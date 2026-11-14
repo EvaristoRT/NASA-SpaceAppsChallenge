@@ -62,13 +62,22 @@ export default function App() {
   const handleSelectZone = (zone) => {
     setSelectedZone(zone);
     setOrbitMode(false);
-    setAutoSpin(false); // Pausar giro automático para inspeccionar
   };
 
   // Alternar rotación continua
   const handleToggleAutoSpin = () => {
-    setAutoSpin((prev) => !prev);
-    setOrbitMode(false);
+    setAutoSpin((prev) => {
+      const next = !prev;
+      if (next) {
+        if (projection !== 'globe') {
+          setProjection('globe');
+        }
+        setSelectedZone(null);
+        setDrawnArea(null);
+        setOrbitMode(false);
+      }
+      return next;
+    });
   };
 
   // Alternar modo órbita
@@ -78,7 +87,6 @@ export default function App() {
       return;
     }
     setOrbitMode((prev) => !prev);
-    setAutoSpin(false);
   };
 
   // Alternar proyección 3D / 2D
@@ -94,19 +102,16 @@ export default function App() {
     } else {
       setIsDrawOpen(true);
       setDrawMode('freehand'); // Por defecto mano alzada
-      setAutoSpin(false);
     }
   };
 
   const handleSelectDrawMode = (mode) => {
     setDrawMode(mode);
-    if (mode) setAutoSpin(false);
   };
 
   const handleFinishDrawing = (data) => {
     setDrawnArea(data);
     setSelectedZone(null); // Priorizar vista de la zona dibujada
-    setAutoSpin(false);
   };
 
   const handleClearDrawing = () => {
@@ -127,6 +132,7 @@ export default function App() {
     setSelectedZone(null);
     setDrawnArea(null);
     setOrbitMode(false);
+    setAutoSpin(true);
     globeRef.current?.resetView();
   };
   const handleDeepZoom = (zone) => globeRef.current?.deepZoom(zone);
