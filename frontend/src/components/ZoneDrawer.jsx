@@ -9,7 +9,9 @@ import {
   MapPin,
   Thermometer,
   Users,
-  Grid
+  Grid,
+  Landmark,
+  Globe
 } from 'lucide-react';
 import { formatCoords } from '../utils/geoUtils';
 
@@ -71,6 +73,26 @@ export default function ZoneDrawer({
 
         {/* Resumen de Métricas */}
         <div className="metrics-grid">
+          {zone.capital && (
+            <div className="metric-card">
+              <div className="metric-header">
+                <Landmark size={13} />
+                <span>Capital</span>
+              </div>
+              <div className="metric-value">{zone.capital}</div>
+            </div>
+          )}
+
+          {zone.continent && (
+            <div className="metric-card">
+              <div className="metric-header">
+                <Globe size={13} />
+                <span>Continente</span>
+              </div>
+              <div className="metric-value">{zone.continent}</div>
+            </div>
+          )}
+
           <div className="metric-card">
             <div className="metric-header">
               <Grid size={13} />

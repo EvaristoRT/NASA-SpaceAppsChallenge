@@ -12,13 +12,15 @@ export function generateZonesGeoJSON() {
       coordinates = [zone.polygon];
     } else {
       const [lng, lat] = zone.coords;
-      const delta = 4;
+      // Calcular tamaño proporcional según el nivel de zoom recomendado del país
+      const zoom = zone.zoom || 5;
+      const delta = Math.max(0.25, Math.min(5.0, (7.0 - zoom) * 1.1));
       coordinates = [[
-        [lng - delta, lat - delta],
-        [lng + delta, lat - delta],
-        [lng + delta, lat + delta],
-        [lng - delta, lat + delta],
-        [lng - delta, lat - delta]
+        [lng - delta, lat - delta * 0.8],
+        [lng + delta, lat - delta * 0.8],
+        [lng + delta, lat + delta * 0.8],
+        [lng - delta, lat + delta * 0.8],
+        [lng - delta, lat - delta * 0.8]
       ]];
     }
 

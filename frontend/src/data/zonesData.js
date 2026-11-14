@@ -1,11 +1,13 @@
-// Catálogo de Zonas de Interés y Regiones del Globo Terráqueo
-export const ZONES = [
-  // --- CONTINENTES ---
+import { ALL_COUNTRIES } from './allCountries.js';
+
+// --- CONTINENTES ---
+export const CONTINENTS = [
   {
     id: 'america-del-sur',
     name: 'América del Sur',
     nativeName: 'South America',
     category: 'Continente',
+    continent: 'América',
     icon: '🌎',
     coords: [-58.4, -14.2],
     zoom: 2.8,
@@ -28,6 +30,7 @@ export const ZONES = [
     name: 'América del Norte',
     nativeName: 'North America',
     category: 'Continente',
+    continent: 'América',
     icon: '🌎',
     coords: [-100.0, 42.0],
     zoom: 2.6,
@@ -50,6 +53,7 @@ export const ZONES = [
     name: 'Europa',
     nativeName: 'Europe',
     category: 'Continente',
+    continent: 'Europa',
     icon: '🌍',
     coords: [15.25, 50.1],
     zoom: 3.2,
@@ -71,6 +75,7 @@ export const ZONES = [
     name: 'África',
     nativeName: 'Africa',
     category: 'Continente',
+    continent: 'África',
     icon: '🌍',
     coords: [21.7, 5.0],
     zoom: 2.7,
@@ -92,6 +97,7 @@ export const ZONES = [
     name: 'Asia',
     nativeName: 'Asia',
     category: 'Continente',
+    continent: 'Asia',
     icon: '🌏',
     coords: [95.0, 38.0],
     zoom: 2.3,
@@ -113,6 +119,7 @@ export const ZONES = [
     name: 'Oceanía',
     nativeName: 'Oceania',
     category: 'Continente',
+    continent: 'Oceanía',
     icon: '🌏',
     coords: [134.0, -25.0],
     zoom: 3.0,
@@ -133,6 +140,7 @@ export const ZONES = [
     name: 'Antártida',
     nativeName: 'Antarctica',
     category: 'Continente',
+    continent: 'Antártida',
     icon: '❄️',
     coords: [0.0, -82.0],
     zoom: 2.2,
@@ -147,14 +155,17 @@ export const ZONES = [
       [-180, -70], [-90, -65], [0, -68], [90, -65], [180, -70],
       [180, -89], [-180, -89], [-180, -70]
     ]
-  },
+  }
+];
 
-  // --- ZONAS GEOGRÁFICAS & ECOLÓGICAS EMBLEMÁTICAS ---
+// --- ZONAS GEOGRÁFICAS & MARAVILLAS NATURALES ---
+export const WONDER_ZONES = [
   {
     id: 'amazonia',
     name: 'Selva Amazónica',
     nativeName: 'Amazonia',
     category: 'Zona Ecológica',
+    continent: 'América',
     icon: '🌿',
     coords: [-62.2, -3.4],
     zoom: 4.8,
@@ -175,6 +186,7 @@ export const ZONES = [
     name: 'Cordillera del Himalaya',
     nativeName: 'The Himalayas',
     category: 'Zona Geográfica',
+    continent: 'Asia',
     icon: '🏔️',
     coords: [86.9, 27.9],
     zoom: 5.5,
@@ -195,6 +207,7 @@ export const ZONES = [
     name: 'Gran Barrera de Coral',
     nativeName: 'Great Barrier Reef',
     category: 'Zona Marina',
+    continent: 'Oceanía',
     icon: '🪸',
     coords: [147.7, -18.2],
     zoom: 5.2,
@@ -215,6 +228,7 @@ export const ZONES = [
     name: 'Cinturón de Fuego del Pacífico',
     nativeName: 'Pacific Ring of Fire',
     category: 'Zona Geológica',
+    continent: 'Mundo',
     icon: '🌋',
     coords: [140.0, 35.0],
     zoom: 3.2,
@@ -236,6 +250,7 @@ export const ZONES = [
     name: 'Desierto del Sahara',
     nativeName: 'Sahara Desert',
     category: 'Zona Geográfica',
+    continent: 'África',
     icon: '🏜️',
     coords: [13.0, 23.4],
     zoom: 4.4,
@@ -256,6 +271,7 @@ export const ZONES = [
     name: 'Fosa de las Marianas',
     nativeName: 'Mariana Trench',
     category: 'Zona Marina',
+    continent: 'Oceanía / Pacífico',
     icon: '🌊',
     coords: [142.2, 11.35],
     zoom: 5.0,
@@ -270,111 +286,51 @@ export const ZONES = [
       [140, 9], [144, 11], [146, 17], [144, 23],
       [142, 23], [141, 16], [139, 11], [140, 9]
     ]
-  },
-
-  // --- PAÍSES & REGIONES DESTACADAS ---
-  {
-    id: 'espana',
-    name: 'España',
-    nativeName: 'Reino de España',
-    category: 'País',
-    icon: '🇪🇸',
-    coords: [-3.7, 40.4],
-    zoom: 5.2,
-    pitch: 42,
-    bearing: -8,
-    area: '505,990 km²',
-    population: '48.4 millones',
-    climate: 'Mediterráneo, Oceánico, Continental',
-    description: 'País de la península ibérica con una historia rica y diversa, playas paradisíacas, monumentos arquitectónicos de renombre mundial y una gastronomía icónica.',
-    highlights: ['Madrid', 'Barcelona (Sagrada Familia)', 'La Alhambra de Granada', 'Islas Canarias y Baleares', 'Picos de Europa'],
-    polygon: [
-      [-9.3, 42.1], [-8.9, 43.8], [-1.8, 43.4], [3.3, 42.4], [2.2, 41.4],
-      [0.2, 40.5], [-0.3, 38.8], [-2.1, 36.7], [-5.6, 36.0], [-7.5, 37.1],
-      [-7.4, 38.2], [-6.9, 39.0], [-6.8, 41.5], [-9.3, 42.1]
-    ]
-  },
-  {
-    id: 'mexico',
-    name: 'México',
-    nativeName: 'Estados Unidos Mexicanos',
-    category: 'País',
-    icon: '🇲🇽',
-    coords: [-102.5, 23.6],
-    zoom: 4.6,
-    pitch: 45,
-    bearing: 5,
-    area: '1,964,375 km²',
-    population: '129 millones',
-    climate: 'Árido, Templado de montaña, Selva tropical',
-    description: 'Nación megadiversa enlazando Norte y Centroamérica, cuna de las civilizaciones maya y azteca, con costas en el Pacífico y el Caribe y una vibrante cultura gastronómica.',
-    highlights: ['Ciudad de México', 'Península de Yucatán y Chichén Itzá', 'Riviera Maya', 'Barrancas del Cobre', 'Volcán Popocatépetl'],
-    polygon: [
-      [-117, 32], [-114, 31], [-108, 31], [-100, 28], [-97, 26],
-      [-97, 21], [-91, 19], [-87, 21], [-87, 18], [-92, 14],
-      [-96, 16], [-104, 19], [-106, 23], [-110, 24], [-115, 30], [-117, 32]
-    ]
-  },
-  {
-    id: 'japon',
-    name: 'Japón',
-    nativeName: '日本 (Nihon)',
-    category: 'País',
-    icon: '🇯🇵',
-    coords: [138.2, 36.2],
-    zoom: 5.1,
-    pitch: 50,
-    bearing: -25,
-    area: '377,975 km²',
-    population: '124 millones',
-    climate: 'Templado insular, 4 estaciones muy marcadas',
-    description: 'Archipiélago volcánico que fusiona milenarias tradiciones samuráis y sintoístas con metrópolis futuristas y tecnología de vanguardia.',
-    highlights: ['Tokio', 'Monte Fuji', 'Kioto y sus templos milenarios', 'Isla de Hokkaido (nieve en polvo)', 'Okinawa'],
-    polygon: [
-      [129, 31], [130, 33], [135, 34], [140, 35], [141, 41],
-      [145, 44], [141, 45], [139, 41], [136, 36], [131, 34], [129, 31]
-    ]
-  },
-  {
-    id: 'islandia',
-    name: 'Islandia',
-    nativeName: 'Ísland',
-    category: 'País / Isla',
-    icon: '🇮🇸',
-    coords: [-18.6, 64.9],
-    zoom: 5.6,
-    pitch: 55,
-    bearing: 15,
-    area: '103,000 km²',
-    population: '390,000',
-    climate: 'Subpolar oceánico con actividad geotérmica',
-    description: 'La tierra del hielo y el fuego: colosal encuentro entre la dorsal mesoatlántica y glaciares continentales, géiseres, cascadas y auroras boreales.',
-    highlights: ['Reykjavik', 'Glaciar Vatnajökull', 'Círculo Dorado y géiseres', 'Playa de arena negra Reynisfjara', 'Laguna Azul'],
-    polygon: [
-      [-24, 65], [-22, 66.5], [-16, 66.5], [-13.5, 65],
-      [-15, 63.8], [-19, 63.4], [-23, 64.2], [-24, 65]
-    ]
-  },
-  {
-    id: 'madagascar',
-    name: 'Madagascar',
-    nativeName: 'Madagasikara',
-    category: 'Isla & Santuario',
-    icon: '🇲🇬',
-    coords: [46.8, -18.7],
-    zoom: 5.2,
-    pitch: 45,
-    bearing: 20,
-    area: '587,041 km²',
-    population: '30 millones',
-    climate: 'Tropical costero, árido al sur, templado central',
-    description: 'La cuarta isla más grande del mundo, aislada durante más de 88 millones de años, lo que generó que el 90% de su flora y fauna no exista en ningún otro rincón del planeta.',
-    highlights: ['Avenida de los Baobabs', 'Tsingy de Bemaraha', 'Lémures endémicos', 'Canal de Mozambique'],
-    polygon: [
-      [43.5, -12], [49.5, -12], [50.5, -15], [48.5, -23],
-      [47, -25.5], [44, -25.5], [43.5, -21], [44.5, -16], [43.5, -12]
-    ]
   }
+];
+
+// Países destacados con polígonos detallados
+export const FEATURED_COUNTRIES_POLYGONS = {
+  espana: [
+    [-9.3, 42.1], [-8.9, 43.8], [-1.8, 43.4], [3.3, 42.4], [2.2, 41.4],
+    [0.2, 40.5], [-0.3, 38.8], [-2.1, 36.7], [-5.6, 36.0], [-7.5, 37.1],
+    [-7.4, 38.2], [-6.9, 39.0], [-6.8, 41.5], [-9.3, 42.1]
+  ],
+  mexico: [
+    [-117, 32], [-114, 31], [-108, 31], [-100, 28], [-97, 26],
+    [-97, 21], [-91, 19], [-87, 21], [-87, 18], [-92, 14],
+    [-96, 16], [-104, 19], [-106, 23], [-110, 24], [-115, 30], [-117, 32]
+  ],
+  japon: [
+    [129, 31], [130, 33], [135, 34], [140, 35], [141, 41],
+    [145, 44], [141, 45], [139, 41], [136, 36], [131, 34], [129, 31]
+  ],
+  islandia: [
+    [-24, 65], [-22, 66.5], [-16, 66.5], [-13.5, 65],
+    [-15, 63.8], [-19, 63.4], [-23, 64.2], [-24, 65]
+  ],
+  madagascar: [
+    [43.5, -12], [49.5, -12], [50.5, -15], [48.5, -23],
+    [47, -25.5], [44, -25.5], [43.5, -21], [44.5, -16], [43.5, -12]
+  ]
+};
+
+// Enriquecer países con polígonos si están disponibles
+const enrichedCountries = ALL_COUNTRIES.map((country) => {
+  if (FEATURED_COUNTRIES_POLYGONS[country.id]) {
+    return {
+      ...country,
+      polygon: FEATURED_COUNTRIES_POLYGONS[country.id]
+    };
+  }
+  return country;
+});
+
+// Catálogo Global Completo de Zonas del Globo Terráqueo
+export const ZONES = [
+  ...CONTINENTS,
+  ...WONDER_ZONES,
+  ...enrichedCountries
 ];
 
 // Estilos de mapa disponibles

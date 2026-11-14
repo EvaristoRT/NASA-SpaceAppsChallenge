@@ -30,9 +30,11 @@ export default function Navbar({
   const searchResults = searchQuery.trim()
     ? ZONES.filter((z) =>
         z.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (z.capital && z.capital.toLowerCase().includes(searchQuery.toLowerCase())) ||
         z.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (z.continent && z.continent.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (z.highlights && z.highlights.some(h => h.toLowerCase().includes(searchQuery.toLowerCase())))
-      )
+      ).slice(0, 10)
     : [];
 
   // Cerrar dropdowns al hacer clic fuera
@@ -87,7 +89,7 @@ export default function Navbar({
           <Search size={16} className="search-icon" />
           <input
             type="text"
-            placeholder="Buscar continente, país o zona geográfica..."
+            placeholder="Buscar país (ej. México, España, Japón...), capital o zona..."
             className="navbar-search-input"
             value={searchQuery}
             onChange={(e) => {
@@ -110,7 +112,10 @@ export default function Navbar({
                 <span className="search-result-icon">{zone.icon || '📍'}</span>
                 <div className="search-result-text">
                   <span className="search-result-title">{zone.name}</span>
-                  <span className="search-result-sub">{zone.category}</span>
+                  <span className="search-result-sub">
+                    {zone.capital ? `${zone.capital} • ` : ''}
+                    {zone.continent || zone.category}
+                  </span>
                 </div>
               </div>
             ))}

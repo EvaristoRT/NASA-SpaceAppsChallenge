@@ -22,6 +22,7 @@ const Globe = forwardRef(function Globe(
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
+  const selectedMarkerRef = useRef(null);
   const animFrameRef = useRef(null);
   const userInteractingRef = useRef(false);
   const autoSpinActiveRef = useRef(autoSpin);
@@ -254,6 +255,12 @@ const Globe = forwardRef(function Globe(
   useEffect(() => {
     if (!mapRef.current) return;
 
+    // Limpiar marcador activo anterior
+    if (selectedMarkerRef.current) {
+      selectedMarkerRef.current.remove();
+      selectedMarkerRef.current = null;
+    }
+
     if (selectedZone) {
       mapRef.current.flyTo({
         center: selectedZone.coords,
@@ -265,6 +272,24 @@ const Globe = forwardRef(function Globe(
         curve: 1.4,
         speed: 1.1
       });
+
+      // Añadir marcador destacado para el país/zona seleccionado
+      const el = document.createElement('div');
+      el.className = 'custom-zone-marker selected-active-marker';
+      el.innerHTML = `
+        <div class="marker-pin active-pin">
+          <span class="marker-icon">${selectedZone.icon || '📍'}</span>
+        </div>
+        <div class="marker-label">${selectedZone.name}</div>
+      `;
+      const marker = new mapboxgl.Marker({
+        element: el,
+        anchor: 'bottom'
+      })
+        .setLngLat(selectedZone.coords)
+        .addTo(mapRef.current);
+
+      selectedMarkerRef.current = marker;
 
       // Actualizar filtros de resaltado
       if (mapRef.current.getLayer('zones-highlight-fill')) {
@@ -398,12 +423,21 @@ const Globe = forwardRef(function Globe(
   const clearMarkers = () => {
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
+    if (selectedMarkerRef.current) {
+      selectedMarkerRef.current.remove();
+      selectedMarkerRef.current = null;
+    }
   };
 
   const renderZoneMarkers = (map) => {
     clearMarkers();
 
-    ZONES.forEach((zone) => {
+    // Renderizar marcadores de referencia principales (continentes y maravillas naturales)
+    const primaryZones = ZONES.filter(
+      (z) => z.category === 'Continente' || z.category.includes('Zona')
+    );
+
+    primaryZones.forEach((zone) => {
       const el = document.createElement('div');
       el.className = 'custom-zone-marker';
       el.innerHTML = `
