@@ -44,6 +44,7 @@ const Globe = forwardRef(function Globe(
   const drawnAreaRef = useRef(drawnArea);
   const projectionRef = useRef(projection);
   const orbitBearingRef = useRef(0);
+  const hoveredZoneIdRef = useRef('');
 
   // Referencias para el modo dibujo
   const drawModeRef = useRef(drawMode);
@@ -287,6 +288,8 @@ const Globe = forwardRef(function Globe(
 
     if (map.getLayer('zones-highlight-line')) map.removeLayer('zones-highlight-line');
     if (map.getLayer('zones-highlight-fill')) map.removeLayer('zones-highlight-fill');
+    if (map.getLayer('zones-hover-line')) map.removeLayer('zones-hover-line');
+    if (map.getLayer('zones-hover-fill')) map.removeLayer('zones-hover-fill');
     if (map.getLayer('zones-line')) map.removeLayer('zones-line');
     if (map.getLayer('zones-fill')) map.removeLayer('zones-fill');
     if (map.getSource('zones-geojson')) map.removeSource('zones-geojson');
@@ -311,7 +314,7 @@ const Globe = forwardRef(function Globe(
           'Zona Geológica', '#f97316',
           '#6366f1'
         ],
-        'fill-opacity': 0.12
+        'fill-opacity': 0.08
       }
     });
 
@@ -323,16 +326,46 @@ const Globe = forwardRef(function Globe(
         'line-color': [
           'match',
           ['get', 'category'],
-          'Continente', '#38bdf8',
-          'País', '#c084fc',
-          'Zona Ecológica', '#34d399',
-          'Zona Marina', '#22d3ee',
-          'Zona Geológica', '#fb923c',
-          '#818cf8'
+          'Continente', 'rgba(56, 189, 248, 0.75)',
+          'País', 'rgba(168, 85, 247, 0.55)',
+          'Zona Ecológica', 'rgba(16, 185, 129, 0.75)',
+          'Zona Marina', 'rgba(6, 182, 212, 0.75)',
+          'Zona Geológica', 'rgba(249, 115, 22, 0.75)',
+          'rgba(99, 102, 241, 0.55)'
         ],
-        'line-width': 1.8,
-        'line-dasharray': [2, 1],
-        'line-opacity': 0.7
+        'line-width': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          1, 0.9,
+          4, 1.4,
+          7, 2.0
+        ],
+        'line-opacity': 0.8
+      }
+    });
+
+    // Capa de hover interactivo al pasar el cursor sobre cualquier país o territorio
+    map.addLayer({
+      id: 'zones-hover-fill',
+      type: 'fill',
+      source: 'zones-geojson',
+      filter: ['==', ['get', 'id'], ''],
+      paint: {
+        'fill-color': '#38bdf8',
+        'fill-opacity': 0.18
+      }
+    });
+
+    map.addLayer({
+      id: 'zones-hover-line',
+      type: 'line',
+      source: 'zones-geojson',
+      filter: ['==', ['get', 'id'], ''],
+      paint: {
+        'line-color': '#38bdf8',
+        'line-width': 2.0,
+        'line-opacity': 0.95
       }
     });
 
@@ -342,8 +375,8 @@ const Globe = forwardRef(function Globe(
       source: 'zones-geojson',
       filter: ['==', ['get', 'id'], selectedZoneRef.current ? selectedZoneRef.current.id : ''],
       paint: {
-        'fill-color': '#38bdf8',
-        'fill-opacity': 0.28
+        'fill-color': '#0ea5e9',
+        'fill-opacity': 0.32
       }
     });
 
@@ -354,7 +387,7 @@ const Globe = forwardRef(function Globe(
       filter: ['==', ['get', 'id'], selectedZoneRef.current ? selectedZoneRef.current.id : ''],
       paint: {
         'line-color': '#38bdf8',
-        'line-width': 3.5,
+        'line-width': 2.8,
         'line-opacity': 1.0
       }
     });
@@ -566,10 +599,21 @@ const Globe = forwardRef(function Globe(
           }
         }
 
-        // Puntero interactivo sobre zonas
+        // Puntero y realce interactivo al posar el cursor sobre cualquier país
         if (!drawModeRef.current && map.getLayer('zones-fill')) {
           const features = map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] });
-          map.getCanvas().style.cursor = features && features.length > 0 ? 'pointer' : '';
+          const hoverId = features && features.length > 0 ? features[0].properties.id : '';
+          map.getCanvas().style.cursor = hoverId ? 'pointer' : '';
+
+          if (hoverId !== hoveredZoneIdRef.current) {
+            hoveredZoneIdRef.current = hoverId;
+            if (map.getLayer('zones-hover-fill')) {
+              map.setFilter('zones-hover-fill', ['==', ['get', 'id'], hoverId]);
+            }
+            if (map.getLayer('zones-hover-line')) {
+              map.setFilter('zones-hover-line', ['==', ['get', 'id'], hoverId]);
+            }
+          }
         }
 
         // Actualizar HUD
@@ -580,6 +624,18 @@ const Globe = forwardRef(function Globe(
             pitch: map.getPitch(),
             bearing: map.getBearing()
           });
+        }
+      });
+
+      map.on('mouseleave', () => {
+        if (hoveredZoneIdRef.current) {
+          hoveredZoneIdRef.current = '';
+          if (map.getLayer('zones-hover-fill')) {
+            map.setFilter('zones-hover-fill', ['==', ['get', 'id'], '']);
+          }
+          if (map.getLayer('zones-hover-line')) {
+            map.setFilter('zones-hover-line', ['==', ['get', 'id'], '']);
+          }
         }
       });
 

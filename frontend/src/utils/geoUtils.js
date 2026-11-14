@@ -1,51 +1,12 @@
-import { ZONES } from '../data/zonesData';
 import { ALL_COUNTRIES } from '../data/allCountries';
+import worldZonesGeoJSON from '../data/worldZonesGeoJSON.json';
 
 /**
- * Convierte el catálogo de zonas en una FeatureCollection GeoJSON
- * para renderizar polígonos interactivos en el globo.
+ * Retorna la FeatureCollection GeoJSON con las geometrías y límites reales
+ * (polígonos y multipolígonos de alta precisión) de todos los países y zonas del mundo.
  */
 export function generateZonesGeoJSON() {
-  const features = ZONES.map((zone) => {
-    let coordinates = [];
-    if (zone.polygon && zone.polygon.length > 0) {
-      coordinates = [zone.polygon];
-    } else {
-      const [lng, lat] = zone.coords;
-      const zoom = zone.zoom || 5;
-      const delta = Math.max(0.25, Math.min(5.0, (7.0 - zoom) * 1.1));
-      coordinates = [[
-        [lng - delta, lat - delta * 0.8],
-        [lng + delta, lat - delta * 0.8],
-        [lng + delta, lat + delta * 0.8],
-        [lng - delta, lat + delta * 0.8],
-        [lng - delta, lat - delta * 0.8]
-      ]];
-    }
-
-    return {
-      type: 'Feature',
-      id: zone.id,
-      properties: {
-        id: zone.id,
-        name: zone.name,
-        category: zone.category,
-        icon: zone.icon,
-        area: zone.area,
-        population: zone.population,
-        climate: zone.climate
-      },
-      geometry: {
-        type: 'Polygon',
-        coordinates: coordinates
-      }
-    };
-  });
-
-  return {
-    type: 'FeatureCollection',
-    features
-  };
+  return worldZonesGeoJSON;
 }
 
 /**
@@ -153,6 +114,7 @@ export function getPolygonBoundsAndCenter(coords) {
 
 /**
  * Detecta qué países o regiones se encuentran dentro o intersectan con el polígono dibujado
+ * utilizando sus geometrías y límites territoriales reales.
  */
 export function findCoveredCountries(polygonCoords) {
   if (!polygonCoords || polygonCoords.length < 3) return [];
@@ -160,15 +122,45 @@ export function findCoveredCountries(polygonCoords) {
   const bounds = getPolygonBoundsAndCenter(polygonCoords);
   if (!bounds) return [];
 
-  // Buscar países cuyo punto central caiga dentro del polígono o dentro de su bounding box
   const covered = ALL_COUNTRIES.filter((country) => {
     const [lng, lat] = country.coords;
-    // Filtro rápido de Bounding Box
-    if (lng < bounds.minLng - 1 || lng > bounds.maxLng + 1 || lat < bounds.minLat - 1 || lat > bounds.maxLat + 1) {
+    // 1. Verificación directa si el centroide del país está dentro del área dibujada
+    if (pointInPolygon([lng, lat], polygonCoords)) {
+      return true;
+    }
+
+    // 2. Filtro rápido de Bounding Box antes de evaluar la geometría real
+    if (
+      lng < bounds.minLng - 15 ||
+      lng > bounds.maxLng + 15 ||
+      lat < bounds.minLat - 15 ||
+      lat > bounds.maxLat + 15
+    ) {
       return false;
     }
-    // Verificación exacta de punto en polígono
-    return pointInPolygon(country.coords, polygonCoords);
+
+    // 3. Verificación de intersección con la geometría real del país
+    const feature = worldZonesGeoJSON.features.find((f) => f.id === country.id);
+    if (!feature || !feature.geometry) return false;
+
+    const geom = feature.geometry;
+    if (geom.type === 'Polygon') {
+      for (const ring of geom.coordinates) {
+        for (let i = 0; i < ring.length; i += 2) {
+          if (pointInPolygon(ring[i], polygonCoords)) return true;
+        }
+      }
+    } else if (geom.type === 'MultiPolygon') {
+      for (const poly of geom.coordinates) {
+        for (const ring of poly) {
+          for (let i = 0; i < ring.length; i += 2) {
+            if (pointInPolygon(ring[i], polygonCoords)) return true;
+          }
+        }
+      }
+    }
+
+    return false;
   });
 
   return covered;
