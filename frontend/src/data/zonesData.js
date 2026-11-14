@@ -177,8 +177,12 @@ export const WONDER_ZONES = [
     description: 'El bosque tropical más extenso del planeta, hogar de 1 de cada 10 especies conocidas y pulmón vital para el ciclo del agua y el carbono global.',
     highlights: ['Río Amazonas', 'Parque Nacional Jaú', 'Canopea tropical', 'Río Negro y Río Solimões'],
     polygon: [
-      [-75, 4], [-68, 5], [-55, 3], [-48, -1], [-46, -4],
-      [-50, -12], [-60, -15], [-68, -13], [-75, -8], [-78, -3], [-75, 4]
+      [-50.0, 0.0], [-51.0, 2.0], [-53.0, 3.5], [-56.0, 2.5], [-59.5, 3.8],
+      [-60.5, 4.8], [-63.5, 3.5], [-65.5, 2.0], [-67.0, 1.8], [-70.0, 1.5],
+      [-73.0, 2.0], [-75.0, 1.0], [-77.5, 0.5], [-78.5, -1.8], [-77.5, -4.5],
+      [-76.5, -7.0], [-74.5, -9.5], [-72.5, -12.5], [-69.5, -14.0], [-66.0, -16.5],
+      [-63.5, -17.8], [-60.5, -16.5], [-58.0, -14.5], [-55.0, -13.0], [-53.0, -11.0],
+      [-50.0, -9.0], [-48.0, -6.0], [-48.0, -2.0], [-49.0, -0.5], [-50.0, 0.0]
     ]
   },
   {
@@ -198,8 +202,11 @@ export const WONDER_ZONES = [
     description: 'La cordillera más alta del planeta, surgida por la colisión tectónica entre el subcontinente indio y Eurasia. Alberga los 14 "ochomiles", incluyendo el Monte Everest (8,848 m).',
     highlights: ['Monte Everest', 'K2', 'Meseta Tibetana', 'Glaciares de Siachen', 'Nacimiento de los ríos Ganges e Indo'],
     polygon: [
-      [73, 35], [77, 36], [82, 31], [88, 28], [95, 29],
-      [97, 27], [92, 26], [85, 27], [78, 30], [73, 35]
+      [74.0, 35.8], [75.2, 35.2], [76.5, 34.2], [78.2, 32.5], [80.5, 30.8],
+      [82.5, 29.8], [84.5, 28.9], [86.5, 28.2], [88.5, 27.8], [90.5, 27.6],
+      [92.5, 27.5], [94.5, 28.5], [95.8, 29.8], [95.2, 30.5], [93.8, 29.6],
+      [91.8, 28.8], [89.8, 29.0], [87.5, 29.4], [85.5, 29.8], [83.0, 30.8],
+      [81.0, 31.8], [78.8, 33.5], [77.0, 35.0], [75.0, 36.2], [74.0, 35.8]
     ]
   },
   {
@@ -219,8 +226,10 @@ export const WONDER_ZONES = [
     description: 'La estructura viva más grande de la Tierra, visible desde el espacio exterior. Compuesta por más de 2,900 arrecifes individuales y 900 islas.',
     highlights: ['Arrecife Heart Reef', 'Whitsunday Islands', 'Tortugas verdes marinas', 'Más de 1,500 especies de peces'],
     polygon: [
-      [143, -11], [146, -14], [150, -20], [153, -24],
-      [151, -24], [148, -20], [144, -15], [142, -11], [143, -11]
+      [143.5, -9.5], [144.2, -10.8], [145.2, -12.5], [146.0, -14.5], [146.8, -16.5],
+      [148.5, -18.8], [150.5, -20.5], [152.8, -21.8], [153.2, -23.5], [152.8, -24.6],
+      [154.0, -24.4], [153.8, -22.5], [151.8, -20.0], [149.2, -17.5], [147.2, -15.0],
+      [146.0, -13.0], [145.0, -11.0], [144.2, -9.8], [143.5, -9.5]
     ]
   },
   {
@@ -240,9 +249,18 @@ export const WONDER_ZONES = [
     description: 'La zona con mayor actividad sísmica y volcánica de la Tierra. Concentra más del 75% de los volcanes activos e inactivos del mundo y el 90% de los terremotos.',
     highlights: ['Monte Fuji', 'Fosa de las Marianas', 'Cinturón volcánico de los Andes', 'Krakatoa', 'Falla de San Andrés'],
     polygon: [
-      [130, 30], [145, 45], [160, 55], [-170, 58], [-150, 58],
-      [-130, 50], [-120, 35], [-105, 20], [-80, 0], [-70, -25],
-      [-75, -45], [-80, -45], [-110, 15], [150, 20], [130, 30]
+      [178.0, -42.0], [175.0, -35.0], [177.0, -22.0], [170.0, -15.0], [155.0, -7.0],
+      [145.0, -4.0], [130.0, -2.0], [120.0, 0.0], [122.0, 14.0], [121.0, 24.0],
+      [130.0, 32.0], [140.0, 36.0], [145.0, 44.0], [158.0, 52.0], [163.0, 58.0],
+      [-175.0, 52.0], [-160.0, 55.0], [-150.0, 60.0], [-140.0, 58.0], [-130.0, 50.0],
+      [-122.0, 42.0], [-118.0, 34.0], [-105.0, 20.0], [-90.0, 14.0], [-80.0, 5.0],
+      [-77.0, -2.0], [-73.0, -18.0], [-70.0, -32.0], [-72.0, -45.0], [-68.0, -55.0],
+      [-75.0, -54.0], [-77.0, -42.0], [-76.0, -30.0], [-79.0, -16.0], [-84.0, 2.0],
+      [-95.0, 12.0], [-110.0, 18.0], [-124.0, 32.0], [-127.0, 44.0], [-135.0, 54.0],
+      [-148.0, 56.0], [-160.0, 52.0], [-175.0, 49.0], [160.0, 48.0], [148.0, 40.0],
+      [138.0, 32.0], [128.0, 28.0], [117.0, 20.0], [116.0, 10.0], [118.0, -5.0],
+      [125.0, -8.0], [140.0, -10.0], [150.0, -12.0], [165.0, -20.0], [172.0, -32.0],
+      [173.0, -42.0], [178.0, -42.0]
     ]
   },
   {
@@ -262,8 +280,12 @@ export const WONDER_ZONES = [
     description: 'El desierto cálido más grande del mundo, abarcando 11 países del norte de África con dunas gigantescas (ergs), mesetas rocosas (hamadas) y oasis históricos.',
     highlights: ['Erg Chebbi', 'Estructura de Richat (Ojo del Sahara)', 'Macizo de Ahaggar', 'Ruta de caravanas tuareg'],
     polygon: [
-      [-15, 28], [0, 32], [15, 33], [30, 30], [33, 22],
-      [30, 15], [15, 14], [-5, 16], [-15, 20], [-15, 28]
+      [-16.8, 20.8], [-15.5, 24.0], [-13.0, 27.5], [-9.5, 29.5], [-5.0, 30.5],
+      [-1.0, 32.2], [3.5, 33.5], [8.0, 34.0], [11.0, 33.0], [15.0, 31.2],
+      [20.0, 30.8], [25.0, 31.5], [30.0, 31.0], [32.5, 30.0], [34.0, 27.5],
+      [35.5, 24.0], [36.5, 20.5], [35.0, 18.0], [32.0, 15.5], [28.0, 14.5],
+      [23.0, 14.8], [17.5, 15.2], [12.0, 15.0], [6.0, 15.5], [0.0, 16.0],
+      [-6.0, 16.5], [-11.0, 17.0], [-16.0, 17.5], [-16.5, 19.0], [-16.8, 20.8]
     ]
   },
   {
@@ -283,8 +305,10 @@ export const WONDER_ZONES = [
     description: 'El punto más profundo de la corteza oceánica terrestre. El abismo Challenger desciende a casi 11,000 metros bajo el nivel del mar, donde habitan criaturas extremófilas.',
     highlights: ['Abismo Challenger (-10,994 m)', 'Sirena Deep', 'Paredes tectónicas de subducción', 'Ecosistemas quimiosintéticos'],
     polygon: [
-      [140, 9], [144, 11], [146, 17], [144, 23],
-      [142, 23], [141, 16], [139, 11], [140, 9]
+      [141.5, 11.0], [142.2, 11.35], [143.2, 12.5], [144.2, 14.2], [145.3, 16.5],
+      [145.8, 19.0], [145.5, 21.5], [144.8, 23.5], [144.0, 25.0], [145.2, 24.8],
+      [146.6, 22.8], [147.2, 19.5], [146.8, 16.2], [145.5, 13.8], [144.2, 12.0],
+      [142.8, 10.8], [141.5, 11.0]
     ]
   }
 ];
