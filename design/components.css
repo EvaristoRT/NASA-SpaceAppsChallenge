@@ -1,0 +1,100 @@
+/* Module-independent building blocks. Report-style: rules, captions and annotation; almost no boxes. */
+
+/* ---- structure ---- */
+.rule { border: 0; border-top: 1px solid var(--rule); margin: 0; }
+.section { padding-top: var(--space-5); border-top: 1px solid var(--rule); }
+
+/* figure + caption, numbered like a paper: "Fig. 1  What it shows." */
+.figure { margin: 0; }
+.caption { margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-muted); max-width: 70ch; }
+.caption b { color: var(--text); font-weight: 700; margin-right: var(--space-2); font-variant-numeric: tabular-nums; }
+
+/* small plain label above a value (sentence case, no tracking, no marker) */
+.label { font-size: var(--text-sm); color: var(--text-muted); font-weight: 500; }
+
+/* key figures as a definition list: label left, value right, hairline between. No cards. */
+.facts { margin: 0; display: grid; }
+.facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--rule); }
+.facts > div:last-child { border-bottom: 1px solid var(--rule); }
+.facts dt { color: var(--text-muted); font-size: var(--text-sm); }
+.facts dd { margin: 0; font-weight: 700; font-size: var(--text-lg); text-align: right; }
+.facts dd small { display: block; font: 400 var(--text-xs)/1.3 var(--font-sans); color: var(--text-muted); }
+
+/* the statement: one sentence the data supports. Set large but not shouting, and no highlighted word. */
+.statement { font-size: clamp(1.9rem, 3.6vw, 2.9rem); font-weight: 700; line-height: 1.12; text-wrap: balance; }
+
+/* brand band: the Space Apps gradient with the event context. Fixed colours: always blue, always white text. */
+.brandbar { position: relative; overflow: hidden; background: var(--brand-gradient); color: #ffffff; }
+/* official Space Apps pattern, screened back to ~25% over the blue (brand guide). Orbits is grey lines on black, so
+   `screen` leaves only the lines. Other patterns are dark lines on white: add `filter: invert(1)` to use them. */
+.brandbar .pattern-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.25; mix-blend-mode: screen; pointer-events: none; }
+.brandbar .brandmark { display: flex; align-items: center; gap: var(--space-4); }
+.brandbar .brandmark img { flex: none; width: 48px; height: 48px; }
+.brandbar .inner {
+  position: relative; display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-5) 0; }
+.brandbar .mark { font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+.brandbar .context { margin: var(--space-1) 0 0; font-size: var(--text-sm); color: #dfe1e2; }
+.brandbar .btn { color: #ffffff; border-color: #ffffff; }
+.brandbar .btn:hover { background: rgb(255 255 255 / 0.14); }
+.brandbar .btn-primary { background: #e7f434; border-color: #e7f434; color: #151622; }
+.brandbar .btn-primary:hover { background: #fafaad; border-color: #fafaad; }
+.brandbar .btn-quiet { border-color: transparent; }
+.brandbar :focus-visible { outline-color: #fafaad; }
+
+/* ---- surfaces that must lift off the page ---- */
+.menu, .tooltip { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: var(--space-3); }
+.overlay { background: var(--overlay); backdrop-filter: blur(3px); }
+
+/* ---- controls ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: 40px; padding: 0 var(--space-4); border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong); background: transparent; color: var(--text);
+  font: 600 var(--text-sm)/1 var(--font-sans); cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.btn:hover { background: var(--surface-2); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-quiet { border-color: transparent; text-decoration: underline; text-underline-offset: 3px; padding: 0 var(--space-2); }
+
+.field {
+  min-height: 40px; padding: 0 var(--space-3); border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong); background: var(--bg); color: var(--text);
+  font: 400 var(--text-sm)/1 var(--font-sans);
+}
+.field.coords { font-variant-numeric: tabular-nums; }
+.field::placeholder { color: var(--text-muted); }
+
+/* ---- status: a glyph + a word, inline. Never colour alone, never a pill. ---- */
+.status { font-weight: 600; font-size: var(--text-sm); white-space: nowrap; }
+.status::before { margin-right: var(--space-1); }
+.status-ok { color: var(--ok); }       .status-ok::before { content: "●"; }
+.status-warn { color: var(--warn); }   .status-warn::before { content: "▲"; }
+.status-danger { color: var(--danger); } .status-danger::before { content: "◆"; }
+.status-info { color: var(--info); }   .status-info::before { content: "○"; }
+
+/* demo-data notice: plain, impossible to miss, no decoration */
+.notice-demo {
+  padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--warn);
+  font-size: var(--text-sm); color: var(--text); background: var(--surface);
+}
+.notice-demo b { color: var(--warn); }
+
+/* ---- data ---- */
+.heat-cell { border: 0; border-radius: 0; transition: outline-color var(--dur) var(--ease); outline: 2px solid transparent; outline-offset: -2px; }
+.heat-cell:hover { outline-color: var(--text); }
+.heat-cell.now { outline: 2px solid var(--accent); outline-offset: -2px; }   /* the current month, the only yellow in the grid */
+
+.axis { font: 400 var(--text-xs)/1 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--text-muted); }
+
+.skeleton { position: relative; overflow: hidden; background: var(--surface-2); border-radius: var(--radius-sm); }
+.skeleton::after {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 30%;
+  background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+  animation: scan 1.3s linear infinite;
+}
+@keyframes scan { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

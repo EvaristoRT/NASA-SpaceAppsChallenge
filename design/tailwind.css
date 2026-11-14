@@ -1,0 +1,44 @@
+/* Entry stylesheet for the frontend (Tailwind v4).
+   In frontend/src/index.css:   @import "../../design/tailwind.css";
+   (or copy the design/ folder into frontend/src/styles and adjust the path)
+
+   `@theme inline` keeps utilities pointing at the CSS variables, so switching
+   [data-theme] re-colours everything without rebuilding. Examples:
+   bg-surface text-muted border-rule bg-accent text-on-accent text-heat font-sans
+
+   Font: Source Sans 3 (one family, no monospace). Bundle it locally so it works on venue wifi:
+     npm i @fontsource/source-sans-3
+   and in main.tsx:
+     import "@fontsource/source-sans-3/400.css";
+     import "@fontsource/source-sans-3/600.css";
+     import "@fontsource/source-sans-3/700.css";
+   (package and file names not verified yet; check them after installing.) */
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./components.css";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-rule: var(--rule);
+  --color-line-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-link: var(--link);
+  --color-heat: var(--heat);
+  --color-heat-deep: var(--heat-deep);
+  --color-alert: var(--alert);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-no-fire: var(--no-fire);
+  --color-no-data: var(--no-data);
+
+  --font-sans: var(--font-sans);
+}

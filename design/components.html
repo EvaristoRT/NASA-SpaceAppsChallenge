@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IgnisSync - Components</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .wrap { max-width: 880px; margin: 0 auto; padding: var(--space-6) var(--space-4); display: grid; gap: var(--space-6); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); }
+  .swatches div { padding-top: 44px; font: 400 var(--text-xs)/1.3 var(--font-sans); }
+  .swatches i { display: block; height: 44px; margin-top: -44px; margin-bottom: 6px; border: 1px solid var(--rule); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1 style="font-size: var(--text-xl)">Referencia de componentes</h1>
+    <p class="label" style="margin: var(--space-2) 0 0">Página de trabajo para el equipo; la pantalla real está en <a href="preview.html">preview.html</a>.
+      <button class="btn btn-quiet" id="theme">Cambiar tema</button></p></header>
+
+  <section class="section"><h2 style="margin-bottom: var(--space-4)">Controles</h2>
+    <div class="row">
+      <button class="btn btn-primary">Buscar área</button><button class="btn">Exportar</button>
+      <button class="btn btn-quiet">Limpiar</button><button class="btn" disabled>Deshabilitado</button>
+      <input class="field coords" placeholder="19.2000, -96.9000" aria-label="Coordenadas">
+    </div>
+  </section>
+
+  <section class="section"><h2 style="margin-bottom: var(--space-4)">Estados</h2>
+    <div class="row"><span class="status status-ok">Normal</span><span class="status status-warn">Elevado</span>
+      <span class="status status-danger">Crítico</span><span class="status status-info">Mes parcial</span></div>
+    <div class="row" style="margin-top: var(--space-4)"><div class="skeleton" style="width: 220px; height: 18px"></div><span class="label">Armonizando registros satelitales…</span></div>
+  </section>
+
+  <section class="section"><h2 style="margin-bottom: var(--space-4)">Lista de hechos</h2>
+    <dl class="facts" style="max-width: 420px">
+      <div><dt>Quemas, 2000–2025</dt><dd class="num">65,335<small>días-celda eq. MODIS</small></dd></div>
+      <div><dt>Año con más actividad</dt><dd>2017</dd></div>
+    </dl>
+  </section>
+
+  <section class="section"><h2 style="margin-bottom: var(--space-4)">Colores de la interfaz</h2>
+    <div class="swatches" id="sw"></div>
+  </section>
+</div>
+<script>
+  const root = document.documentElement;
+  document.getElementById('theme').onclick = () => { root.setAttribute('data-theme', root.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); };
+  function paint() {
+    const sw = document.getElementById('sw'); sw.innerHTML = '';
+    ['bg','surface','surface-2','rule','border-strong','text','text-muted','accent','link','heat','ok','warn','danger','no-fire','no-data'].forEach(n => {
+      const d = document.createElement('div'); d.innerHTML = `<i style="background: var(--${n})"></i>--${n}<br>${getComputedStyle(root).getPropertyValue('--' + n).trim()}`; sw.append(d);
+    });
+  }
+  paint();
+</script>
+</body>
+</html>

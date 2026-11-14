@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IgnisSync - Style preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--space-4); }
+  .bar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-4) 0; }
+  .tools { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+  .lead { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: var(--space-7); align-items: end; padding: var(--space-6) 0 var(--space-6); }
+  .lead p.where { margin: var(--space-4) 0 0; color: var(--text-muted); max-width: 52ch; }
+  .stack { display: grid; gap: var(--space-7); padding-bottom: var(--space-7); }
+  .sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4); }
+  .cal { display: grid; grid-template-columns: 42px repeat(12, 1fr); gap: 2px; }
+  .cal .cell { aspect-ratio: 2.2; display: grid; place-items: center; font: 600 12px/1 var(--font-sans); }
+  .cal .lab { align-self: center; }
+  .scale { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-4); }
+  .scale .ramp { flex: 0 1 280px; height: 10px; }
+  .two { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-7); }
+  svg text { font: 400 12px var(--font-sans); fill: var(--text-muted); }
+  svg .lbl { font: 600 12px var(--font-sans); fill: var(--text); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; }
+  footer { border-top: 1px solid var(--rule); padding: var(--space-5) 0 var(--space-7); color: var(--text-muted); font-size: var(--text-sm); }
+  @media (max-width: 820px) { .lead, .two { grid-template-columns: 1fr; gap: var(--space-6); } }
+</style>
+</head>
+<body>
+<div class="notice-demo"><b>Datos de demostración.</b> Generados artificialmente; no son observaciones de incendios.</div>
+
+<header class="brandbar">
+  <img class="pattern-img" src="brand/patterns/orbits.png" alt="">
+  <div class="wrap inner">
+    <div class="brandmark">
+      <img src="brand/symbol/space-apps-symbol-white.svg" alt="" width="48" height="48">
+      <div>
+        <p class="mark">IgnisSync</p>
+        <p class="context">NASA Space Apps Challenge 2026 · Boca del Río · Reto: Harmonization of MODIS and VIIRS Hot Spots</p>
+      </div>
+    </div>
+    <div class="tools">
+      <button class="btn btn-quiet" id="theme">Tema claro / oscuro</button>
+      <button class="btn btn-primary">Descargar CSV</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="lead">
+    <div>
+      <h1 class="statement">Octubre está 1.6× por encima de lo normal.</h1>
+      <p class="where">Frente a la mediana de los octubres de 2003 a 2025, en el área seleccionada: 41,600 km² entre Veracruz y Puebla.</p>
+    </div>
+    <dl class="facts">
+      <div><dt>Quemas, 2000–2025</dt><dd class="num">65,335<small>días-celda eq. MODIS</small></dd></div>
+      <div><dt>Año con más actividad</dt><dd>2017</dd></div>
+      <div><dt>Mes de mayor riesgo</dt><dd>Abril</dd></div>
+      <div><dt>Estado del mes</dt><dd><span class="status status-warn">Elevado</span></dd></div>
+    </dl>
+  </section>
+
+  <main class="stack">
+    <section class="section">
+      <div class="sec-head">
+        <h2>Calendario de quemas</h2>
+        <label class="row" style="gap: var(--space-2)"><span class="label">Escala de color</span>
+          <select class="field" id="ramp">
+            <optgroup label="Térmicas"><option value="Inferno">Inferno</option><option value="Magma">Magma</option></optgroup>
+            <optgroup label="Accesibilidad (daltonismo)"><option value="Viridis">Viridis</option><option value="Cividis">Cividis</option></optgroup>
+          </select></label>
+      </div>
+      <figure class="figure">
+        <div class="cal" id="cal" role="img" aria-label="Calendario: cada fila es un año, cada columna un mes"></div>
+        <div class="scale"><span class="axis">0</span><div class="ramp" id="legend"></div><span class="axis" id="max"></span></div>
+        <figcaption class="caption"><b>Fig. 1</b>Días con fuego detectado, por mes, equivalentes a MODIS. El recuadro amarillo marca el mes en curso. Gris: sin fuego.</figcaption>
+      </figure>
+    </section>
+
+    <div class="two">
+      <section class="section">
+        <h2 style="margin-bottom: var(--space-4)">Por qué hace falta armonizar</h2>
+        <figure class="figure">
+          <svg id="sensors" viewBox="0 0 640 210" width="100%" role="img" aria-label="Periodo de operación de cada sensor entre 2000 y 2026"></svg>
+          <figcaption class="caption"><b>Fig. 2</b>VIIRS entra en 2012 con otra sensibilidad y otra huella. Sin corrección, el salto parece un aumento de incendios.</figcaption>
+        </figure>
+      </section>
+      <section class="section">
+        <h2 style="margin-bottom: var(--space-4)">Últimos 12 meses</h2>
+        <figure class="figure">
+          <svg id="last12" viewBox="0 0 400 210" width="100%" role="img" aria-label="Razón de cada mes contra la mediana histórica"></svg>
+          <figcaption class="caption"><b>Fig. 3</b>Cada barra es el mes contra su mediana. La línea es lo normal (1×). Morado: menos; naranja: más.</figcaption>
+        </figure>
+      </section>
+    </div>
+
+  </main>
+</div>
+
+<footer><div class="wrap">Datos: NASA FIRMS (MODIS y VIIRS). Proyecto del NASA Space Apps Challenge; no es un producto ni cuenta con el respaldo de la NASA.</div></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+  const root = document.documentElement;
+  document.getElementById('theme').onclick = () => { root.setAttribute('data-theme', root.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); draw(); };
+  const css = n => getComputedStyle(root).getPropertyValue(n).trim();
+  const FLOOR = { Inferno: .2, Magma: .2, Viridis: .08, Cividis: .15 };
+  const lum = c => { const { r, g, b } = d3.color(c).rgb(); const l = v => (v /= 255) <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; return .2126 * l(r) + .7152 * l(g) + .0722 * l(b); };
+  const el = (t, p = {}) => Object.assign(document.createElement(t), p);
+  const ns = 'http://www.w3.org/2000/svg';
+  const sv = (t, a = {}, txt) => { const e = document.createElementNS(ns, t); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; return e; };
+  const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  function fig1() {
+    const name = document.getElementById('ramp').value, f = FLOOR[name], interp = d3['interpolate' + name], MAX = 120;
+    const col = (v) => v <= 0 ? css('--no-fire') : interp(f + (1 - f) * Math.sqrt(Math.min(v / MAX, 1)));
+    const cal = document.getElementById('cal'); cal.innerHTML = ''; cal.append(el('span'));
+    MES.forEach(m => cal.append(el('span', { className: 'lab axis', textContent: m })));
+    let peak = { v: -1 };
+    const data = [];
+    for (let y = 2015; y <= 2025; y++) for (let m = 0; m < 12; m++) {
+      if (y === 2025 && m > 9) continue;
+      const v = Math.max(0, Math.round(120 * Math.exp(-(((m - 3.5) / 1.4) ** 2)) * (0.6 + ((y * 7 + m * 3) % 10) / 12) - 4));
+      data.push({ y, m, v }); if (v > peak.v) peak = { y, m, v };
+    }
+    for (let y = 2015; y <= 2025; y++) {
+      cal.append(el('span', { className: 'lab axis', textContent: y }));
+      for (let m = 0; m < 12; m++) {
+        const d = data.find(x => x.y === y && x.m === m);
+        if (!d) { cal.append(el('span', { className: 'cell' })); continue; }
+        const c = el('span', { className: 'cell heat-cell' + (y === 2025 && m === 9 ? ' now' : ''), title: `${MES[m]} ${y}: ${d.v} días con fuego` });
+        c.style.background = col(d.v);
+        if (d === data.find(x => x.y === peak.y && x.m === peak.m)) { c.textContent = d.v; c.style.color = lum(col(d.v)) > .179 ? '#000' : '#fff'; }
+        cal.append(c);
+      }
+    }
+    document.getElementById('legend').style.background = `linear-gradient(90deg, ${Array.from({ length: 12 }, (_, i) => interp(f + (1 - f) * i / 11)).join(',')})`;
+    document.getElementById('max').textContent = `${MAX}+ (máximo: ${peak.v}, ${MES[peak.m]} ${peak.y})`;
+  }
+
+  function fig2() {
+    const s = document.getElementById('sensors'); s.innerHTML = '';
+    const x0 = 112, x1 = 628, y0 = 2000, y1 = 2027, X = t => x0 + (t - y0) / (y1 - y0) * (x1 - x0);
+    const rows = [
+      ['MODIS Terra', 2000.83, 2027, '--link'], ['MODIS Aqua', 2002.5, 2027, '--link'],
+      ['VIIRS S-NPP', 2012.05, 2026.84, '--text-2'], ['VIIRS NOAA-20', 2018.25, 2027, '--text-2'], ['VIIRS NOAA-21', 2023.17, 2027, '--text-2'],
+    ];
+    for (let t = 2000; t <= 2025; t += 5) {
+      s.append(sv('line', { x1: X(t), x2: X(t), y1: 14, y2: 168, stroke: 'var(--rule)' }));
+      s.append(sv('text', { x: X(t), y: 190, 'text-anchor': 'middle' }, t));
+    }
+    rows.forEach(([n, a, b, c], i) => {
+      const y = 22 + i * 28;
+      s.append(sv('text', { x: 0, y: y + 12, class: 'lbl' }, n));
+      s.append(sv('rect', { x: X(a), y, width: X(b) - X(a), height: 16, fill: `var(${c})` }));
+    });
+    s.append(sv('line', { x1: X(2012.05), x2: X(2012.05), y1: 8, y2: 168, stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-dasharray': '4 3' }));
+    s.append(sv('text', { x: X(2012.05) - 6, y: 8, 'text-anchor': 'end', class: 'lbl' }, 'VIIRS entra'));
+  }
+
+  function fig3() {
+    const s = document.getElementById('last12'); s.innerHTML = '';
+    const r = [0.8, 0.7, 0.9, 1.1, 1.3, 0.9, 0.6, 0.5, 0.8, 1.2, 1.4, 1.6], mes = ['n','d','e','f','m','a','m','j','j','a','s','o'];
+    const base = 150, k = 62, w = 22;
+    r.forEach((v, i) => {
+      const c = d3.interpolatePuOr((Math.max(-1, Math.min(1, Math.log2(v))) + 1) / 2), h = v * k, x = 14 + i * 31;
+      s.append(sv('rect', { x, y: base - h, width: w, height: h, fill: c }));
+      s.append(sv('text', { x: x + w / 2, y: 170, 'text-anchor': 'middle' }, mes[i]));
+    });
+    s.append(sv('line', { x1: 8, x2: 392, y1: base - k, y2: base - k, stroke: 'var(--text)', 'stroke-width': 1.5 }));
+    s.append(sv('text', { x: 8, y: base - k - 6, 'text-anchor': 'start', class: 'lbl' }, 'mediana (1×)'));
+    s.append(sv('text', { x: 14 + 11 * 31 + w / 2, y: base - r[11] * k - 8, 'text-anchor': 'middle', class: 'lbl' }, '1.6×'));
+  }
+
+  function draw() { fig1(); fig2(); fig3(); }
+  document.getElementById('ramp').onchange = draw; draw();
+</script>
+</body>
+</html>
