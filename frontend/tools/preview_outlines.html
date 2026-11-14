@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Contornos de continentes: antes y después</title>
+<style>
+  body { margin: 0; background: #151622; color: #fff; font: 15px "Segoe UI", system-ui, sans-serif; }
+  header { padding: 8px 12px; display: flex; gap: 16px; align-items: baseline; }
+  b { font-weight: 700; } a { color: #2491ff; } .x { color: #ff6b57; }
+  canvas { display: block; margin: 0 auto; }
+</style>
+</head>
+<body>
+<header><b id="t"></b><span id="info"></span><a href="?v=before">antes</a> <a href="?v=after">después</a></header>
+<canvas id="c" width="780" height="390"></canvas>
+<script type="module">
+  import { buildOutlineCollection } from '../src/utils/outlines.js';
+  const mode = new URLSearchParams(location.search).get('v') === 'before' ? 'before' : 'after';
+  const file = mode === 'before' ? '../tools/worldZonesGeoJSON.original.json' : '../src/data/worldZonesGeoJSON.json';
+  const fc = await (await fetch(file)).json();
+  document.getElementById('t').textContent = mode === 'before' ? 'ANTES (datos originales, todas las aristas)' : 'DESPUÉS (datos corregidos + contornos sin aristas artificiales)';
+
+  const c = document.getElementById('c'), g = c.getContext('2d');
+  const X = (lon) => (lon + 180) * (c.width / 360), Y = (lat) => (90 - lat) * (c.height / 180);
+  g.fillStyle = '#151622'; g.fillRect(0, 0, c.width, c.height);
+  g.strokeStyle = '#2c3050'; g.lineWidth = 1;
+  for (const lon of [-180, -90, 0, 90, 180]) { g.beginPath(); g.moveTo(X(lon), 0); g.lineTo(X(lon), c.height); g.stroke(); }
+  for (const lat of [-60, -30, 0, 30, 60]) { g.beginPath(); g.moveTo(0, Y(lat)); g.lineTo(c.width, Y(lat)); g.stroke(); }
+
+  const polys = (geom) => geom.type === 'MultiPolygon' ? geom.coordinates : [geom.coordinates];
+  const strokeLine = (pts, color, w) => { g.strokeStyle = color; g.lineWidth = w; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(X(p[0]), Y(p[1])) : g.moveTo(X(p[0]), Y(p[1]))); g.stroke(); };
+  const ringsOf = (f) => polys(f.geometry).flatMap((p) => p);
+
+  // países, finos y apagados (contexto)
+  for (const f of fc.features) if (f.properties.category === 'País') ringsOf(f).forEach((r) => strokeLine(r, 'rgba(223,225,226,0.28)', 0.6));
+
+  let wrap = 0;
+  if (mode === 'before') {
+    for (const f of fc.features) {
+      if (f.properties.category !== 'Continente') continue;
+      for (const r of ringsOf(f)) {
+        strokeLine(r, 'rgba(36,145,255,0.85)', 1.3);
+        for (let i = 0; i < r.length - 1; i++) if (Math.abs(r[i + 1][0] - r[i][0]) > 180) { wrap++; strokeLine([r[i], r[i + 1]], '#ff6b57', 2); }
+      }
+    }
+  } else {
+    const out = buildOutlineCollection(fc);
+    for (const f of out.features) if (f.properties.category === 'Continente') f.geometry.coordinates.forEach((l) => strokeLine(l, 'rgba(36,145,255,0.95)', 1.5));
+  }
+  document.getElementById('info').innerHTML = mode === 'before'
+    ? `azul = contorno de continente · gris = países · <span class="x">rojo = arista que da la vuelta al mundo (${wrap})</span>`
+    : 'azul = contorno de continente · gris = países';
+</script>
+</body>
+</html>

@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { ZONES } from '../data/zonesData';
 import {
   generateZonesGeoJSON,
+  generateZonesOutlineGeoJSON,
   calculatePolygonArea,
   calculatePolygonPerimeter,
   getPolygonBoundsAndCenter,
@@ -407,10 +408,17 @@ const Globe = forwardRef(function Globe(
     if (map.getLayer('zones-line')) map.removeLayer('zones-line');
     if (map.getLayer('zones-fill')) map.removeLayer('zones-fill');
     if (map.getSource('zones-geojson')) map.removeSource('zones-geojson');
+    if (map.getSource('zones-outline')) map.removeSource('zones-outline');
 
     map.addSource('zones-geojson', {
       type: 'geojson',
       data: geojsonData
+    });
+
+    // Los contornos salen de una fuente propia, sin las aristas artificiales del antimeridiano y el polo
+    map.addSource('zones-outline', {
+      type: 'geojson',
+      data: generateZonesOutlineGeoJSON()
     });
 
     map.addLayer({
@@ -435,7 +443,7 @@ const Globe = forwardRef(function Globe(
     map.addLayer({
       id: 'zones-line',
       type: 'line',
-      source: 'zones-geojson',
+      source: 'zones-outline',
       paint: {
         'line-color': [
           'match',
@@ -474,7 +482,7 @@ const Globe = forwardRef(function Globe(
     map.addLayer({
       id: 'zones-hover-line',
       type: 'line',
-      source: 'zones-geojson',
+      source: 'zones-outline',
       filter: ['==', ['get', 'id'], ''],
       paint: {
         'line-color': '#ffffff',
@@ -498,7 +506,7 @@ const Globe = forwardRef(function Globe(
     map.addLayer({
       id: 'zones-highlight-line',
       type: 'line',
-      source: 'zones-geojson',
+      source: 'zones-outline',
       filter: ['==', ['get', 'id'], selectedZoneRef.current ? selectedZoneRef.current.id : ''],
       paint: {
         'line-color': '#e7f434',

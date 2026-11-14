@@ -1,5 +1,6 @@
 import { ALL_COUNTRIES } from '../data/allCountries';
 import worldZonesGeoJSON from '../data/worldZonesGeoJSON.json';
+import { buildOutlineCollection } from './outlines';
 
 /**
  * Retorna la FeatureCollection GeoJSON con las geometrías y límites reales
@@ -164,4 +165,11 @@ export function findCoveredCountries(polygonCoords) {
   });
 
   return covered;
+}
+
+// Contornos para las capas de línea: sin aristas sobre el antimeridiano ni el polo (ver outlines.js)
+let zonesOutlineCache = null;
+export function generateZonesOutlineGeoJSON() {
+  if (!zonesOutlineCache) zonesOutlineCache = buildOutlineCollection(worldZonesGeoJSON);
+  return zonesOutlineCache;
 }
