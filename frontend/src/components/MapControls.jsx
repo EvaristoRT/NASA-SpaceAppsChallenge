@@ -47,7 +47,7 @@ export default function MapControls({
   return (
     <div className="map-controls-container">
       {/* Zoom Controls */}
-      <div className="control-group glass-panel">
+      <div className="control-group panel">
         <button
           className="control-btn"
           onClick={onZoomIn}
@@ -68,7 +68,7 @@ export default function MapControls({
       </div>
 
       {/* Navigation Controls */}
-      <div className="control-group glass-panel">
+      <div className="control-group panel">
         <button
           className="control-btn"
           onClick={onResetNorth}
@@ -98,7 +98,7 @@ export default function MapControls({
       </div>
 
       {/* Rotation & Orbit Controls */}
-      <div className="control-group glass-panel">
+      <div className="control-group panel">
         <button
           className={`control-btn ${autoSpin ? 'active' : ''}`}
           onClick={onToggleAutoSpin}

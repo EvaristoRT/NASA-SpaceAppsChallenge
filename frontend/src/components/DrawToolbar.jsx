@@ -21,7 +21,7 @@ export default function DrawToolbar({
   onClose
 }) {
   return (
-    <div className="draw-toolbar glass-panel">
+    <div className="draw-toolbar panel">
       <div className="draw-toolbar-header">
         <div className="draw-title-group">
           <Pencil size={16} className="text-amber-400" />

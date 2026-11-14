@@ -266,7 +266,7 @@ export default function App() {
 
       {/* Alerta flotante en caso de error de Mapbox */}
       {mapError && (
-        <div className="error-toast glass-panel">
+        <div className="error-toast panel">
           <AlertCircle size={18} className="text-amber-400" />
           <div className="error-text">
             <strong>Aviso de Mapbox:</strong> {mapError}

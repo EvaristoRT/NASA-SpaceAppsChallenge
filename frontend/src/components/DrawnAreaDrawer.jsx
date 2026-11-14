@@ -79,10 +79,9 @@ export default function DrawnAreaDrawer({
   };
 
   return (
-    <div className="zone-drawer glass-panel drawn-area-drawer">
+    <div className="zone-drawer panel drawn-area-drawer">
       <div className="zone-drawer-header">
         <div className="zone-title-box">
-          <span className="zone-icon-hero">📐</span>
           <div>
             <div className="zone-category-badge text-amber-400">
               Área de Interés Manual ({typeLabel})
@@ -156,7 +155,7 @@ export default function DrawnAreaDrawer({
             <div className="tags-container">
               {coveredCountries.map((c) => (
                 <span key={c.id} className="tag-pill country-pill">
-                  {c.icon} {c.name}
+                  {c.name}
                 </span>
               ))}
             </div>

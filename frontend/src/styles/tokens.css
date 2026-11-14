@@ -1,0 +1,133 @@
+/* IgnisSync design tokens. Direction: technical report / scientific atlas.
+   Data first, hairline rules instead of boxes, annotation instead of decoration.
+   Palette = NASA Space Apps brand (https://www.spaceappschallenge.org/brand/); thermal colours
+   (oxide orange / NASA red) are reserved for fire DATA. Brand rules kept: body text only on deep
+   blue / electric blue / white, neon yellow never a background field, contrast >= 4.5:1.
+   Typography is the team's own choice (not the brand fonts): Source Sans 3 only, no monospace.
+   Dark is default. Light via [data-theme="light"], or from the OS when unset. */
+
+:root {
+  /* official brand palette (raw values) */
+  --brand-deepblue: #151622;
+  --brand-electricblue: #1b2b85;
+  --brand-neonblue: #0050d8;
+  --brand-blueyonder: #2491ff;
+  --brand-neonyellow: #e7f434;
+  --brand-paleyellow: #fafaad;
+  --brand-oxideorange: #ff5804;
+  --brand-nasared: #e52207;
+  --brand-martianred: #8b0a03;
+  --brand-slategray: #3d4551;
+  --brand-claygray: #8d9297;
+  --brand-cloudgray: #dfe1e2;
+}
+
+:root {
+  color-scheme: dark;
+
+  --bg: #151622;
+  --surface: #1c1f33;          /* only for things that must lift off the page: menus, tooltips, inputs */
+  --surface-2: #262a47;
+  --rule: #353b66;             /* hairline between sections */
+  --border-strong: #6a76bd;    /* control outlines (>= 3:1) */
+  --overlay: rgb(21 22 34 / 0.86);
+
+  --text: #ffffff;
+  --text-2: #dfe1e2;
+  --text-muted: #a9aebb;
+
+  --accent: #e7f434;           /* ONE job: the primary action and the "now" marker */
+  --accent-hover: #fafaad;
+  --on-accent: #151622;
+  --link: #2491ff;
+  --focus: #fafaad;
+
+  --heat: #ff5804;
+  --heat-deep: #8b0a03;
+  --alert: #e52207;
+
+  --ok: #4fd1a1;
+  --warn: #fafaad;
+  --danger: #ff6b57;
+  --info: #2491ff;
+
+  --no-fire: #20233b;
+  --no-data: #2c3050;
+
+  --radius-sm: 2px;
+  --radius: 2px;
+  --radius-lg: 2px;
+
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 40px; --space-7: 64px;
+
+  /* Source Sans 3 (Adobe, OFL): humanist, legible at small sizes. One family; hierarchy comes from size and
+     weight (400 / 600 / 700). Numbers use tabular figures so columns align without a monospace. */
+  --font-sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --text-xs: 0.75rem;  --text-sm: 0.875rem; --text-base: 1rem;
+  --text-lg: 1.25rem;  --text-xl: 1.75rem;  --text-2xl: 2.75rem; --text-3xl: clamp(2.25rem, 6vw, 4.25rem);
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur: 140ms;
+
+  /* Space Apps brand gradient: electric blue (top-left) easing into deep blue (bottom-right), no hard steps.
+     Used only for the brand band; it stays blue in both themes so white text on it is always valid. */
+  --brand-gradient: linear-gradient(135deg, #1b2b85 0%, #1a2778 25%, #181f55 60%, #151622 100%);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f3f5fa;
+  --surface-2: #e6eaf4;
+  --rule: #c3cbe0;
+  --border-strong: #1b2b85;
+  --overlay: rgb(255 255 255 / 0.88);
+  --text: #151622;
+  --text-2: #272a3d;
+  --text-muted: #3d4551;
+  --accent: #0050d8;
+  --accent-hover: #1b2b85;
+  --on-accent: #ffffff;
+  --link: #0050d8;
+  --focus: #0050d8;
+  --heat: #b93c00;
+  --heat-deep: #8b0a03;
+  --alert: #c71e05;
+  --ok: #0f7a55;
+  --warn: #8a5a00;
+  --danger: #c71e05;
+  --info: #0050d8;
+  --no-fire: #e9ecf5;
+  --no-data: #d9deec;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --bg: #ffffff; --surface: #f3f5fa; --surface-2: #e6eaf4; --rule: #c3cbe0; --border-strong: #1b2b85;
+    --overlay: rgb(255 255 255 / 0.88);
+    --text: #151622; --text-2: #272a3d; --text-muted: #3d4551;
+    --accent: #0050d8; --accent-hover: #1b2b85; --on-accent: #ffffff; --link: #0050d8; --focus: #0050d8;
+    --heat: #b93c00; --heat-deep: #8b0a03; --alert: #c71e05;
+    --ok: #0f7a55; --warn: #8a5a00; --danger: #c71e05; --info: #0050d8;
+    --no-fire: #e9ecf5; --no-data: #d9deec;
+  }
+}
+
+/* base */
+html { background: var(--bg); color: var(--text); font-family: var(--font-sans); }
+body { margin: 0; font-size: 1.0625rem; line-height: 1.5; font-variant-numeric: tabular-nums; }
+
+/* titles: sentence case, expanded width, tight. Never all-caps. */
+h1, h2, h3 { font-family: var(--font-sans); font-weight: 700; letter-spacing: -0.01em; line-height: 1.15; margin: 0; text-wrap: balance; }
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-lg); }
+a { color: var(--link); text-underline-offset: 3px; }
+.num { font-variant-numeric: tabular-nums; }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

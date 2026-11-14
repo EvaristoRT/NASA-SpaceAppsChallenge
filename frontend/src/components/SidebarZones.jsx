@@ -53,7 +53,7 @@ export default function SidebarZones({
   }, [activeCategory, searchTerm]);
 
   return (
-    <aside className={`sidebar-zones glass-panel ${isOpen ? 'open' : 'closed'}`}>
+    <aside className={`sidebar-zones panel ${isOpen ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
         <div className="sidebar-title-group">
           <Layers size={18} className="accent" />
@@ -109,11 +109,10 @@ export default function SidebarZones({
                 className={`zone-list-item ${isSelected ? 'selected' : ''}`}
                 onClick={() => onSelectZone(zone)}
               >
-                <div className="zone-item-icon">{zone.icon || '📍'}</div>
                 <div className="zone-item-content">
                   <div className="zone-item-name">{zone.name}</div>
                   <div className="zone-item-meta">
-                    <span className="zone-item-category">
+                    <span className="zone-item-category" data-category={zone.category}>
                       {zone.capital ? `Cap: ${zone.capital}` : zone.category}
                     </span>
                     {zone.population && (

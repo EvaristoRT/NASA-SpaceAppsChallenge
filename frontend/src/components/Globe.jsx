@@ -314,9 +314,10 @@ const Globe = forwardRef(function Globe(
     try {
       map.setFog({
         range: [0.5, 10],
-        color: '#1e293b',
-        'high-color': '#0f172a',
-        'space-color': '#030712',
+        // Atmósfera con los azules de la marca Space Apps
+        color: '#1b2b85',
+        'high-color': '#151622',
+        'space-color': '#151622',
         'horizon-blend': 0.03,
         'star-intensity': 0.75
       });
@@ -348,9 +349,7 @@ const Globe = forwardRef(function Globe(
       const el = document.createElement('div');
       el.className = 'custom-zone-marker';
       el.innerHTML = `
-        <div class="marker-pin">
-          <span class="marker-icon">${zone.icon || '📍'}</span>
-        </div>
+        <div class="marker-dot"></div>
         <div class="marker-label">${zone.name}</div>
       `;
 
@@ -382,9 +381,7 @@ const Globe = forwardRef(function Globe(
     const el = document.createElement('div');
     el.className = 'custom-zone-marker selected-active-marker';
     el.innerHTML = `
-      <div class="marker-pin active-pin">
-        <span class="marker-icon">${zone.icon || '📍'}</span>
-      </div>
+      <div class="marker-dot active"></div>
       <div class="marker-label">${zone.name}</div>
     `;
 
@@ -424,12 +421,12 @@ const Globe = forwardRef(function Globe(
         'fill-color': [
           'match',
           ['get', 'category'],
-          'Continente', '#38bdf8',
-          'País', '#a855f7',
-          'Zona Ecológica', '#10b981',
-          'Zona Marina', '#06b6d4',
-          'Zona Geológica', '#f97316',
-          '#6366f1'
+          'Continente', '#2491ff',
+          'País', '#dfe1e2',
+          'Zona Ecológica', '#4fd1a1',
+          'Zona Marina', '#7aa7ff',
+          'Zona Geológica', '#8c93d9',
+          '#6a76bd'
         ],
         'fill-opacity': 0.08
       }
@@ -443,12 +440,12 @@ const Globe = forwardRef(function Globe(
         'line-color': [
           'match',
           ['get', 'category'],
-          'Continente', 'rgba(56, 189, 248, 0.75)',
-          'País', 'rgba(168, 85, 247, 0.55)',
-          'Zona Ecológica', 'rgba(16, 185, 129, 0.75)',
-          'Zona Marina', 'rgba(6, 182, 212, 0.75)',
-          'Zona Geológica', 'rgba(249, 115, 22, 0.75)',
-          'rgba(99, 102, 241, 0.55)'
+          'Continente', 'rgba(36, 145, 255, 0.75)',
+          'País', 'rgba(223, 225, 226, 0.45)',
+          'Zona Ecológica', 'rgba(79, 209, 161, 0.75)',
+          'Zona Marina', 'rgba(122, 167, 255, 0.75)',
+          'Zona Geológica', 'rgba(140, 147, 217, 0.75)',
+          'rgba(106, 118, 189, 0.55)'
         ],
         'line-width': [
           'interpolate',
@@ -469,8 +466,8 @@ const Globe = forwardRef(function Globe(
       source: 'zones-geojson',
       filter: ['==', ['get', 'id'], ''],
       paint: {
-        'fill-color': '#38bdf8',
-        'fill-opacity': 0.18
+        'fill-color': '#ffffff',
+        'fill-opacity': 0.14
       }
     });
 
@@ -480,9 +477,9 @@ const Globe = forwardRef(function Globe(
       source: 'zones-geojson',
       filter: ['==', ['get', 'id'], ''],
       paint: {
-        'line-color': '#38bdf8',
+        'line-color': '#ffffff',
         'line-width': 2.0,
-        'line-opacity': 0.95
+        'line-opacity': 0.9
       }
     });
 
@@ -492,8 +489,9 @@ const Globe = forwardRef(function Globe(
       source: 'zones-geojson',
       filter: ['==', ['get', 'id'], selectedZoneRef.current ? selectedZoneRef.current.id : ''],
       paint: {
-        'fill-color': '#0ea5e9',
-        'fill-opacity': 0.32
+        // Selección = amarillo neón de la marca
+        'fill-color': '#e7f434',
+        'fill-opacity': 0.2
       }
     });
 
@@ -503,8 +501,8 @@ const Globe = forwardRef(function Globe(
       source: 'zones-geojson',
       filter: ['==', ['get', 'id'], selectedZoneRef.current ? selectedZoneRef.current.id : ''],
       paint: {
-        'line-color': '#38bdf8',
-        'line-width': 2.8,
+        'line-color': '#e7f434',
+        'line-width': 3,
         'line-opacity': 1.0
       }
     });
@@ -532,8 +530,8 @@ const Globe = forwardRef(function Globe(
       source: 'draw-source',
       filter: ['==', '$type', 'Polygon'],
       paint: {
-        'fill-color': '#f59e0b',
-        'fill-opacity': 0.25
+        'fill-color': '#e7f434',
+        'fill-opacity': 0.2
       }
     });
 
@@ -543,7 +541,7 @@ const Globe = forwardRef(function Globe(
       source: 'draw-source',
       filter: ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'LineString']],
       paint: {
-        'line-color': '#fbbf24',
+        'line-color': '#e7f434',
         'line-width': 2.8,
         'line-dasharray': [2, 1]
       }
@@ -564,11 +562,11 @@ const Globe = forwardRef(function Globe(
         'circle-color': [
           'case',
           ['get', 'isFirst'],
-          '#10b981',
-          '#f59e0b'
+          '#4fd1a1',
+          '#e7f434'
         ],
         'circle-stroke-width': 2.5,
-        'circle-stroke-color': '#ffffff'
+        'circle-stroke-color': '#151622'
       }
     });
   };

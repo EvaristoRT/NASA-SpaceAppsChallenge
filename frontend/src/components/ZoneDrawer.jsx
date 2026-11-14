@@ -35,12 +35,11 @@ export default function ZoneDrawer({
   };
 
   return (
-    <div className="zone-drawer glass-panel">
+    <div className="zone-drawer panel">
       <div className="zone-drawer-header">
         <div className="zone-title-box">
-          <span className="zone-icon-hero">{zone.icon || '📍'}</span>
           <div>
-            <div className="zone-category-badge">{zone.category}</div>
+            <div className="zone-category-badge" data-category={zone.category}>{zone.category}</div>
             <h2 className="zone-title">{zone.name}</h2>
             {zone.nativeName && zone.nativeName !== zone.name && (
               <span className="zone-native-title">{zone.nativeName}</span>

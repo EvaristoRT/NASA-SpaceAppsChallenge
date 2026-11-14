@@ -6,7 +6,7 @@ export default function CoordinatesHUD({ cursorCoords, zoom, pitch, bearing, pro
   const normalizedBearing = bearing !== null && bearing !== undefined ? Math.round(((bearing % 360) + 360) % 360) : 0;
 
   return (
-    <div className="coordinates-hud glass-panel">
+    <div className="coordinates-hud panel">
       <div className="hud-item">
         <Navigation2 size={13} className="hud-icon accent" />
         <span className="hud-label">Coord:</span>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Globe,
+  Map as MapIcon,
   Search,
   KeyRound,
   ChevronDown,
@@ -63,7 +64,7 @@ export default function Navbar({
   };
 
   return (
-    <header className="navbar glass-panel">
+    <header className="navbar panel">
       {/* Brand & Sidebar Toggle */}
       <div className="navbar-brand-group">
         <button
@@ -76,12 +77,11 @@ export default function Navbar({
         </button>
 
         <div className="brand-badge">
-          <div className="brand-icon-wrapper">
-            <Globe size={22} className="brand-globe-icon" />
-          </div>
+          {/* Símbolo de Space Apps (provisional: confirmar condiciones de uso, ver design/brand/README.md) */}
+          <img className="brand-symbol" src="/brand/space-apps-symbol-white.svg" alt="" width="40" height="40" onError={(e) => { e.currentTarget.style.display = "none"; }} />
           <div className="brand-texts">
-            <span className="brand-name">TerraGlobe</span>
-            <span className="brand-tag">3D Interactive</span>
+            <span className="brand-name">IgnisSync</span>
+            <span className="brand-tag">NASA Space Apps 2026 · Boca del Río</span>
           </div>
         </div>
       </div>
@@ -105,14 +105,13 @@ export default function Navbar({
 
         {/* Dropdown de resultados de búsqueda */}
         {showSearchResults && searchResults.length > 0 && (
-          <div className="search-results-dropdown glass-panel">
+          <div className="search-results-dropdown panel">
             {searchResults.map((zone) => (
               <div
                 key={zone.id}
                 className="search-result-item"
                 onClick={() => handleSelectSearchResult(zone)}
               >
-                <span className="search-result-icon">{zone.icon || '📍'}</span>
                 <div className="search-result-text">
                   <span className="search-result-title">{zone.name}</span>
                   <span className="search-result-sub">
@@ -135,13 +134,12 @@ export default function Navbar({
             onClick={() => setShowStyleDropdown(!showStyleDropdown)}
             title="Cambiar estilo de mapa"
           >
-            <span className="style-icon-preview">{activeStyle.icon}</span>
             <span className="style-name-text">{activeStyle.name}</span>
             <ChevronDown size={14} className="chevron-icon" />
           </button>
 
           {showStyleDropdown && (
-            <div className="styles-menu-dropdown glass-panel">
+            <div className="styles-menu-dropdown panel">
               <div className="dropdown-header">Estilo de Cartografía</div>
               {MAP_STYLES.map((style) => (
                 <div
@@ -152,7 +150,6 @@ export default function Navbar({
                     setShowStyleDropdown(false);
                   }}
                 >
-                  <span className="style-item-icon">{style.icon}</span>
                   <div className="style-item-desc">
                     <span className="style-item-name">{style.name}</span>
                     <span className="style-item-detail">{style.description}</span>
@@ -179,7 +176,7 @@ export default function Navbar({
           onClick={onToggleProjection}
           title={projection === 'globe' ? 'Cambiar a proyección plana 2D (Mercator)' : 'Cambiar a proyección esférica 3D (Globo)'}
         >
-          <span className="projection-pill-icon">{projection === 'globe' ? '🌍' : '🗺️'}</span>
+          {projection === 'globe' ? <Globe size={16} /> : <MapIcon size={16} />}
           <span className="projection-pill-text">{projection === 'globe' ? 'Globo 3D' : 'Plano 2D'}</span>
         </button>
 
