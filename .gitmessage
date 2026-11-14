@@ -1,0 +1,7 @@
+# <type>(<scope>): <short imperative summary>   (max 72 chars, English)
+# types: feat | fix | chore | refactor | style | docs
+# scopes: not defined yet; omit until modules are designed
+
+- Context:
+- Details:
+- Dev:
