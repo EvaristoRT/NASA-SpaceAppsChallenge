@@ -2,7 +2,13 @@ import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { ZONES } from '../data/zonesData';
-import { generateZonesGeoJSON } from '../utils/geoUtils';
+import {
+  generateZonesGeoJSON,
+  calculatePolygonArea,
+  calculatePolygonPerimeter,
+  getPolygonBoundsAndCenter,
+  findCoveredCountries
+} from '../utils/geoUtils';
 
 const Globe = forwardRef(function Globe(
   {
@@ -14,6 +20,9 @@ const Globe = forwardRef(function Globe(
     autoSpin,
     orbitMode,
     isTilted,
+    drawMode,
+    drawnArea,
+    onFinishDrawing,
     onUpdateHUD,
     onMapError
   },
@@ -29,6 +38,26 @@ const Globe = forwardRef(function Globe(
   const orbitActiveRef = useRef(orbitMode);
   const selectedZoneRef = useRef(selectedZone);
   const orbitBearingRef = useRef(0);
+
+  // Referencias para el modo dibujo
+  const drawModeRef = useRef(drawMode);
+  const isDrawingRef = useRef(false);
+  const drawPointsRef = useRef([]);
+  const rectangleStartRef = useRef(null);
+
+  useEffect(() => {
+    drawModeRef.current = drawMode;
+    if (mapRef.current) {
+      if (drawMode) {
+        mapRef.current.dragPan.disable();
+        mapRef.current.getCanvas().style.cursor = 'crosshair';
+      } else {
+        mapRef.current.dragPan.enable();
+        mapRef.current.getCanvas().style.cursor = '';
+        isDrawingRef.current = false;
+      }
+    }
+  }, [drawMode]);
 
   // Exponer métodos para los controles flotantes
   useImperativeHandle(ref, () => ({
@@ -64,10 +93,21 @@ const Globe = forwardRef(function Globe(
           speed: 1.1
         });
       }
+    },
+    focusArea: (bounds) => {
+      if (mapRef.current && bounds) {
+        mapRef.current.fitBounds(
+          [
+            [bounds.minLng, bounds.minLat],
+            [bounds.maxLng, bounds.maxLat]
+          ],
+          { padding: 100, duration: 2200, maxZoom: 8 }
+        );
+      }
     }
   }));
 
-  // Mantener referencias sincronizadas para la animación
+  // Sincronizar referencias de bucle de animación
   useEffect(() => {
     autoSpinActiveRef.current = autoSpin;
   }, [autoSpin]);
@@ -79,6 +119,42 @@ const Globe = forwardRef(function Globe(
   useEffect(() => {
     selectedZoneRef.current = selectedZone;
   }, [selectedZone]);
+
+  // Actualizar fuente del trazado en tiempo real
+  const updateDrawSource = (coords) => {
+    if (!mapRef.current) return;
+    const source = mapRef.current.getSource('draw-source');
+    if (!source) return;
+
+    if (coords && coords.length >= 3) {
+      source.setData({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [coords]
+            }
+          }
+        ]
+      });
+    } else {
+      source.setData({
+        type: 'FeatureCollection',
+        features: []
+      });
+    }
+  };
+
+  // Reflejar polígono dibujado cuando cambie externamente
+  useEffect(() => {
+    if (drawnArea && drawnArea.coords) {
+      updateDrawSource(drawnArea.coords);
+    } else {
+      updateDrawSource(null);
+    }
+  }, [drawnArea]);
 
   // Inicialización de Mapbox GL
   useEffect(() => {
@@ -122,27 +198,85 @@ const Globe = forwardRef(function Globe(
         }
       });
 
-      // Configurar atmósfera y capas al cargar estilo
+      // Configurar atmósfera, capas y dibujo al cargar estilo
       map.on('style.load', () => {
         applyAtmosphereAndFog(map);
         setupZoneLayers(map);
+        setupDrawLayers(map);
         renderZoneMarkers(map);
+
+        if (drawnArea && drawnArea.coords) {
+          updateDrawSource(drawnArea.coords);
+        }
       });
 
-      // Detectar interacciones directas del usuario
-      const startInteract = () => { userInteractingRef.current = true; };
-      const endInteract = () => { userInteractingRef.current = false; };
+      // --- GESTIÓN DE EVENTOS DE DIBUJO Y NAVEGACIÓN ---
+      map.on('mousedown', (e) => {
+        if (drawModeRef.current) {
+          isDrawingRef.current = true;
+          userInteractingRef.current = true;
+          const point = [e.lngLat.lng, e.lngLat.lat];
 
-      map.on('mousedown', startInteract);
-      map.on('dragstart', startInteract);
-      map.on('touchstart', startInteract);
+          if (drawModeRef.current === 'freehand') {
+            drawPointsRef.current = [point];
+          } else if (drawModeRef.current === 'rectangle') {
+            rectangleStartRef.current = point;
+          }
+          return;
+        }
+        userInteractingRef.current = true;
+      });
 
-      map.on('mouseup', endInteract);
-      map.on('touchend', endInteract);
-      map.on('moveend', endInteract);
+      map.on('dragstart', () => {
+        if (!drawModeRef.current) userInteractingRef.current = true;
+      });
 
-      // Actualizar el HUD en tiempo real
+      map.on('touchstart', (e) => {
+        if (drawModeRef.current && e.lngLat) {
+          isDrawingRef.current = true;
+          userInteractingRef.current = true;
+          const point = [e.lngLat.lng, e.lngLat.lat];
+          if (drawModeRef.current === 'freehand') {
+            drawPointsRef.current = [point];
+          } else if (drawModeRef.current === 'rectangle') {
+            rectangleStartRef.current = point;
+          }
+          return;
+        }
+        userInteractingRef.current = true;
+      });
+
       map.on('mousemove', (e) => {
+        // Modo dibujo activo
+        if (drawModeRef.current && isDrawingRef.current) {
+          if (drawModeRef.current === 'freehand') {
+            const pts = drawPointsRef.current;
+            const last = pts[pts.length - 1];
+            const dist = Math.hypot(e.lngLat.lng - last[0], e.lngLat.lat - last[1]);
+            if (dist > 0.04) {
+              pts.push([e.lngLat.lng, e.lngLat.lat]);
+              if (pts.length >= 3) {
+                updateDrawSource([...pts, pts[0]]);
+              }
+            }
+          } else if (drawModeRef.current === 'rectangle') {
+            const s = rectangleStartRef.current;
+            if (s) {
+              const cLng = e.lngLat.lng;
+              const cLat = e.lngLat.lat;
+              const rectCoords = [
+                [s[0], s[1]],
+                [cLng, s[1]],
+                [cLng, cLat],
+                [s[0], cLat],
+                [s[0], s[1]]
+              ];
+              updateDrawSource(rectCoords);
+            }
+          }
+        }
+
+        // Actualizar HUD
         if (onUpdateHUD) {
           onUpdateHUD({
             cursorCoords: { lat: e.lngLat.lat, lng: e.lngLat.lng },
@@ -151,6 +285,69 @@ const Globe = forwardRef(function Globe(
             bearing: map.getBearing()
           });
         }
+      });
+
+      map.on('mouseup', (e) => {
+        if (drawModeRef.current && isDrawingRef.current) {
+          isDrawingRef.current = false;
+          userInteractingRef.current = false;
+
+          let finalCoords = null;
+
+          if (drawModeRef.current === 'freehand') {
+            const pts = drawPointsRef.current;
+            if (pts.length >= 3) {
+              finalCoords = [...pts, pts[0]];
+            }
+          } else if (drawModeRef.current === 'rectangle') {
+            const s = rectangleStartRef.current;
+            if (s) {
+              const cLng = e.lngLat.lng;
+              const cLat = e.lngLat.lat;
+              if (Math.abs(cLng - s[0]) > 0.05 && Math.abs(cLat - s[1]) > 0.05) {
+                finalCoords = [
+                  [s[0], s[1]],
+                  [cLng, s[1]],
+                  [cLng, cLat],
+                  [s[0], cLat],
+                  [s[0], s[1]]
+                ];
+              }
+            }
+          }
+
+          if (finalCoords) {
+            updateDrawSource(finalCoords);
+            const area = calculatePolygonArea(finalCoords);
+            const perimeter = calculatePolygonPerimeter(finalCoords);
+            const bounds = getPolygonBoundsAndCenter(finalCoords);
+            const coveredCountries = findCoveredCountries(finalCoords);
+
+            if (onFinishDrawing) {
+              onFinishDrawing({
+                type: drawModeRef.current,
+                coords: finalCoords,
+                area,
+                perimeter,
+                bounds,
+                center: bounds ? bounds.center : [0, 0],
+                coveredCountries
+              });
+            }
+          }
+          return;
+        }
+
+        userInteractingRef.current = false;
+      });
+
+      map.on('touchend', () => {
+        isDrawingRef.current = false;
+        userInteractingRef.current = false;
+      });
+
+      map.on('moveend', () => {
+        userInteractingRef.current = false;
       });
 
       map.on('zoom', () => {
@@ -191,8 +388,12 @@ const Globe = forwardRef(function Globe(
               easing: (t) => t
             });
           }
-          // Rotación majestuosa continua del globo terráqueo
-          else if (autoSpinActiveRef.current && !userInteractingRef.current) {
+          // Rotación majestuosa continua del globo (si no se está dibujando ni interactuando)
+          else if (
+            autoSpinActiveRef.current &&
+            !userInteractingRef.current &&
+            !drawModeRef.current
+          ) {
             const currentZoom = mapRef.current.getZoom();
             if (currentZoom < 5) {
               const degreesPerSecond = 3.5;
@@ -235,7 +436,12 @@ const Globe = forwardRef(function Globe(
       mapRef.current.once('style.load', () => {
         applyAtmosphereAndFog(mapRef.current);
         setupZoneLayers(mapRef.current);
+        setupDrawLayers(mapRef.current);
         renderZoneMarkers(mapRef.current);
+
+        if (drawnArea && drawnArea.coords) {
+          updateDrawSource(drawnArea.coords);
+        }
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -255,7 +461,6 @@ const Globe = forwardRef(function Globe(
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Limpiar marcador activo anterior
     if (selectedMarkerRef.current) {
       selectedMarkerRef.current.remove();
       selectedMarkerRef.current = null;
@@ -273,7 +478,7 @@ const Globe = forwardRef(function Globe(
         speed: 1.1
       });
 
-      // Añadir marcador destacado para el país/zona seleccionado
+      // Pin dinámico en el país o zona seleccionada
       const el = document.createElement('div');
       el.className = 'custom-zone-marker selected-active-marker';
       el.innerHTML = `
@@ -324,7 +529,7 @@ const Globe = forwardRef(function Globe(
     }
   };
 
-  // Capas poligonales interactivas
+  // Capas poligonales de países y zonas
   const setupZoneLayers = (map) => {
     const geojsonData = generateZonesGeoJSON();
 
@@ -403,19 +608,56 @@ const Globe = forwardRef(function Globe(
     });
 
     map.on('mouseenter', 'zones-fill', () => {
-      map.getCanvas().style.cursor = 'pointer';
+      if (!drawModeRef.current) map.getCanvas().style.cursor = 'pointer';
     });
     map.on('mouseleave', 'zones-fill', () => {
-      map.getCanvas().style.cursor = '';
+      if (!drawModeRef.current) map.getCanvas().style.cursor = '';
     });
 
     map.on('click', 'zones-fill', (e) => {
+      if (drawModeRef.current) return;
       if (e.features && e.features.length > 0) {
         const featureId = e.features[0].properties.id;
         const found = ZONES.find((z) => z.id === featureId);
         if (found) {
           onSelectZone(found);
         }
+      }
+    });
+  };
+
+  // Capas para el trazado de dibujo manual
+  const setupDrawLayers = (map) => {
+    if (map.getLayer('draw-line')) map.removeLayer('draw-line');
+    if (map.getLayer('draw-fill')) map.removeLayer('draw-fill');
+    if (map.getSource('draw-source')) map.removeSource('draw-source');
+
+    map.addSource('draw-source', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: []
+      }
+    });
+
+    map.addLayer({
+      id: 'draw-fill',
+      type: 'fill',
+      source: 'draw-source',
+      paint: {
+        'fill-color': '#f59e0b',
+        'fill-opacity': 0.25
+      }
+    });
+
+    map.addLayer({
+      id: 'draw-line',
+      type: 'line',
+      source: 'draw-source',
+      paint: {
+        'line-color': '#fbbf24',
+        'line-width': 2.8,
+        'line-dasharray': [2, 1]
       }
     });
   };
@@ -432,7 +674,7 @@ const Globe = forwardRef(function Globe(
   const renderZoneMarkers = (map) => {
     clearMarkers();
 
-    // Renderizar marcadores de referencia principales (continentes y maravillas naturales)
+    // Marcadores de referencia para continentes y maravillas
     const primaryZones = ZONES.filter(
       (z) => z.category === 'Continente' || z.category.includes('Zona')
     );
@@ -448,6 +690,7 @@ const Globe = forwardRef(function Globe(
       `;
 
       el.addEventListener('click', (e) => {
+        if (drawModeRef.current) return;
         e.stopPropagation();
         onSelectZone(zone);
       });

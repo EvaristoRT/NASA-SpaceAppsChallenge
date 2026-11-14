@@ -3,6 +3,8 @@ import Globe from './components/Globe';
 import Navbar from './components/Navbar';
 import SidebarZones from './components/SidebarZones';
 import ZoneDrawer from './components/ZoneDrawer';
+import DrawnAreaDrawer from './components/DrawnAreaDrawer';
+import DrawToolbar from './components/DrawToolbar';
 import MapControls from './components/MapControls';
 import CoordinatesHUD from './components/CoordinatesHUD';
 import TokenModal from './components/TokenModal';
@@ -24,12 +26,17 @@ export default function App() {
   const [currentStyleId, setCurrentStyleId] = useState('satellite');
   const [projection, setProjection] = useState('globe'); // 'globe' | 'mercator'
 
-  // Estado de Navegación y Selección
+  // Estado de Navegación y Selección de Zonas
   const [selectedZone, setSelectedZone] = useState(null);
   const [autoSpin, setAutoSpin] = useState(true);
   const [orbitMode, setOrbitMode] = useState(false);
   const [isTilted, setIsTilted] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // --- ESTADO DE LA HERRAMIENTA DE DIBUJO MANUAL (PAINT / AOI) ---
+  const [isDrawOpen, setIsDrawOpen] = useState(false);
+  const [drawMode, setDrawMode] = useState(null); // 'freehand' | 'rectangle' | null
+  const [drawnArea, setDrawnArea] = useState(null); // { type, coords, area, perimeter, bounds, center, coveredCountries }
 
   // Estado del HUD (Coordenadas, Zoom, Inclinación)
   const [hudData, setHudData] = useState({
@@ -39,7 +46,7 @@ export default function App() {
     bearing: 0
   });
 
-  // Notificación de error de Mapbox (por ejemplo, si el token caduca o falla)
+  // Notificación de error de Mapbox
   const [mapError, setMapError] = useState(null);
 
   const activeStyle = MAP_STYLES.find((s) => s.id === currentStyleId) || MAP_STYLES[0];
@@ -55,7 +62,7 @@ export default function App() {
   const handleSelectZone = (zone) => {
     setSelectedZone(zone);
     setOrbitMode(false);
-    setAutoSpin(false); // Pausar giro automático para inspeccionar la zona
+    setAutoSpin(false); // Pausar giro automático para inspeccionar
   };
 
   // Alternar rotación continua
@@ -67,7 +74,6 @@ export default function App() {
   // Alternar modo órbita
   const handleToggleOrbit = () => {
     if (!selectedZone) {
-      // Si no hay zona seleccionada, avisar o enfocar una por defecto
       setIsSidebarOpen(true);
       return;
     }
@@ -80,12 +86,46 @@ export default function App() {
     setProjection((prev) => (prev === 'globe' ? 'mercator' : 'globe'));
   };
 
+  // --- GESTORES DE DIBUJO ---
+  const handleToggleDraw = () => {
+    if (isDrawOpen) {
+      setIsDrawOpen(false);
+      setDrawMode(null);
+    } else {
+      setIsDrawOpen(true);
+      setDrawMode('freehand'); // Por defecto mano alzada
+      setAutoSpin(false);
+    }
+  };
+
+  const handleSelectDrawMode = (mode) => {
+    setDrawMode(mode);
+    if (mode) setAutoSpin(false);
+  };
+
+  const handleFinishDrawing = (data) => {
+    setDrawnArea(data);
+    setSelectedZone(null); // Priorizar vista de la zona dibujada
+    setAutoSpin(false);
+  };
+
+  const handleClearDrawing = () => {
+    setDrawnArea(null);
+  };
+
+  const handleFocusDrawnArea = () => {
+    if (drawnArea?.bounds) {
+      globeRef.current?.focusArea(drawnArea.bounds);
+    }
+  };
+
   // Controles de cámara delegados al componente Globe
   const handleZoomIn = () => globeRef.current?.zoomIn();
   const handleZoomOut = () => globeRef.current?.zoomOut();
   const handleResetNorth = () => globeRef.current?.resetNorth();
   const handleResetView = () => {
     setSelectedZone(null);
+    setDrawnArea(null);
     setOrbitMode(false);
     globeRef.current?.resetView();
   };
@@ -104,6 +144,8 @@ export default function App() {
         onSelectZone={handleSelectZone}
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
         isSidebarOpen={isSidebarOpen}
+        isDrawOpen={isDrawOpen}
+        onToggleDraw={handleToggleDraw}
       />
 
       {/* Visor principal del Globo 3D con Mapbox GL */}
@@ -117,11 +159,28 @@ export default function App() {
         autoSpin={autoSpin}
         orbitMode={orbitMode}
         isTilted={isTilted}
+        drawMode={drawMode}
+        drawnArea={drawnArea}
+        onFinishDrawing={handleFinishDrawing}
         onUpdateHUD={(data) => setHudData((prev) => ({ ...prev, ...data }))}
         onMapError={(err) => setMapError(err)}
       />
 
-      {/* Explorador lateral de zonas */}
+      {/* Barra de herramientas flotante de dibujo (tipo Paint) */}
+      {isDrawOpen && (
+        <DrawToolbar
+          drawMode={drawMode}
+          onSelectDrawMode={handleSelectDrawMode}
+          onClearDrawing={handleClearDrawing}
+          hasDrawing={Boolean(drawnArea)}
+          onClose={() => {
+            setIsDrawOpen(false);
+            setDrawMode(null);
+          }}
+        />
+      )}
+
+      {/* Explorador lateral de zonas y países */}
       <SidebarZones
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -129,17 +188,29 @@ export default function App() {
         onSelectZone={handleSelectZone}
       />
 
-      {/* Tarjeta flotante con detalles de la zona seleccionada */}
-      <ZoneDrawer
-        zone={selectedZone}
-        onClose={() => {
-          setSelectedZone(null);
-          setOrbitMode(false);
-        }}
-        onDeepZoom={handleDeepZoom}
-        onStartOrbit={() => setOrbitMode((prev) => !prev)}
-        isOrbiting={orbitMode}
-      />
+      {/* Tarjeta flotante con detalles de la zona de catálogo seleccionada */}
+      {!drawnArea && (
+        <ZoneDrawer
+          zone={selectedZone}
+          onClose={() => {
+            setSelectedZone(null);
+            setOrbitMode(false);
+          }}
+          onDeepZoom={handleDeepZoom}
+          onStartOrbit={() => setOrbitMode((prev) => !prev)}
+          isOrbiting={orbitMode}
+        />
+      )}
+
+      {/* Tarjeta de detalles del Área Dibujada Manualmente */}
+      {drawnArea && (
+        <DrawnAreaDrawer
+          drawnData={drawnArea}
+          onClose={() => setDrawnArea(null)}
+          onFocusArea={handleFocusDrawnArea}
+          onClear={handleClearDrawing}
+        />
+      )}
 
       {/* Controles de cámara flotantes */}
       <MapControls

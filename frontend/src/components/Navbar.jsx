@@ -4,7 +4,8 @@ import {
   Search,
   KeyRound,
   ChevronDown,
-  Menu
+  Menu,
+  Pencil
 } from 'lucide-react';
 import { MAP_STYLES, ZONES } from '../data/zonesData';
 
@@ -17,7 +18,9 @@ export default function Navbar({
   isCustomToken,
   onSelectZone,
   onToggleSidebar,
-  isSidebarOpen
+  isSidebarOpen,
+  isDrawOpen,
+  onToggleDraw
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showStyleDropdown, setShowStyleDropdown] = useState(false);
@@ -159,6 +162,16 @@ export default function Navbar({
             </div>
           )}
         </div>
+
+        {/* Herramienta de Dibujo Manual (Paint / AOI) */}
+        <button
+          className={`draw-toggle-btn ${isDrawOpen ? 'active' : ''}`}
+          onClick={onToggleDraw}
+          title="Dibujar zona manualmente (forma libre o rectangular)"
+        >
+          <Pencil size={15} />
+          <span className="draw-btn-text">Dibujar Zona</span>
+        </button>
 
         {/* 2D / 3D Projection Toggle */}
         <button
