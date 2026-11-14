@@ -1378,6 +1378,29 @@
   border-color: #ef4444;
 }
 
+.draw-tool-btn.success {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #34d399;
+}
+
+.draw-tool-btn.success:hover {
+  background: rgba(16, 185, 129, 0.3);
+  border-color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+}
+
+.vertex-counter-badge {
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.22);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-left: 6px;
+}
+
 .draw-hint-box {
   display: flex;
   align-items: center;

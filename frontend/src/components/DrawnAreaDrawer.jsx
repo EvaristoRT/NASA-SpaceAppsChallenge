@@ -51,12 +51,19 @@ export default function DrawnAreaDrawer({
     setTimeout(() => setCopiedCoords(false), 1600);
   };
 
+  const typeLabel =
+    type === 'rectangle'
+      ? 'Rectángulo'
+      : type === 'polygon'
+      ? 'Polígono por Vértices'
+      : 'Forma Libre';
+
   const handleCopyGeoJSON = () => {
     const geojson = {
       type: 'Feature',
       properties: {
         name: 'Área Personalizada',
-        tipo: type,
+        tipo: typeLabel,
         superficie_km2: Math.round(area),
         perimetro_km: Math.round(perimeter),
         paises_detectados: coveredCountries.map((c) => c.name)
@@ -78,7 +85,7 @@ export default function DrawnAreaDrawer({
           <span className="zone-icon-hero">📐</span>
           <div>
             <div className="zone-category-badge text-amber-400">
-              Área de Interés Manual ({type === 'rectangle' ? 'Rectángulo' : 'Forma Libre'})
+              Área de Interés Manual ({typeLabel})
             </div>
             <h2 className="zone-title">Zona Trazada</h2>
           </div>

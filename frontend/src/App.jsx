@@ -35,7 +35,8 @@ export default function App() {
 
   // --- ESTADO DE LA HERRAMIENTA DE DIBUJO MANUAL (PAINT / AOI) ---
   const [isDrawOpen, setIsDrawOpen] = useState(false);
-  const [drawMode, setDrawMode] = useState(null); // 'freehand' | 'rectangle' | null
+  const [drawMode, setDrawMode] = useState(null); // 'polygon' | 'freehand' | 'rectangle' | null
+  const [polygonPointsCount, setPolygonPointsCount] = useState(0);
   const [drawnArea, setDrawnArea] = useState(null); // { type, coords, area, perimeter, bounds, center, coveredCountries }
 
   // Estado del HUD (Coordenadas, Zoom, Inclinación)
@@ -99,23 +100,30 @@ export default function App() {
     if (isDrawOpen) {
       setIsDrawOpen(false);
       setDrawMode(null);
+      setPolygonPointsCount(0);
+      globeRef.current?.clearPolygonPoints();
     } else {
       setIsDrawOpen(true);
-      setDrawMode('freehand'); // Por defecto mano alzada
+      setDrawMode('polygon'); // Polígono por defecto para precisión por vértices
     }
   };
 
   const handleSelectDrawMode = (mode) => {
     setDrawMode(mode);
+    setPolygonPointsCount(0);
+    globeRef.current?.clearPolygonPoints();
   };
 
   const handleFinishDrawing = (data) => {
     setDrawnArea(data);
     setSelectedZone(null); // Priorizar vista de la zona dibujada
+    setPolygonPointsCount(0);
   };
 
   const handleClearDrawing = () => {
     setDrawnArea(null);
+    setPolygonPointsCount(0);
+    globeRef.current?.clearPolygonPoints();
   };
 
   const handleFocusDrawnArea = () => {
@@ -168,6 +176,7 @@ export default function App() {
         drawMode={drawMode}
         drawnArea={drawnArea}
         onFinishDrawing={handleFinishDrawing}
+        onDrawPointsChange={setPolygonPointsCount}
         onUpdateHUD={(data) => setHudData((prev) => ({ ...prev, ...data }))}
         onMapError={(err) => setMapError(err)}
       />
@@ -179,9 +188,14 @@ export default function App() {
           onSelectDrawMode={handleSelectDrawMode}
           onClearDrawing={handleClearDrawing}
           hasDrawing={Boolean(drawnArea)}
+          polygonPointsCount={polygonPointsCount}
+          onFinishPolygon={() => globeRef.current?.finishPolygon()}
+          onUndoVertex={() => globeRef.current?.undoPolygonVertex()}
           onClose={() => {
             setIsDrawOpen(false);
             setDrawMode(null);
+            setPolygonPointsCount(0);
+            globeRef.current?.clearPolygonPoints();
           }}
         />
       )}

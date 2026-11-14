@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { ZONES } from '../data/zonesData';
@@ -23,6 +23,7 @@ const Globe = forwardRef(function Globe(
     drawMode,
     drawnArea,
     onFinishDrawing,
+    onDrawPointsChange,
     onUpdateHUD,
     onMapError
   },
@@ -51,6 +52,7 @@ const Globe = forwardRef(function Globe(
   const isDrawingRef = useRef(false);
   const drawPointsRef = useRef([]);
   const rectangleStartRef = useRef(null);
+  const polygonPointsRef = useRef([]);
 
   // Sincronizar referencias cuando cambian los props
   useEffect(() => {
@@ -78,14 +80,18 @@ const Globe = forwardRef(function Globe(
     if (mapRef.current) {
       if (drawMode) {
         mapRef.current.dragPan.disable();
+        mapRef.current.doubleClickZoom.disable();
         mapRef.current.getCanvas().style.cursor = 'crosshair';
       } else {
         mapRef.current.dragPan.enable();
+        mapRef.current.doubleClickZoom.enable();
         mapRef.current.getCanvas().style.cursor = '';
         isDrawingRef.current = false;
+        polygonPointsRef.current = [];
+        if (onDrawPointsChange) onDrawPointsChange(0);
       }
     }
-  }, [drawMode]);
+  }, [drawMode, onDrawPointsChange]);
 
   // Manejadores para pausar y reanudar rotación automática en interacciones del usuario
   const handleInteractionStart = () => {
@@ -106,6 +112,32 @@ const Globe = forwardRef(function Globe(
       userInteractingRef.current = false;
     }, 1200);
   };
+
+  // Finalizar y calcular métricas del polígono manual por vértices
+  const completePolygon = useCallback((points) => {
+    if (!points || points.length < 3) return;
+    const finalCoords = [...points, points[0]];
+    updateDrawSource(finalCoords, []);
+    const area = calculatePolygonArea(finalCoords);
+    const perimeter = calculatePolygonPerimeter(finalCoords);
+    const bounds = getPolygonBoundsAndCenter(finalCoords);
+    const coveredCountries = findCoveredCountries(finalCoords);
+
+    polygonPointsRef.current = [];
+    if (onDrawPointsChange) onDrawPointsChange(0);
+
+    if (onFinishDrawing) {
+      onFinishDrawing({
+        type: 'polygon',
+        coords: finalCoords,
+        area,
+        perimeter,
+        bounds,
+        center: bounds ? bounds.center : [0, 0],
+        coveredCountries
+      });
+    }
+  }, [onDrawPointsChange, onFinishDrawing]);
 
   // Exponer métodos para los controles flotantes
   useImperativeHandle(ref, () => ({
@@ -152,34 +184,119 @@ const Globe = forwardRef(function Globe(
           { padding: 100, duration: 2200, maxZoom: 8 }
         );
       }
+    },
+    finishPolygon: () => {
+      if (polygonPointsRef.current.length >= 3) {
+        completePolygon(polygonPointsRef.current);
+      }
+    },
+    undoPolygonVertex: () => {
+      if (polygonPointsRef.current.length > 0) {
+        polygonPointsRef.current.pop();
+        const pts = polygonPointsRef.current;
+        if (onDrawPointsChange) onDrawPointsChange(pts.length);
+        if (pts.length >= 3) {
+          updateDrawSource([...pts, pts[0]], pts);
+        } else if (pts.length === 2) {
+          updateDrawSource(pts, pts);
+        } else {
+          updateDrawSource(null, pts);
+        }
+      }
+    },
+    clearPolygonPoints: () => {
+      polygonPointsRef.current = [];
+      if (onDrawPointsChange) onDrawPointsChange(0);
+      updateDrawSource(null, []);
     }
   }));
 
-  // Actualizar fuente del trazado en tiempo real
-  const updateDrawSource = (coords) => {
+  // Atajos de teclado para el modo polígono por vértices
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (drawModeRef.current === 'polygon') {
+        if (e.key === 'Enter') {
+          if (polygonPointsRef.current.length >= 3) {
+            e.preventDefault();
+            completePolygon(polygonPointsRef.current);
+          }
+        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+          if (polygonPointsRef.current.length > 0) {
+            e.preventDefault();
+            polygonPointsRef.current.pop();
+            const pts = polygonPointsRef.current;
+            if (onDrawPointsChange) onDrawPointsChange(pts.length);
+            if (pts.length >= 3) {
+              updateDrawSource([...pts, pts[0]], pts);
+            } else if (pts.length === 2) {
+              updateDrawSource(pts, pts);
+            } else {
+              updateDrawSource(null, pts);
+            }
+          }
+        } else if (e.key === 'Escape') {
+          polygonPointsRef.current = [];
+          if (onDrawPointsChange) onDrawPointsChange(0);
+          updateDrawSource(null, []);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [completePolygon, onDrawPointsChange]);
+
+  // Actualizar fuente del trazado en tiempo real (polígono, línea elástica y vértices)
+  const updateDrawSource = (coords, vertexPoints = []) => {
     if (!mapRef.current) return;
     const source = mapRef.current.getSource('draw-source');
     if (!source) return;
 
+    const features = [];
+
+    // Polígono o línea de trazado
     if (coords && coords.length >= 3) {
-      source.setData({
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [coords]
-            }
-          }
-        ]
+      features.push({
+        type: 'Feature',
+        properties: { type: 'area' },
+        geometry: {
+          type: 'Polygon',
+          coordinates: [coords]
+        }
       });
-    } else {
-      source.setData({
-        type: 'FeatureCollection',
-        features: []
+    } else if (coords && coords.length === 2) {
+      features.push({
+        type: 'Feature',
+        properties: { type: 'line' },
+        geometry: {
+          type: 'LineString',
+          coordinates: coords
+        }
       });
     }
+
+    // Puntos de vértices para polígono manual
+    if (vertexPoints && vertexPoints.length > 0) {
+      vertexPoints.forEach((pt, index) => {
+        features.push({
+          type: 'Feature',
+          properties: {
+            type: 'vertex',
+            index: index + 1,
+            isFirst: index === 0
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: pt
+          }
+        });
+      });
+    }
+
+    source.setData({
+      type: 'FeatureCollection',
+      features
+    });
   };
 
   // Reflejar polígono dibujado cuando cambie externamente
@@ -393,9 +510,10 @@ const Globe = forwardRef(function Globe(
     });
   };
 
-  // Capas para el trazado de dibujo manual
+  // Capas para el trazado de dibujo manual (polígono, líneas guía y vértices)
   const setupDrawLayers = (map) => {
     if (!map) return;
+    if (map.getLayer('draw-points')) map.removeLayer('draw-points');
     if (map.getLayer('draw-line')) map.removeLayer('draw-line');
     if (map.getLayer('draw-fill')) map.removeLayer('draw-fill');
     if (map.getSource('draw-source')) map.removeSource('draw-source');
@@ -412,6 +530,7 @@ const Globe = forwardRef(function Globe(
       id: 'draw-fill',
       type: 'fill',
       source: 'draw-source',
+      filter: ['==', '$type', 'Polygon'],
       paint: {
         'fill-color': '#f59e0b',
         'fill-opacity': 0.25
@@ -422,10 +541,34 @@ const Globe = forwardRef(function Globe(
       id: 'draw-line',
       type: 'line',
       source: 'draw-source',
+      filter: ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'LineString']],
       paint: {
         'line-color': '#fbbf24',
         'line-width': 2.8,
         'line-dasharray': [2, 1]
+      }
+    });
+
+    map.addLayer({
+      id: 'draw-points',
+      type: 'circle',
+      source: 'draw-source',
+      filter: ['==', ['get', 'type'], 'vertex'],
+      paint: {
+        'circle-radius': [
+          'case',
+          ['get', 'isFirst'],
+          7,
+          5
+        ],
+        'circle-color': [
+          'case',
+          ['get', 'isFirst'],
+          '#10b981',
+          '#f59e0b'
+        ],
+        'circle-stroke-width': 2.5,
+        'circle-stroke-color': '#ffffff'
       }
     });
   };
@@ -521,8 +664,36 @@ const Globe = forwardRef(function Globe(
         applyMapConfiguration(map);
       });
 
-      // Selección de zonas por clic sobre el mapa
+      // Selección de zonas por clic o colocación de vértices en modo polígono
       map.on('click', (e) => {
+        if (drawModeRef.current === 'polygon') {
+          const clickedPt = [e.lngLat.lng, e.lngLat.lat];
+          const pts = polygonPointsRef.current;
+
+          // Si ya hay al menos 3 vértices y se hace clic sobre/cerca del primer vértice, cerrar polígono
+          if (pts.length >= 3) {
+            const firstPtScreen = map.project(pts[0]);
+            const distPixels = Math.hypot(e.point.x - firstPtScreen.x, e.point.y - firstPtScreen.y);
+            if (distPixels < 25) {
+              completePolygon(pts);
+              return;
+            }
+          }
+
+          // Añadir nuevo vértice
+          pts.push(clickedPt);
+          if (onDrawPointsChange) onDrawPointsChange(pts.length);
+
+          if (pts.length >= 3) {
+            updateDrawSource([...pts, pts[0]], pts);
+          } else if (pts.length === 2) {
+            updateDrawSource(pts, pts);
+          } else {
+            updateDrawSource(null, pts);
+          }
+          return;
+        }
+
         if (drawModeRef.current) return;
         if (!map.getLayer('zones-fill')) return;
 
@@ -536,10 +707,20 @@ const Globe = forwardRef(function Globe(
         }
       });
 
+      // Doble clic para finalizar polígono por vértices
+      map.on('dblclick', (e) => {
+        if (drawModeRef.current === 'polygon') {
+          e.preventDefault();
+          if (polygonPointsRef.current.length >= 3) {
+            completePolygon(polygonPointsRef.current);
+          }
+        }
+      });
+
       // --- GESTIÓN DE EVENTOS DE DIBUJO Y NAVEGACIÓN ---
       map.on('mousedown', (e) => {
         handleInteractionStart();
-        if (drawModeRef.current) {
+        if (drawModeRef.current === 'freehand' || drawModeRef.current === 'rectangle') {
           isDrawingRef.current = true;
           const point = [e.lngLat.lng, e.lngLat.lat];
           if (drawModeRef.current === 'freehand') {
@@ -552,7 +733,10 @@ const Globe = forwardRef(function Globe(
 
       map.on('touchstart', (e) => {
         handleInteractionStart();
-        if (drawModeRef.current && e.lngLat) {
+        if (
+          (drawModeRef.current === 'freehand' || drawModeRef.current === 'rectangle') &&
+          e.lngLat
+        ) {
           isDrawingRef.current = true;
           const point = [e.lngLat.lng, e.lngLat.lat];
           if (drawModeRef.current === 'freehand') {
@@ -570,7 +754,29 @@ const Globe = forwardRef(function Globe(
       map.on('boxzoomstart', handleInteractionStart);
 
       map.on('mousemove', (e) => {
-        // Modo dibujo activo
+        // Previsualización elástica dinámica para modo polígono por vértices
+        if (drawModeRef.current === 'polygon') {
+          const pts = polygonPointsRef.current;
+          if (pts.length > 0) {
+            const currentPt = [e.lngLat.lng, e.lngLat.lat];
+            if (pts.length === 1) {
+              updateDrawSource([pts[0], currentPt], pts);
+            } else if (pts.length >= 2) {
+              updateDrawSource([...pts, currentPt, pts[0]], pts);
+            }
+          }
+
+          // Si el cursor está cerca del primer vértice (verde), mostrar cursor puntero de cierre
+          if (pts.length >= 3) {
+            const firstPtScreen = map.project(pts[0]);
+            const dist = Math.hypot(e.point.x - firstPtScreen.x, e.point.y - firstPtScreen.y);
+            map.getCanvas().style.cursor = dist < 25 ? 'pointer' : 'crosshair';
+          } else {
+            map.getCanvas().style.cursor = 'crosshair';
+          }
+        }
+
+        // Modo dibujo libre y rectángulo activo
         if (drawModeRef.current && isDrawingRef.current) {
           if (drawModeRef.current === 'freehand') {
             const pts = drawPointsRef.current;
