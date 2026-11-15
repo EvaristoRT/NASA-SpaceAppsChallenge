@@ -98,3 +98,32 @@ Pendiente: Groenlandia y el Atlántico norte al este de −50 no tienen datos de
 ## 4. Resultados y notas de Europa (Evaristo)
 
 _(escribir aquí)_
+
+> Los resultados de Europa están en esta misma sección, en la rama `datos/europa` (commit `3d3adfd`): validación −2.0% / 11.5% / 0.993,
+> banda 89.4%, y **737 celdas industriales persistentes** (1.7% de los días-celda) que la limpieza deja pasar. Ver también `MVP_AMERICA.md` §2:
+> conviene revisar lo mismo en América (mecheros de Permian, Bakken, Alberta y el golfo de México).
+
+## 5. Propuesta: África (Evaristo) — **pide un cambio en `config.py`**
+
+Mientras se arma el MVP de América, Evaristo adelanta África en su propia rama (`datos/africa`, creada desde esta). No toca `main` ni publica nada.
+
+**Lo que ya está corriendo (no necesita `config.py`):** 2026 de África con su propia MAP_KEY, en su carpeta y **sin solaparse con Europa**:
+```bash
+BBOX="-26,-36,63,34" OUT="<FIRE_DATA_DIR>/datos_2026/api/zona_africa" bash pipeline/scripts/00b_descargar_2026.sh
+```
+El techo de 34° N es a propósito: `zona_europa` (−25, 34, 45, 72) ya cubre la costa de Marruecos, Argelia y Túnez.
+
+**Lo que necesita de Carlos:** agregar la región en `config.py`, que es tuyo según la regla de la sección 2. Propuesta:
+```python
+    # África (Evaristo): Cabo Verde y Senegal hasta Seychelles y Mauricio; de Ciudad del Cabo a Bizerta (Túnez).
+    # 2026 se bajó como zona_africa (-26, -36, 63, 34) + la franja 34-37.6 N que ya trae zona_europa.
+    "africa": (-26.0, -36.0, 63.0, 37.6),
+```
+Como `europa`, el rectángulo no sigue fronteras: incluye la península arábiga y parte de Oriente Medio, Sicilia, Creta, Chipre y el sur de España.
+Para el modelo no importa (factores por h3_r3); en el mapa, sí. Para 2026 queda un hueco al este de 45° E y al norte de 34° N
+(Irán y Turkmenistán): no es África y no tiene datos de 2026.
+
+**Ojo con el tamaño:** África es la región con más fuego del planeta (sabanas). Se espera bastante más que América (~100 M focos limpios):
+silver de decenas de minutos, y un backend que en local cabe (16 GB) pero que en Cloud Run pediría `--memory 8Gi` o más.
+
+Cuando agregues la línea (en esta rama o en `main`), Evaristo corre `03 → 07 --region africa` y anota los resultados en una sección 6.
