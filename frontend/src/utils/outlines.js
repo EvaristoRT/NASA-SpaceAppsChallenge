@@ -44,15 +44,49 @@ export function ringToLines(ring) {
   return lines;
 }
 
-/** FeatureCollection de polígonos → FeatureCollection de MultiLineString con las mismas propiedades `id` y `category`. */
-export function buildOutlineCollection(collection) {
+/**
+ * Suaviza una línea cortando esquinas (Chaikin): cada tramo se reemplaza por dos puntos a 1/4 y 3/4. Redondea el
+ * aspecto "poligonal" de los contornos sin inventar detalle. Las líneas abiertas conservan sus extremos; las cerradas
+ * (el primer punto igual al último) se suavizan también en la costura.
+ */
+export function smoothLine(line, iterations = 2) {
+  let pts = line;
+  for (let it = 0; it < iterations; it++) {
+    if (pts.length < 3) break;
+    const closed = pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1];
+    const out = [];
+    const last = pts.length - 1;
+    if (!closed) out.push(pts[0]);
+    for (let i = 0; i < last; i++) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      out.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]]);
+      out.push([0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]);
+    }
+    if (closed) out.push(out[0]);
+    else out.push(pts[last]);
+    pts = out;
+  }
+  return pts;
+}
+
+/**
+ * FeatureCollection de polígonos → FeatureCollection de MultiLineString con las mismas propiedades `id` y `category`.
+ * Con `smooth` los contornos se redondean; las zonas con pocos vértices (formas muy angulosas) reciben una pasada más.
+ */
+export function buildOutlineCollection(collection, { smooth = false } = {}) {
   const features = [];
   for (const f of collection.features) {
     const g = f.geometry;
     if (!g || (g.type !== 'Polygon' && g.type !== 'MultiPolygon')) continue;
     const polygons = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
-    const lines = polygons.flatMap((poly) => poly.flatMap(ringToLines));
+    let lines = polygons.flatMap((poly) => poly.flatMap(ringToLines));
     if (lines.length === 0) continue;
+    if (smooth) {
+      const vertices = lines.reduce((n, l) => n + l.length, 0);
+      const passes = vertices < 150 ? 3 : 2;
+      lines = lines.map((l) => smoothLine(l, passes));
+    }
     features.push({
       type: 'Feature',
       id: f.id,

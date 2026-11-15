@@ -405,6 +405,7 @@ const Globe = forwardRef(function Globe(
     if (map.getLayer('zones-highlight-fill')) map.removeLayer('zones-highlight-fill');
     if (map.getLayer('zones-hover-line')) map.removeLayer('zones-hover-line');
     if (map.getLayer('zones-hover-fill')) map.removeLayer('zones-hover-fill');
+    if (map.getLayer('zones-line-countries')) map.removeLayer('zones-line-countries');
     if (map.getLayer('zones-line')) map.removeLayer('zones-line');
     if (map.getLayer('zones-fill')) map.removeLayer('zones-fill');
     if (map.getSource('zones-geojson')) map.removeSource('zones-geojson');
@@ -440,30 +441,40 @@ const Globe = forwardRef(function Globe(
       }
     });
 
+    // Fronteras de los 196 países: finas y casi invisibles de lejos, para que el globo no se llene de líneas; se
+    // van marcando al acercarse. Uniones y extremos redondeados para que no se vean quebradas.
+    map.addLayer({
+      id: 'zones-line-countries',
+      type: 'line',
+      source: 'zones-outline',
+      filter: ['==', ['get', 'category'], 'País'],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': '#dfe1e2',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 1, 0.5, 4, 0.9, 7, 1.4],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 1.5, 0.12, 3.5, 0.3, 6, 0.5]
+      }
+    });
+
+    // Continentes y zonas especiales: el trazo principal
     map.addLayer({
       id: 'zones-line',
       type: 'line',
       source: 'zones-outline',
+      filter: ['!=', ['get', 'category'], 'País'],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: {
         'line-color': [
           'match',
           ['get', 'category'],
-          'Continente', 'rgba(36, 145, 255, 0.75)',
-          'País', 'rgba(223, 225, 226, 0.45)',
-          'Zona Ecológica', 'rgba(79, 209, 161, 0.75)',
-          'Zona Marina', 'rgba(122, 167, 255, 0.75)',
-          'Zona Geológica', 'rgba(140, 147, 217, 0.75)',
-          'rgba(106, 118, 189, 0.55)'
+          'Continente', '#2491ff',
+          'Zona Ecológica', '#4fd1a1',
+          'Zona Marina', '#7aa7ff',
+          'Zona Geológica', '#8c93d9',
+          '#6a76bd'
         ],
-        'line-width': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          1, 0.9,
-          4, 1.4,
-          7, 2.0
-        ],
-        'line-opacity': 0.8
+        'line-width': ['interpolate', ['linear'], ['zoom'], 1, 1, 4, 1.5, 7, 2.2],
+        'line-opacity': 0.75
       }
     });
 
@@ -484,6 +495,7 @@ const Globe = forwardRef(function Globe(
       type: 'line',
       source: 'zones-outline',
       filter: ['==', ['get', 'id'], ''],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: {
         'line-color': '#ffffff',
         'line-width': 2.0,
@@ -508,6 +520,7 @@ const Globe = forwardRef(function Globe(
       type: 'line',
       source: 'zones-outline',
       filter: ['==', ['get', 'id'], selectedZoneRef.current ? selectedZoneRef.current.id : ''],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: {
         'line-color': '#e7f434',
         'line-width': 3,

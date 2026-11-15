@@ -170,6 +170,6 @@ export function findCoveredCountries(polygonCoords) {
 // Contornos para las capas de línea: sin aristas sobre el antimeridiano ni el polo (ver outlines.js)
 let zonesOutlineCache = null;
 export function generateZonesOutlineGeoJSON() {
-  if (!zonesOutlineCache) zonesOutlineCache = buildOutlineCollection(worldZonesGeoJSON);
+  if (!zonesOutlineCache) zonesOutlineCache = buildOutlineCollection(worldZonesGeoJSON, { smooth: true });
   return zonesOutlineCache;
 }

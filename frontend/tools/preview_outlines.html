@@ -11,16 +11,20 @@
 </style>
 </head>
 <body>
-<header><b id="t"></b><span id="info"></span><a href="?v=before">antes</a> <a href="?v=after">después</a></header>
+<header><b id="t"></b><span id="info"></span><a href="?v=before">antes</a> <a href="?v=after">después</a> <a href="?v=smooth">suavizado</a></header>
 <canvas id="c" width="780" height="390"></canvas>
 <script type="module">
   import { buildOutlineCollection } from '../src/utils/outlines.js';
-  const mode = new URLSearchParams(location.search).get('v') === 'before' ? 'before' : 'after';
+  const v = new URLSearchParams(location.search).get('v');
+  const mode = v === 'before' ? 'before' : 'after';
+  const smooth = v === 'smooth';
+  const k = Number(new URLSearchParams(location.search).get('k')) || 1; // ampliación: ?v=smooth&k=3
   const file = mode === 'before' ? '../tools/worldZonesGeoJSON.original.json' : '../src/data/worldZonesGeoJSON.json';
   const fc = await (await fetch(file)).json();
   document.getElementById('t').textContent = mode === 'before' ? 'ANTES (datos originales, todas las aristas)' : 'DESPUÉS (datos corregidos + contornos sin aristas artificiales)';
 
   const c = document.getElementById('c'), g = c.getContext('2d');
+  c.width = 780 * k; c.height = 390 * k;
   const X = (lon) => (lon + 180) * (c.width / 360), Y = (lat) => (90 - lat) * (c.height / 180);
   g.fillStyle = '#151622'; g.fillRect(0, 0, c.width, c.height);
   g.strokeStyle = '#2c3050'; g.lineWidth = 1;
@@ -28,11 +32,11 @@
   for (const lat of [-60, -30, 0, 30, 60]) { g.beginPath(); g.moveTo(0, Y(lat)); g.lineTo(c.width, Y(lat)); g.stroke(); }
 
   const polys = (geom) => geom.type === 'MultiPolygon' ? geom.coordinates : [geom.coordinates];
-  const strokeLine = (pts, color, w) => { g.strokeStyle = color; g.lineWidth = w; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(X(p[0]), Y(p[1])) : g.moveTo(X(p[0]), Y(p[1]))); g.stroke(); };
+  const strokeLine = (pts, color, w) => { g.strokeStyle = color; g.lineWidth = w * k / 1.5; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(X(p[0]), Y(p[1])) : g.moveTo(X(p[0]), Y(p[1]))); g.stroke(); };
   const ringsOf = (f) => polys(f.geometry).flatMap((p) => p);
 
   // países, finos y apagados (contexto)
-  for (const f of fc.features) if (f.properties.category === 'País') ringsOf(f).forEach((r) => strokeLine(r, 'rgba(223,225,226,0.28)', 0.6));
+  if (!smooth) for (const f of fc.features) if (f.properties.category === 'País') ringsOf(f).forEach((r) => strokeLine(r, 'rgba(223,225,226,0.28)', 0.6));
 
   let wrap = 0;
   if (mode === 'before') {
@@ -44,7 +48,8 @@
       }
     }
   } else {
-    const out = buildOutlineCollection(fc);
+    const out = buildOutlineCollection(fc, { smooth });
+    if (smooth) for (const f of out.features) if (f.properties.category === 'País') f.geometry.coordinates.forEach((l) => strokeLine(l, 'rgba(223,225,226,0.35)', 0.6));
     for (const f of out.features) if (f.properties.category === 'Continente') f.geometry.coordinates.forEach((l) => strokeLine(l, 'rgba(36,145,255,0.95)', 1.5));
   }
   document.getElementById('info').innerHTML = mode === 'before'

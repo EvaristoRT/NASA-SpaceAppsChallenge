@@ -26,6 +26,7 @@ Guayana Francesa, y varias aristas sobre ±180° o el polo se dibujaban como tra
 - `node tools/check_outlines.mjs` comprueba que no queda ninguna arista artificial. `tools/preview_outlines.html` dibuja antes y después sin Mapbox
   (servirla desde esta carpeta, por ejemplo con `python -m http.server`).
 - La línea Europa/Asia en Rusia es recta a 60° E; los Urales reales no lo son.
+- **Aspecto poligonal:** los países traen pocos vértices (~76 de media). `buildOutlineCollection(fc, { smooth: true })` suaviza solo las líneas (corte de esquinas de Chaikin, 2 pasadas; 3 si la zona es muy angulosa); el relleno conserva los polígonos originales. En `Globe.jsx` las fronteras de países van en su propia capa (`zones-line-countries`), casi invisibles de lejos y más marcadas al acercarse, con uniones redondeadas; continentes y zonas especiales conservan el trazo principal. `tools/preview_outlines.html?v=smooth&k=3` compara el resultado sin Mapbox.
 
 ## Para ejecutarlo
 Token público de Mapbox en `.env` o `.env.local` (ignorados por git): `VITE_MAPBOX_TOKEN=pk.…`. Luego `npm install` y `npm run dev`.
