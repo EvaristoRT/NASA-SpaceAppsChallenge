@@ -27,3 +27,24 @@ Coincide con los 4.4 M de 2026 que reportó Carlos.
 3. **Terra 2022 tiene solo 353 días con focos** (12 días sin datos). Revisar antes de usar 2022 en el ajuste.
 4. **2026:** la parte archive (`SP`) llega hasta ~2026-07/08 y el resto es NRT. NOAA-20 2026 = 1.41 M y NOAA-21 = 1.37 M (~3% de diferencia).
 5. La carpeta `datos_2026/bulk_7d/` no la lee el paso 01 (solo `datos_2026/api/`). Hoy no hace falta porque la API llega al 2026-11-14.
+
+---
+
+## 2026-11-14 · Evaristo · tabla de calibración `argentina_chile` (paso 04)
+
+Corrida sobre el silver del paso 03 (14.6 M focos limpios): **1,111,085 filas · 21,496 hexágonos r5 · 2000–2026**, en 6 s.
+
+Comprobaciones: `n_*` suma exactamente los focos de silver por satélite; `cd_n20` de 2020 coincide con un conteo directo
+(533,865); sin claves repetidas ni nulos; en todas las filas `max(cd_terra, cd_aqua) ≤ cd_modis ≤ cd_terra + cd_aqua`.
+
+Probada con `05_model.py` (sin cambiarlo): corre de punta a punta. MODIS → NOAA-20 en la prueba 2023–2026:
+sesgo −56.4% → **+1.9%**, error mediano 59.5% → **8.7%**, r = 0.995.
+
+Para Carlos:
+1. Factores globales en Argentina + Chile: `cd` MODIS → NOAA-20 = **2.32** (el plan citaba 2.84, medido en otra región/periodo),
+   S-NPP → NOAA-20 = 1.01, Terra → MODIS = 2.77.
+2. **FRP no sale tan neutro aquí:** `frp_n20 / frp_modis` = **0.71** en 2018–2022 (el plan decía ~1.04 en 2026). Revisar antes de
+   usar FRP como "control independiente".
+3. `cd_n21` solo tiene datos en 2026: no hay zips anuales de NOAA-21 (jpss2) en el archivo que bajamos.
+4. En mi máquina `pyarrow` no carga (Windows bloquea su DLL por control de aplicaciones), así que `pd.read_parquet` falla.
+   Si a alguien le pasa, el 05 se puede leer con `duckdb.sql(...).df()`. Es de la máquina, no del código.
