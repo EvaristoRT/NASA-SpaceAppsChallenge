@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { ZONES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
+import { continentIdOf } from '../utils/continents';
 import {
   generateZonesGeoJSON,
   generateZonesOutlineGeoJSON,
@@ -20,6 +21,9 @@ const FLY_CURVE = 1.2;
 // En el mapa plano el mundo se repite al desplazarse (como cualquier mapa web): el arrastre es libre. Con `false` el mapa queda en un
 // solo mundo, pero Mapbox obliga a que llene el ancho de la pantalla y al alejar el arrastre queda bloqueado en horizontal.
 const FLAT_WORLD_COPIES = true;
+
+// Desde este zoom, el mapa elige siempre países; más lejos elige continentes (salvo dentro del continente ya elegido).
+const COUNTRY_ZOOM = 4;
 
 const Globe = forwardRef(function Globe(
   {
@@ -523,9 +527,22 @@ const Globe = forwardRef(function Globe(
   };
 
   // Bajo el cursor hay a la vez un país y su continente (los continentes están al final de los datos, así que Mapbox los devuelve primero).
-  // Siempre se prefiere el país; el continente solo si no hay ninguno debajo (por ejemplo, la Antártida).
-  const pickZoneFeature = (features) =>
-    features && features.length > 0 ? features.find((f) => f.properties.category === 'País') || features[0] : null;
+  // Se elige por niveles, igual que en el explorador:
+  //  - lejos (zoom < COUNTRY_ZOOM) y sin continente elegido: el continente;
+  //  - dentro del continente ya elegido (o de un país suyo): el país;
+  //  - cerca (zoom >= COUNTRY_ZOOM): siempre el país.
+  // Así se puede elegir el continente y después uno de sus países tocando el mapa. Sin país debajo (la Antártida) queda el continente.
+  const pickZoneFeature = (features, map) => {
+    if (!features || features.length === 0) return null;
+    const country = features.find((f) => f.properties.category === 'País');
+    const continent = features.find((f) => f.properties.category === 'Continente');
+    if (!country || !continent) return country || continent || features[0];
+
+    const activeContinent = continentIdOf(selectedZoneRef.current);
+    const countryContinent = continentIdOf(ZONES.find((z) => z.id === country.properties.id));
+    const insideActive = Boolean(activeContinent) && (activeContinent === continent.properties.id || activeContinent === countryContinent);
+    return map.getZoom() >= COUNTRY_ZOOM || insideActive ? country : continent;
+  };
 
   // Etiqueta con el nombre de la zona bajo el cursor (en el idioma activo). Sigue al cursor.
   const showHoverLabel = (map, lngLat, zoneId) => {
@@ -987,7 +1004,7 @@ const Globe = forwardRef(function Globe(
 
         if (!map.getLayer('zones-fill')) return;
 
-        const picked = pickZoneFeature(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }));
+        const picked = pickZoneFeature(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
         if (picked) {
           const found = ZONES.find((z) => z.id === picked.properties.id);
           if (found) {
@@ -1096,7 +1113,7 @@ const Globe = forwardRef(function Globe(
 
         // Puntero y realce interactivo al posar el cursor sobre cualquier país
         if (!drawModeRef.current && map.getLayer('zones-fill')) {
-          const picked = pickZoneFeature(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }));
+          const picked = pickZoneFeature(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
           const hoverId = picked ? picked.properties.id : '';
           map.getCanvas().style.cursor = hoverId ? 'pointer' : '';
           showHoverLabel(map, e.lngLat, hoverId);
