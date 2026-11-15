@@ -7,6 +7,7 @@ Entrada
     o, mientras el paso 04 no exista:  --fake  (genera una tabla falsa con factores conocidos)
 
 Salida  (en <FIRE_DATA_DIR>/models/)
+    (todo en models/region=<region>/; la región por defecto se copia también a models/ para 06 y 07)
     factores.parquet      una fila por (origen, metrica, h3_r3, mes): factor, factor_global, n_meses, num, den,
                           factor_lo, factor_hi, factor_global_lo, factor_global_hi  (IC 95% por bootstrap, --n-boot)
     metrics.json          validación (con cobertura del IC), deriva del factor por año y control con FRP
@@ -340,10 +341,12 @@ def main() -> int:
     ap.add_argument("--n-boot", type=int, default=200, help="Réplicas bootstrap para el IC 95%% de los factores (0 = sin IC)")
     args = ap.parse_args()
 
-    models = config.layer("models", args.data_dir)
+    # Una carpeta por región para que correr otra región no sobrescriba los factores de la anterior.
+    models_root = config.layer("models", args.data_dir)
+    models = models_root / f"region={args.region}"
     truth = None
     if args.fake:
-        models = models / "fake"
+        models = models_root / "fake"
         df, truth = fake_calibration()
         print(f"Tabla falsa: {len(df):,} filas")
     else:
@@ -383,6 +386,16 @@ def main() -> int:
         metrics["verdad_fake"] = {**{k_: v for k_, v in truth.items() if k_ == "k_modis_cd_mean"},
                                   "error_medio_k_modis_por_region_pct": round(float(np.mean(err) * 100), 2)}
     (models / "metrics.json").write_text(json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    # Compatibilidad: 06 y 07 todavía leen models/factores.parquet y models/metrics.json sin región.
+    # Mientras no lean por región, la región por defecto se copia también ahí. Las demás no, para no pisarla.
+    if not args.fake and args.region == config.DEFAULT_REGION:
+        import shutil
+        for name in ("factores.parquet", "metrics.json"):
+            shutil.copy2(models / name, models_root / name)
+        if (models / "figs").is_dir():
+            shutil.copytree(models / "figs", models_root / "figs", dirs_exist_ok=True)
+        print(f"Copia de compatibilidad para 06/07 en {models_root}")
 
     print(json.dumps({k_: metrics[k_] for k_ in ("factores_globales", "control_frp")}, indent=2, ensure_ascii=False))
     m = val.get("modis_cd", {})
