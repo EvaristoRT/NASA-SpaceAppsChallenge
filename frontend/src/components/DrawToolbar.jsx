@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Undo2
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function DrawToolbar({
   drawMode, // null | 'freehand' | 'polygon' | 'rectangle'
@@ -20,23 +21,56 @@ export default function DrawToolbar({
   onUndoVertex,
   onClose
 }) {
+  const { lang, t } = useLanguage();
+
+  const getHint = () => {
+    if (drawMode === 'polygon') {
+      if (polygonPointsCount === 0) {
+        return lang === 'es'
+          ? 'Haz clic en el mapa para colocar el primer vértice del polígono.'
+          : 'Click on the map to place the first polygon vertex.';
+      }
+      if (polygonPointsCount < 3) {
+        return lang === 'es'
+          ? `Coloca al menos 3 vértices (${polygonPointsCount}/3 colocados). Mueve el cursor para ver la guía.`
+          : `Place at least 3 vertices (${polygonPointsCount}/3 placed). Move cursor to preview.`;
+      }
+      return lang === 'es'
+        ? 'Haz clic en el punto inicial, haz doble clic o presiona Enter para cerrar el polígono.'
+        : 'Click the starting point, double-click, or press Enter to close the polygon.';
+    }
+    if (drawMode === 'freehand') {
+      return lang === 'es'
+        ? 'Mantén pulsado el botón del ratón y traza el contorno deseado sobre el globo terráqueo.'
+        : 'Hold down the mouse button and draw your desired outline on the globe.';
+    }
+    if (drawMode === 'rectangle') {
+      return lang === 'es'
+        ? 'Haz clic en un vértice y arrastra hacia la esquina opuesta para definir el rectángulo.'
+        : 'Click on a corner and drag to the opposite corner to define the rectangle.';
+    }
+    return lang === 'es'
+      ? 'Selecciona un modo de dibujo para trazar un área personalizada.'
+      : 'Select a drawing mode to outline a custom area.';
+  };
+
   return (
     <div className="draw-toolbar panel">
       <div className="draw-toolbar-header">
         <div className="draw-title-group">
           <Pencil size={16} className="text-amber-400" />
-          <span className="draw-title">Herramienta de Dibujo y AOI</span>
+          <span className="draw-title">{t('drawToolbar.title')}</span>
           {drawMode === 'polygon' && polygonPointsCount > 0 && (
             <span className="vertex-counter-badge">
-              {polygonPointsCount} {polygonPointsCount === 1 ? 'vértice' : 'vértices'}
+              {polygonPointsCount} {polygonPointsCount === 1 ? t('drawToolbar.vertex') : t('drawToolbar.vertices')}
             </span>
           )}
         </div>
         <button
           className="btn-close-sm"
           onClick={onClose}
-          title="Cerrar barra de dibujo"
-          aria-label="Cerrar"
+          title={t('drawToolbar.closeToolbar')}
+          aria-label={t('drawToolbar.close')}
         >
           <X size={15} />
         </button>
@@ -46,28 +80,28 @@ export default function DrawToolbar({
         <button
           className={`draw-tool-btn ${drawMode === 'polygon' ? 'active' : ''}`}
           onClick={() => onSelectDrawMode(drawMode === 'polygon' ? null : 'polygon')}
-          title="Dibujar polígono colocando puntos vértice por vértice"
+          title={t('drawToolbar.polygonTitle')}
         >
           <Pentagon size={15} />
-          <span>Polígono (Vértices)</span>
+          <span>{t('drawToolbar.polygon')}</span>
         </button>
 
         <button
           className={`draw-tool-btn ${drawMode === 'freehand' ? 'active' : ''}`}
           onClick={() => onSelectDrawMode(drawMode === 'freehand' ? null : 'freehand')}
-          title="Dibujar forma libre a mano alzada (mantén pulsado y arrastra)"
+          title={t('drawToolbar.freehandTitle')}
         >
           <Pencil size={15} />
-          <span>Mano Alzada</span>
+          <span>{t('drawToolbar.freehand')}</span>
         </button>
 
         <button
           className={`draw-tool-btn ${drawMode === 'rectangle' ? 'active' : ''}`}
           onClick={() => onSelectDrawMode(drawMode === 'rectangle' ? null : 'rectangle')}
-          title="Dibujar zona rectangular (clic y arrastra diagonalmente)"
+          title={t('drawToolbar.rectangleTitle')}
         >
           <Square size={15} />
-          <span>Rectángulo</span>
+          <span>{t('drawToolbar.rectangle')}</span>
         </button>
 
         {/* Acciones contextuales para modo Polígono */}
@@ -75,10 +109,10 @@ export default function DrawToolbar({
           <button
             className="draw-tool-btn success"
             onClick={onFinishPolygon}
-            title="Finalizar y cerrar el polígono actual (o presiona Enter)"
+            title={t('drawToolbar.finishPolygonTitle')}
           >
             <CheckCircle2 size={15} />
-            <span>Cerrar Polígono</span>
+            <span>{t('drawToolbar.finishPolygon')}</span>
           </button>
         )}
 
@@ -86,10 +120,10 @@ export default function DrawToolbar({
           <button
             className="draw-tool-btn"
             onClick={onUndoVertex}
-            title="Deshacer el último vértice colocado (o presiona Backspace)"
+            title={t('drawToolbar.undoVertexTitle')}
           >
             <Undo2 size={15} />
-            <span>Deshacer punto</span>
+            <span>{t('drawToolbar.undoVertex')}</span>
           </button>
         )}
 
@@ -97,30 +131,17 @@ export default function DrawToolbar({
           <button
             className="draw-tool-btn danger"
             onClick={onClearDrawing}
-            title="Borrar trazado actual"
+            title={t('drawToolbar.clearDrawingTitle')}
           >
             <Trash2 size={15} />
-            <span>Limpiar</span>
+            <span>{t('drawToolbar.clearDrawing')}</span>
           </button>
         )}
       </div>
 
       <div className="draw-hint-box">
         <Info size={13} className="text-amber-400 flex-shrink-0" />
-        <span>
-          {drawMode === 'polygon' && (
-            polygonPointsCount === 0
-              ? 'Haz clic en el mapa para colocar el primer vértice del polígono.'
-              : polygonPointsCount < 3
-              ? `Coloca al menos 3 vértices (${polygonPointsCount}/3 colocados). Mueve el cursor para ver la guía.`
-              : 'Haz clic en el punto verde inicial, haz doble clic o presiona Enter para cerrar el polígono.'
-          )}
-          {drawMode === 'freehand' &&
-            'Mantén pulsado el botón del ratón y traza el contorno deseado sobre el globo terráqueo.'}
-          {drawMode === 'rectangle' &&
-            'Haz clic en un vértice y arrastra hacia la esquina opuesta para definir el rectángulo.'}
-          {!drawMode && 'Selecciona un modo de dibujo para trazar un área personalizada.'}
-        </span>
+        <span>{getHint()}</span>
       </div>
     </div>
   );

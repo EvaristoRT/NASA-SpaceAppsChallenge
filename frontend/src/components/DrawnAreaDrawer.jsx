@@ -13,6 +13,7 @@ import {
   Compass
 } from 'lucide-react';
 import { formatCoords } from '../utils/geoUtils';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function DrawnAreaDrawer({
   drawnData, // { type, coords, area, perimeter, bounds, center, coveredCountries }
@@ -20,6 +21,7 @@ export default function DrawnAreaDrawer({
   onFocusArea,
   onClear
 }) {
+  const { lang, t } = useLanguage();
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedGeoJSON, setCopiedGeoJSON] = useState(false);
 
@@ -53,16 +55,16 @@ export default function DrawnAreaDrawer({
 
   const typeLabel =
     type === 'rectangle'
-      ? 'Rectángulo'
+      ? t('drawnAreaDrawer.types.rectangle')
       : type === 'polygon'
-      ? 'Polígono por Vértices'
-      : 'Forma Libre';
+      ? t('drawnAreaDrawer.types.polygon')
+      : t('drawnAreaDrawer.types.freehand');
 
   const handleCopyGeoJSON = () => {
     const geojson = {
       type: 'Feature',
       properties: {
-        name: 'Área Personalizada',
+        name: lang === 'es' ? 'Área Personalizada' : 'Custom Area',
         tipo: typeLabel,
         superficie_km2: Math.round(area),
         perimetro_km: Math.round(perimeter),
@@ -84,12 +86,12 @@ export default function DrawnAreaDrawer({
         <div className="zone-title-box">
           <div>
             <div className="zone-category-badge text-amber-400">
-              Área de Interés Manual ({typeLabel})
+              {t('drawnAreaDrawer.aoiTitle')} ({typeLabel})
             </div>
-            <h2 className="zone-title">Zona Trazada</h2>
+            <h2 className="zone-title">{t('drawnAreaDrawer.drawnZone')}</h2>
           </div>
         </div>
-        <button className="btn-close" onClick={onClose} aria-label="Cerrar detalles del área">
+        <button className="btn-close" onClick={onClose} aria-label={t('drawnAreaDrawer.close')}>
           <X size={18} />
         </button>
       </div>
@@ -100,16 +102,16 @@ export default function DrawnAreaDrawer({
           <div className="coords-info">
             <MapPin size={14} className="text-amber-400" />
             <span className="font-mono text-sm">
-              Centro: {formatCoords(center[1], center[0])}
+              {t('drawnAreaDrawer.center')}: {formatCoords(center[1], center[0])}
             </span>
           </div>
           <button
             className="btn-tiny"
             onClick={handleCopyCoords}
-            title="Copiar coordenadas del centro y Bounding Box"
+            title={t('drawnAreaDrawer.copyCoords')}
           >
             {copiedCoords ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-            <span>{copiedCoords ? 'Copiado' : 'Copiar'}</span>
+            <span>{copiedCoords ? t('zoneDrawer.copied') : t('zoneDrawer.copy')}</span>
           </button>
         </div>
 
@@ -118,7 +120,7 @@ export default function DrawnAreaDrawer({
           <div className="metric-card">
             <div className="metric-header">
               <Grid size={13} />
-              <span>Superficie Total</span>
+              <span>{t('drawnAreaDrawer.estimatedArea')}</span>
             </div>
             <div className="metric-value font-mono text-amber-300">{formattedArea}</div>
           </div>
@@ -126,7 +128,7 @@ export default function DrawnAreaDrawer({
           <div className="metric-card">
             <div className="metric-header">
               <Ruler size={13} />
-              <span>Perímetro</span>
+              <span>{t('drawnAreaDrawer.perimeter')}</span>
             </div>
             <div className="metric-value font-mono">{formattedPerimeter}</div>
           </div>
@@ -134,13 +136,13 @@ export default function DrawnAreaDrawer({
           <div className="metric-card full-width">
             <div className="metric-header">
               <Compass size={13} />
-              <span>Límites Geográficos (Bounding Box)</span>
+              <span>{lang === 'es' ? 'Límites Geográficos (Bounding Box)' : 'Geographic Limits (Bounding Box)'}</span>
             </div>
             <div className="bbox-grid font-mono text-xs">
               <div><strong>N:</strong> {bounds.maxLat.toFixed(2)}°</div>
               <div><strong>S:</strong> {bounds.minLat.toFixed(2)}°</div>
               <div><strong>E:</strong> {bounds.maxLng.toFixed(2)}°</div>
-              <div><strong>O:</strong> {bounds.minLng.toFixed(2)}°</div>
+              <div><strong>{lang === 'es' ? 'O:' : 'W:'}</strong> {bounds.minLng.toFixed(2)}°</div>
             </div>
           </div>
         </div>
@@ -149,7 +151,7 @@ export default function DrawnAreaDrawer({
         <div className="zone-section">
           <h4 className="section-title flex-center">
             <Globe2 size={14} className="text-amber-400 mr-1" />
-            Países / Regiones Abarcadas ({coveredCountries.length})
+            {t('drawnAreaDrawer.coveredCountries')} ({coveredCountries.length})
           </h4>
           {coveredCountries.length > 0 ? (
             <div className="tags-container">
@@ -161,7 +163,7 @@ export default function DrawnAreaDrawer({
             </div>
           ) : (
             <p className="zone-description italic text-xs text-slate-400">
-              No se detectaron capitales o centros de países reconocidos dentro del trazado (posible zona marítima, polar o desértica).
+              {t('drawnAreaDrawer.noCountriesDetected')}
             </p>
           )}
         </div>
@@ -170,18 +172,18 @@ export default function DrawnAreaDrawer({
         <div className="zone-actions-grid">
           <button className="action-btn primary" onClick={onFocusArea}>
             <Maximize2 size={15} />
-            <span>Enfocar Área</span>
+            <span>{t('drawnAreaDrawer.focusArea')}</span>
           </button>
 
           <button className="action-btn secondary" onClick={handleCopyGeoJSON}>
             {copiedGeoJSON ? <Check size={15} className="text-emerald-400" /> : <Share2 size={15} />}
-            <span>{copiedGeoJSON ? 'GeoJSON Copiado' : 'Exportar GeoJSON'}</span>
+            <span>{copiedGeoJSON ? (lang === 'es' ? 'GeoJSON Copiado' : 'GeoJSON Copied') : (lang === 'es' ? 'Exportar GeoJSON' : 'Export GeoJSON')}</span>
           </button>
         </div>
 
         <button className="btn-delete-drawing" onClick={onClear}>
           <Trash2 size={14} />
-          <span>Borrar este dibujo</span>
+          <span>{t('drawnAreaDrawer.clearArea')}</span>
         </button>
       </div>
     </div>

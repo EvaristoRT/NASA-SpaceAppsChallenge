@@ -14,6 +14,7 @@ import {
   Globe
 } from 'lucide-react';
 import { formatCoords } from '../utils/geoUtils';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ZoneDrawer({
   zone,
@@ -22,6 +23,7 @@ export default function ZoneDrawer({
   onStartOrbit,
   isOrbiting
 }) {
+  const { lang, t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
   if (!zone) return null;
@@ -34,19 +36,23 @@ export default function ZoneDrawer({
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const displayName = (lang === 'en' && zone.nativeName && zone.category === 'Continente')
+    ? zone.nativeName
+    : zone.name;
+
   return (
     <div className="zone-drawer panel">
       <div className="zone-drawer-header">
         <div className="zone-title-box">
           <div>
             <div className="zone-category-badge" data-category={zone.category}>{zone.category}</div>
-            <h2 className="zone-title">{zone.name}</h2>
-            {zone.nativeName && zone.nativeName !== zone.name && (
+            <h2 className="zone-title">{displayName}</h2>
+            {zone.nativeName && zone.nativeName !== displayName && (
               <span className="zone-native-title">{zone.nativeName}</span>
             )}
           </div>
         </div>
-        <button className="btn-close" onClick={onClose} aria-label="Cerrar panel">
+        <button className="btn-close" onClick={onClose} aria-label={t('zoneDrawer.close')}>
           <X size={18} />
         </button>
       </div>
@@ -63,10 +69,10 @@ export default function ZoneDrawer({
           <button
             className="btn-tiny"
             onClick={handleCopyCoords}
-            title="Copiar latitud y longitud"
+            title={t('zoneDrawer.copyCoords')}
           >
             {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-            <span>{copied ? 'Copiado' : 'Copiar'}</span>
+            <span>{copied ? t('zoneDrawer.copied') : t('zoneDrawer.copy')}</span>
           </button>
         </div>
 
@@ -76,7 +82,7 @@ export default function ZoneDrawer({
             <div className="metric-card">
               <div className="metric-header">
                 <Landmark size={13} />
-                <span>Capital</span>
+                <span>{t('zoneDrawer.capital')}</span>
               </div>
               <div className="metric-value">{zone.capital}</div>
             </div>
@@ -86,7 +92,7 @@ export default function ZoneDrawer({
             <div className="metric-card">
               <div className="metric-header">
                 <Globe size={13} />
-                <span>Continente</span>
+                <span>{t('zoneDrawer.continent')}</span>
               </div>
               <div className="metric-value">{zone.continent}</div>
             </div>
@@ -95,7 +101,7 @@ export default function ZoneDrawer({
           <div className="metric-card">
             <div className="metric-header">
               <Grid size={13} />
-              <span>Superficie</span>
+              <span>{t('zoneDrawer.area')}</span>
             </div>
             <div className="metric-value">{zone.area || 'N/A'}</div>
           </div>
@@ -103,7 +109,7 @@ export default function ZoneDrawer({
           <div className="metric-card">
             <div className="metric-header">
               <Users size={13} />
-              <span>Población</span>
+              <span>{t('zoneDrawer.population')}</span>
             </div>
             <div className="metric-value">{zone.population || 'N/A'}</div>
           </div>
@@ -111,15 +117,15 @@ export default function ZoneDrawer({
           <div className="metric-card full-width">
             <div className="metric-header">
               <Thermometer size={13} />
-              <span>Clima / Entorno</span>
+              <span>{t('zoneDrawer.climate')}</span>
             </div>
-            <div className="metric-value text-sm">{zone.climate || 'Variable'}</div>
+            <div className="metric-value text-sm">{zone.climate || t('zoneDrawer.variable')}</div>
           </div>
         </div>
 
         {/* Descripción */}
         <div className="zone-section">
-          <h4 className="section-title">Acerca de esta zona</h4>
+          <h4 className="section-title">{t('zoneDrawer.about')}</h4>
           <p className="zone-description">{zone.description}</p>
         </div>
 
@@ -128,7 +134,7 @@ export default function ZoneDrawer({
           <div className="zone-section">
             <h4 className="section-title flex-center">
               <Sparkles size={14} className="accent mr-1" />
-              Puntos Destacados
+              {t('zoneDrawer.highlights')}
             </h4>
             <div className="tags-container">
               {zone.highlights.map((highlight, idx) => (
@@ -144,7 +150,7 @@ export default function ZoneDrawer({
         <div className="zone-actions-grid">
           <button className="action-btn primary" onClick={() => onDeepZoom(zone)}>
             <Maximize2 size={15} />
-            <span>Zoom Detallado</span>
+            <span>{t('zoneDrawer.detailedZoom')}</span>
           </button>
 
           <button
@@ -152,7 +158,7 @@ export default function ZoneDrawer({
             onClick={() => onStartOrbit(zone)}
           >
             <Orbit size={15} />
-            <span>{isOrbiting ? 'Detener Órbita' : 'Orbitar en 3D'}</span>
+            <span>{isOrbiting ? t('zoneDrawer.stopOrbit') : t('zoneDrawer.orbit3D')}</span>
           </button>
         </div>
       </div>

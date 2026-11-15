@@ -6,6 +6,7 @@ import {
   X
 } from 'lucide-react';
 import { ZONES } from '../data/zonesData';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function SidebarZones({
   isOpen,
@@ -13,6 +14,7 @@ export default function SidebarZones({
   selectedZone,
   onSelectZone
 }) {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
 
   // Solo países, de la A a la Z (los continentes se buscan desde la barra superior o se eligen en el globo)
@@ -27,6 +29,7 @@ export default function SidebarZones({
     return countries.filter(
       (zone) =>
         zone.name.toLowerCase().includes(q) ||
+        (zone.nativeName && zone.nativeName.toLowerCase().includes(q)) ||
         (zone.capital && zone.capital.toLowerCase().includes(q)) ||
         (zone.continent && zone.continent.toLowerCase().includes(q))
     );
@@ -37,9 +40,9 @@ export default function SidebarZones({
       <div className="sidebar-header">
         <div className="sidebar-title-group">
           <Layers size={18} className="accent" />
-          <h3 className="sidebar-title">Explorador de países</h3>
+          <h3 className="sidebar-title">{t('sidebarZones.title')}</h3>
         </div>
-        <button className="btn-close" onClick={onClose} aria-label="Cerrar barra lateral">
+        <button className="btn-close" onClick={onClose} aria-label={t('sidebarZones.closeSidebar')}>
           <X size={18} />
         </button>
       </div>
@@ -49,13 +52,13 @@ export default function SidebarZones({
         <Search size={15} className="search-icon" />
         <input
           type="text"
-          placeholder="Buscar país, capital o continente..."
+          placeholder={t('sidebarZones.searchPlaceholder')}
           className="sidebar-search-input"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         {searchTerm && (
-          <button className="clear-btn" onClick={() => setSearchTerm('')}>
+          <button className="clear-btn" onClick={() => setSearchTerm('')} title={t('sidebarZones.clear')}>
             <X size={12} />
           </button>
         )}
@@ -65,7 +68,7 @@ export default function SidebarZones({
       <div className="zones-list-container">
         {filteredZones.length === 0 ? (
           <div className="no-results">
-            <p>No se encontraron países con ese término.</p>
+            <p>{t('sidebarZones.noZonesFound')}</p>
           </div>
         ) : (
           filteredZones.map((zone) => {
@@ -89,7 +92,7 @@ export default function SidebarZones({
 
       <div className="sidebar-footer">
         <span className="sidebar-count">
-          {filteredZones.length} {filteredZones.length === 1 ? 'país' : 'países'}
+          {filteredZones.length} {t(filteredZones.length === 1 ? 'sidebarZones.countOne' : 'sidebarZones.countMany')}
         </span>
       </div>
     </aside>

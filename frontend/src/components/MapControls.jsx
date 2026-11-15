@@ -10,6 +10,7 @@ import {
   Layers3,
   Globe2
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function MapControls({
   onZoomIn,
@@ -24,6 +25,7 @@ export default function MapControls({
   isTilted,
   selectedZone
 }) {
+  const { t } = useLanguage();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -44,6 +46,10 @@ export default function MapControls({
     }
   };
 
+  const orbitTitle = selectedZone
+    ? t('mapControls.orbitAround', { name: selectedZone.name })
+    : t('mapControls.selectZoneToOrbit');
+
   return (
     <div className="map-controls-container">
       {/* Zoom Controls */}
@@ -51,8 +57,8 @@ export default function MapControls({
         <button
           className="control-btn"
           onClick={onZoomIn}
-          title="Acercar zoom (+)"
-          aria-label="Acercar"
+          title={t('mapControls.zoomIn')}
+          aria-label={t('mapControls.zoomInAria')}
         >
           <Plus size={18} />
         </button>
@@ -60,8 +66,8 @@ export default function MapControls({
         <button
           className="control-btn"
           onClick={onZoomOut}
-          title="Alejar zoom (-)"
-          aria-label="Alejar"
+          title={t('mapControls.zoomOut')}
+          aria-label={t('mapControls.zoomOutAria')}
         >
           <Minus size={18} />
         </button>
@@ -72,8 +78,8 @@ export default function MapControls({
         <button
           className="control-btn"
           onClick={onResetNorth}
-          title="Orientar al Norte (0°)"
-          aria-label="Orientar al Norte"
+          title={t('mapControls.resetNorth')}
+          aria-label={t('mapControls.resetNorthAria')}
         >
           <Compass size={18} />
         </button>
@@ -81,8 +87,8 @@ export default function MapControls({
         <button
           className={`control-btn ${isTilted ? 'active' : ''}`}
           onClick={onTogglePitch}
-          title={isTilted ? 'Vista Cenital Plana (0°)' : 'Vista Perspectiva 3D (60°)'}
-          aria-label="Alternar inclinación 3D"
+          title={isTilted ? t('mapControls.zenithView') : t('mapControls.perspective3D')}
+          aria-label={t('mapControls.togglePitchAria')}
         >
           <Layers3 size={18} />
         </button>
@@ -90,8 +96,8 @@ export default function MapControls({
         <button
           className="control-btn"
           onClick={onResetView}
-          title="Vista Global Completa"
-          aria-label="Restaurar vista global"
+          title={t('mapControls.resetView')}
+          aria-label={t('mapControls.resetViewAria')}
         >
           <Globe2 size={18} />
         </button>
@@ -102,8 +108,8 @@ export default function MapControls({
         <button
           className={`control-btn ${autoSpin ? 'active' : ''}`}
           onClick={onToggleAutoSpin}
-          title={autoSpin ? 'Detener rotación automática' : 'Iniciar rotación continua'}
-          aria-label="Rotación automática"
+          title={autoSpin ? t('mapControls.stopAutoSpin') : t('mapControls.startAutoSpin')}
+          aria-label={t('mapControls.autoSpinAria')}
         >
           <RotateCw size={18} className={autoSpin ? 'spinning' : ''} />
         </button>
@@ -111,12 +117,8 @@ export default function MapControls({
         <button
           className={`control-btn ${orbitMode ? 'active' : ''}`}
           onClick={onToggleOrbit}
-          title={
-            selectedZone
-              ? `Orbitar alrededor de ${selectedZone.name}`
-              : 'Selecciona una zona para orbitar alrededor de ella'
-          }
-          aria-label="Modo órbita cinemática"
+          title={orbitTitle}
+          aria-label={t('mapControls.orbitAria')}
         >
           <Orbit size={18} className={orbitMode ? 'pulsing' : ''} />
         </button>
@@ -124,8 +126,8 @@ export default function MapControls({
         <button
           className="control-btn"
           onClick={toggleFullscreen}
-          title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-          aria-label="Pantalla completa"
+          title={isFullscreen ? t('mapControls.exitFullscreen') : t('mapControls.fullscreen')}
+          aria-label={t('mapControls.fullscreenAria')}
         >
           {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
         </button>

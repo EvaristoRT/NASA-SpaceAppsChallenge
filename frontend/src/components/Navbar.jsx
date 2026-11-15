@@ -5,9 +5,11 @@ import {
   Search,
   ChevronDown,
   Menu,
-  Pencil
+  Pencil,
+  Languages
 } from 'lucide-react';
 import { MAP_STYLES, ZONES } from '../data/zonesData';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Navbar({
   currentStyleId,
@@ -20,6 +22,7 @@ export default function Navbar({
   isDrawOpen,
   onToggleDraw
 }) {
+  const { lang, setLang, t, getStyleText } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [showStyleDropdown, setShowStyleDropdown] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -53,6 +56,7 @@ export default function Navbar({
   }, []);
 
   const activeStyle = MAP_STYLES.find((s) => s.id === currentStyleId) || MAP_STYLES[0];
+  const activeStyleText = getStyleText(activeStyle.id);
 
   const handleSelectSearchResult = (zone) => {
     onSelectZone(zone);
@@ -67,8 +71,8 @@ export default function Navbar({
         <button
           className={`btn-icon-toggle ${isSidebarOpen ? 'active' : ''}`}
           onClick={onToggleSidebar}
-          title="Alternar panel de zonas"
-          aria-label="Abrir explorador de zonas"
+          title={t('navbar.toggleSidebar')}
+          aria-label={t('navbar.openExplorer')}
         >
           <Menu size={20} />
         </button>
@@ -78,7 +82,7 @@ export default function Navbar({
           <img className="brand-symbol" src="/brand/space-apps-symbol-white.svg" alt="" width="40" height="40" onError={(e) => { e.currentTarget.style.display = "none"; }} />
           <div className="brand-texts">
             <span className="brand-name">IgnisSync</span>
-            <span className="brand-tag">NASA Space Apps 2026 · Boca del Río</span>
+            <span className="brand-tag">{t('navbar.brandTag')}</span>
           </div>
         </div>
       </div>
@@ -89,7 +93,7 @@ export default function Navbar({
           <Search size={16} className="search-icon" />
           <input
             type="text"
-            placeholder="Buscar país (ej. México, España, Japón...), capital o continente..."
+            placeholder={t('navbar.searchPlaceholder')}
             className="navbar-search-input"
             value={searchQuery}
             onChange={(e) => {
@@ -122,37 +126,65 @@ export default function Navbar({
         )}
       </div>
 
-      {/* Right Controls: Map Style, Draw, 2D/3D Projection */}
+      {/* Right Controls: Language Tab, Map Style, Draw, 2D/3D Projection */}
       <div className="navbar-actions">
+        {/* Pestaña selectora de idioma (ES / EN) */}
+        <div className="language-tabs" role="tablist" aria-label={t('navbar.languageTab')}>
+          <Languages size={14} className="lang-icon" aria-hidden="true" />
+          <button
+            type="button"
+            role="tab"
+            aria-selected={lang === 'es'}
+            className={`lang-tab-pill ${lang === 'es' ? 'active' : ''}`}
+            onClick={() => setLang('es')}
+            title={t('navbar.langEsFull')}
+          >
+            {t('navbar.langEs')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={lang === 'en'}
+            className={`lang-tab-pill ${lang === 'en' ? 'active' : ''}`}
+            onClick={() => setLang('en')}
+            title={t('navbar.langEnFull')}
+          >
+            {t('navbar.langEn')}
+          </button>
+        </div>
+
         {/* Style Selector Dropdown */}
         <div className="style-selector-container" ref={styleDropdownRef}>
           <button
             className="style-dropdown-btn"
             onClick={() => setShowStyleDropdown(!showStyleDropdown)}
-            title="Cambiar estilo de mapa"
+            title={t('navbar.changeStyle')}
           >
-            <span className="style-name-text">{activeStyle.name}</span>
+            <span className="style-name-text">{activeStyleText.name}</span>
             <ChevronDown size={14} className="chevron-icon" />
           </button>
 
           {showStyleDropdown && (
             <div className="styles-menu-dropdown panel">
-              <div className="dropdown-header">Estilo de Cartografía</div>
-              {MAP_STYLES.map((style) => (
-                <div
-                  key={style.id}
-                  className={`style-menu-item ${currentStyleId === style.id ? 'active' : ''}`}
-                  onClick={() => {
-                    onSelectStyle(style.id);
-                    setShowStyleDropdown(false);
-                  }}
-                >
-                  <div className="style-item-desc">
-                    <span className="style-item-name">{style.name}</span>
-                    <span className="style-item-detail">{style.description}</span>
+              <div className="dropdown-header">{t('navbar.cartographyStyle')}</div>
+              {MAP_STYLES.map((style) => {
+                const styleText = getStyleText(style.id);
+                return (
+                  <div
+                    key={style.id}
+                    className={`style-menu-item ${currentStyleId === style.id ? 'active' : ''}`}
+                    onClick={() => {
+                      onSelectStyle(style.id);
+                      setShowStyleDropdown(false);
+                    }}
+                  >
+                    <div className="style-item-desc">
+                      <span className="style-item-name">{styleText.name}</span>
+                      <span className="style-item-detail">{styleText.desc}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -161,20 +193,20 @@ export default function Navbar({
         <button
           className={`draw-toggle-btn ${isDrawOpen ? 'active' : ''}`}
           onClick={onToggleDraw}
-          title="Dibujar zona manualmente (forma libre o rectangular)"
+          title={t('navbar.drawTitle')}
         >
           <Pencil size={15} />
-          <span className="draw-btn-text">Dibujar Zona</span>
+          <span className="draw-btn-text">{t('navbar.drawButton')}</span>
         </button>
 
         {/* 2D / 3D Projection Toggle */}
         <button
           className={`projection-toggle-btn ${projection === 'globe' ? 'is-globe' : 'is-mercator'}`}
           onClick={onToggleProjection}
-          title={projection === 'globe' ? 'Cambiar a proyección plana 2D (Mercator)' : 'Cambiar a proyección esférica 3D (Globo)'}
+          title={projection === 'globe' ? t('navbar.switchTo2D') : t('navbar.switchTo3D')}
         >
           {projection === 'globe' ? <Globe size={16} /> : <MapIcon size={16} />}
-          <span className="projection-pill-text">{projection === 'globe' ? 'Globo 3D' : 'Plano 2D'}</span>
+          <span className="projection-pill-text">{projection === 'globe' ? t('navbar.globe3D') : t('navbar.map2D')}</span>
         </button>
       </div>
     </header>

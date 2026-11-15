@@ -17,6 +17,12 @@ ya no están en `zonesData.js`, ni en el GeoJSON, ni en los colores del mapa. El
 capital o continente) y el continente como texto secundario; sin pestañas ni categorías. Los continentes siguen en el mapa (contorno y etiqueta) y se encuentran
 desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve a generar las zonas.
 
+## Idioma y relieve (rama `view_tests`, de Mauricio, integrada)
+- **Idioma:** `src/context/LanguageContext.jsx` (español por defecto, inglés, se recuerda en `localStorage`) y `src/i18n/translations.js`; selector ES/EN en la barra superior.
+  Se traduce la interfaz; **los nombres de países, capitales y continentes siguen en español** (solo el nombre del continente usa `nativeName` en inglés).
+  Al cambiar el texto del explorador, editar las dos lenguas en `translations.js` (`sidebarZones`).
+- **Relieve:** `applyTerrain` en `Globe.jsx` activa Mapbox Terrain-DEM en los estilos Satélite (exageración 1.35) y Relieve (1.95).
+
 ## Colores del mapa (en `Globe.jsx` y en `App.css`; si cambian en uno, cambiar el otro)
 - **Amarillo neón** = lo activo: zona seleccionada, área que se dibuja, herramienta activa, fila seleccionada, controles encendidos.
 - **Blanco** = hover. **Verde** = primer vértice del polígono y "Cerrar polígono". **Rojo** = destructivo.
