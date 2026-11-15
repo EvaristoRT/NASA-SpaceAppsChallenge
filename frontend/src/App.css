@@ -72,14 +72,17 @@
   color: #ffffff;
 }
 
-/* Patrón oficial Orbits sobre el azul. Los PNG de public/brand son versiones para pantalla: líneas blancas más gruesas
-   sobre transparente (los originales de 1 px casi desaparecen al reducirlos), por eso van sin mezcla ni inversión. */
+/* Patrón oficial Orbits sobre el azul. Los PNG de public/brand son versiones para pantalla (blanco sobre transparente,
+   doble densidad, ver tools/make_patterns.py), por eso van sin mezcla ni inversión. */
 .navbar::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: url('/brand/orbits.png') center / 1400px auto no-repeat;
-  opacity: 0.4;
+  background: url('/brand/orbits.png') center / 1200px auto no-repeat;
+  opacity: 0.35;
+  /* se desvanece detrás de la marca y el texto, a la izquierda, para que se lea bien */
+  -webkit-mask-image: linear-gradient(to right, transparent 12%, #000 55%);
+  mask-image: linear-gradient(to right, transparent 12%, #000 55%);
   pointer-events: none;
 }
 
@@ -1105,8 +1108,11 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: center / 900px auto no-repeat;
-  opacity: 0.4;
+  background: center / 1000px auto no-repeat;
+  opacity: 0.35;
+  /* las líneas se desvanecen hacia el título (izquierda) para que no estorben al texto */
+  -webkit-mask-image: linear-gradient(to right, transparent 25%, #000 90%);
+  mask-image: linear-gradient(to right, transparent 25%, #000 90%);
   pointer-events: none;
 }
 
