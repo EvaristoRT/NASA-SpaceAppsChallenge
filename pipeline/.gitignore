@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Environment and sensitive data
+.env
+credentials/
+*.json
+
+# Local data cache and processed output
+data/cache/*
+data/output/*
+*.parquet
+*.duckdb
+*.csv
+*.zip
+*.tar.gz
+
+# IDE
+.vscode/
+.idea/
