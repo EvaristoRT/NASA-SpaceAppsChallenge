@@ -43,7 +43,7 @@
 ### Dev A — MODIS + tabla de calibración (Romero)
 1. ~~Descargar MODIS 2000–2025~~ ✅ ya está (global, todos los países).
 2. Escribir y probar el script de conversión `scripts/01_to_parquet.py` (lo usa también Dev B). Probar primero con un año.
-3. Convertir **todo MODIS, global** → `bronze/sensor=MODIS/`.
+3. ~~Convertir **todo MODIS, global** → `bronze/sensor=MODIS/`~~ ✅ (111.4 M focos, 2000-11-01 a 2025-12-31).
 4. Revisión de calidad de MODIS (`scripts/02_qa.py`): años completos, duplicados, nulos, rangos de fecha por satélite.
 5. Cuando tenga el bronze de VIIRS de Dev B: armar la **capa silver** (`03_silver.py`) y la **tabla de calibración** (`04_calibration_set.py`), y repartirla.
 6. Al final, con el modelo de Dev C: aplicar a 2001–2011 y exportar `harmonized.parquet` (`06_apply_gold.py`, `07_export.py`).
@@ -103,8 +103,22 @@
 ## Contratos (las columnas que todos usan)
 
 ### Bronze — un registro por foco
-`sensor, satellite, source, acq_date, acq_time, latitude, longitude, bright_mir, bright_tir, frp, confidence_raw, confidence_level, scan, track, daynight, type, year`
-Particionado por `sensor` y `year`. `source` = `archive` o `nrt`.
+`sensor, satellite, source, version, country, acq_date, acq_time, acq_datetime_utc, latitude, longitude, bright_mir, bright_tir, frp, confidence_raw, confidence_level, scan, track, daynight, type, year`
+- Un archivo por zip: `bronze/sensor=MODIS/year=2005/modis.parquet`, `bronze/sensor=VIIRS/year=2015/viirs-snpp.parquet`, `.../viirs-jpss1.parquet`.
+- `satellite`: `Terra`, `Aqua`, `S-NPP`, `NOAA-20`, `NOAA-21`. `source` = `archive` o `nrt`. `country` sale del nombre del CSV.
+- Leer: `read_parquet('bronze/**/*.parquet', hive_partitioning=true)`.
+
+**Cómo correr la conversión** (Windows, desde la raíz del repo):
+```powershell
+py -m venv .venv
+.venv\Scripts\python -m pip install -r pipeline\requirements.txt
+$env:FIRE_DATA_DIR = "C:\ruta\a\tus\zips"          # busca los zips en subcarpetas
+.venv\Scripts\python pipeline\scripts\01_to_parquet.py --sensor MODIS
+.venv\Scripts\python pipeline\scripts\01_to_parquet.py --product viirs-snpp
+.venv\Scripts\python pipeline\scripts\01_to_parquet.py --product viirs-jpss1 --years 2018-2025
+```
+Si se interrumpe, se vuelve a correr y salta lo ya convertido (`--overwrite` para rehacer).
+Referencia (12 núcleos): MODIS completo 4.5 min (111 M focos, 1.5 GB); un año de VIIRS S-NPP ≈ 40 s (≈ 21 M focos, 340 MB).
 
 ### Tabla de calibración — una fila por hexágono r5 × mes (2012–2025)
 | columna | tipo | qué es |
@@ -132,9 +146,8 @@ Ya limpios (sin volcanes, offshore ni confianza `low`), ordenados por `h3_r6, ac
 ```
 pipeline/
 ├── PLAN_EQUIPO.md        ← este archivo
-├── config.py             ← lee FIRE_DATA_DIR y la región
-├── scripts/
-│   ├── 01_to_parquet.py
+├── scripts/              ← cada script lee FIRE_DATA_DIR (y --region a partir de silver)
+│   ├── 01_to_parquet.py  ✅
 │   ├── 02_qa.py
 │   ├── 03_silver.py
 │   ├── 04_calibration_set.py
