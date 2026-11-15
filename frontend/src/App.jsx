@@ -6,6 +6,8 @@ import InfoPanel from './components/InfoPanel';
 import DrawToolbar from './components/DrawToolbar';
 import MapControls from './components/MapControls';
 import CoordinatesHUD from './components/CoordinatesHUD';
+import ActivityLegend from './components/ActivityLegend';
+import { useActivity } from './utils/useActivity';
 import { MAP_STYLES, ZONES } from './data/zonesData';
 import { continentIdOf } from './utils/continents';
 import { AlertCircle, X } from 'lucide-react';
@@ -45,6 +47,16 @@ function MainApp() {
     pitch: 0,
     bearing: 0
   });
+
+  // Mes elegido en el calendario para pintar su actividad en el mapa: { key, year, month (0-11) }. `key` identifica la zona o el área
+  // para la que se eligió; si la zona cambia, el mes se descarta (el calendario y la capa siempre hablan de lo mismo).
+  const [activeMonth, setActiveMonth] = useState(null);
+  const monthScope = drawnArea ? `area:${(drawnArea.center || []).join(',')}` : selectedZone?.id ?? null;
+  if (activeMonth && activeMonth.key !== monthScope) setActiveMonth(null);
+  const selectedMonth = activeMonth && activeMonth.key === monthScope ? activeMonth : null;
+  const activity = useActivity(selectedZone, drawnArea, selectedMonth);
+  const handleSelectMonth = (year, month) =>
+    setActiveMonth((prev) => (prev && prev.year === year && prev.month === month && prev.key === monthScope ? null : { key: monthScope, year, month }));
 
   // Notificación de error de Mapbox
   const [mapError, setMapError] = useState(null);
@@ -237,6 +249,7 @@ function MainApp() {
         onMapError={(err) => setMapError(err)}
         onCameraSettled={() => setPanelReady(true)}
         onFlightChange={setIsFlying}
+        activity={activity}
       />
 
       {/* Barra de herramientas flotante de dibujo (tipo Paint) */}
@@ -281,8 +294,13 @@ function MainApp() {
           isOrbiting={orbitMode}
           onFocusArea={handleFocusDrawnArea}
           onClearArea={handleClearDrawing}
+          selectedMonth={selectedMonth}
+          onSelectMonth={handleSelectMonth}
         />
       )}
+
+      {/* Leyenda de la capa de actividad del mes elegido */}
+      <ActivityLegend month={selectedMonth} activity={activity} onClear={() => setActiveMonth(null)} />
 
       {/* Controles de cámara flotantes */}
       <MapControls

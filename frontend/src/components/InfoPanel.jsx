@@ -22,7 +22,9 @@ export default function InfoPanel({
   onStartOrbit,
   isOrbiting,
   onFocusArea,
-  onClearArea
+  onClearArea,
+  selectedMonth,
+  onSelectMonth
 }) {
   const { lang, t } = useLanguage();
   const [tab, setTab] = useState('main');
@@ -105,7 +107,7 @@ export default function InfoPanel({
       </div>
 
       {tab === 'analysis' ? (
-        <AnalysisView zone={zone} drawnArea={drawnArea} />
+        <AnalysisView zone={zone} drawnArea={drawnArea} selectedMonth={selectedMonth} onSelectMonth={onSelectMonth} />
       ) : isArea ? (
         <AreaSummary drawnData={drawnArea} onFocusArea={onFocusArea} onClear={onClearArea} />
       ) : (

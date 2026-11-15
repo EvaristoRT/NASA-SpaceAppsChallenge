@@ -2,23 +2,7 @@ import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAnalysis } from '../utils/useAnalysis';
 
-// Rampa térmica (Inferno) para los días con fuego. Cero = "sin fuego" (color propio, no el primer color de la rampa).
-const INFERNO = ['#000004', '#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#f7d13d', '#fcffa4'];
-const FLOOR = 0.2; // las rampas oscuras empiezan más arriba para no confundirse con el fondo azul oscuro
-
-function hexToRgb(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-function ramp(t) {
-  const x = Math.min(1, Math.max(0, t)) * (INFERNO.length - 1);
-  const i = Math.min(INFERNO.length - 2, Math.floor(x));
-  const a = hexToRgb(INFERNO[i]);
-  const b = hexToRgb(INFERNO[i + 1]);
-  const f = x - i;
-  return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(',')})`;
-}
+import { FLOOR, ramp, rampGradient } from '../utils/fireRamp';
 
 // Raíz cuadrada para que los meses con pocos focos no desaparezcan frente al pico
 const cellColor = (value, max) => (value <= 0 ? 'var(--no-fire)' : ramp(FLOOR + (1 - FLOOR) * Math.sqrt(Math.min(value / max, 1))));
@@ -26,7 +10,7 @@ const textOn = (value, max) => (FLOOR + (1 - FLOOR) * Math.sqrt(Math.min(value /
 
 // Panel de análisis de la zona o el área trazada. Por ahora con DATOS DE DEMOSTRACIÓN (ver utils/demoAnalysis.js):
 // sirve para ir definiendo cómo se despliega el calendario de quemas y el resto de los datos.
-export default function AnalysisView({ zone, drawnArea }) {
+export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectMonth }) {
   const { lang, t } = useLanguage();
 
   const seed = drawnArea ? `area:${Math.round(drawnArea.center?.[0] ?? 0)}:${Math.round(drawnArea.center?.[1] ?? 0)}` : zone?.id;
@@ -44,6 +28,48 @@ export default function AnalysisView({ zone, drawnArea }) {
   const monthsLong = t('analysis.monthsLong');
   const years = [];
   for (let y = data.firstYear; y <= data.lastYear; y++) years.push(y);
+
+  // Con datos reales los meses con dato armonizado y completos se pueden elegir (con la demostración no hay mapa que pintar)
+  const interactive = !data.synthetic && typeof onSelectMonth === 'function';
+  // Un solo punto de tabulación en el calendario: el mes elegido o, si no hay, el último mes elegible
+  let tabY = null;
+  let tabM = null;
+  if (interactive) {
+    if (selectedMonth) {
+      tabY = selectedMonth.year;
+      tabM = selectedMonth.month;
+    } else {
+      for (const y of years) {
+        data.calendar[y].forEach((v, m) => {
+          if (v !== null && !data.partial?.[y]?.[m]) {
+            tabY = y;
+            tabM = m;
+          }
+        });
+      }
+    }
+  }
+  // Flechas para moverse entre los meses elegibles
+  const moveFocus = (e) => {
+    const step = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }[e.key];
+    const from = e.target.closest?.('[data-y]');
+    if (!step || !from) return;
+    e.preventDefault();
+    let y = Number(from.dataset.y);
+    let m = Number(from.dataset.m);
+    for (let i = 0; i < 400; i++) {
+      m += step[1];
+      y += step[0];
+      if (m < 0) { m = 11; y -= 1; }
+      if (m > 11) { m = 0; y += 1; }
+      if (y < data.firstYear || y > data.lastYear) return;
+      const next = e.currentTarget.querySelector(`button[data-y="${y}"][data-m="${m}"]:not(:disabled)`);
+      if (next) {
+        next.focus();
+        return;
+      }
+    }
+  };
 
   const fmt = (n) => n.toLocaleString(lang === 'en' ? 'en-US' : 'es-MX');
   const ratioText = data.ratio === null ? '—' : data.ratio.toFixed(1);
@@ -74,7 +100,7 @@ export default function AnalysisView({ zone, drawnArea }) {
           <p className="analysis-statement">{statement}</p>
 
           <figure className="analysis-figure">
-            <div className="cal" role="img" aria-label={t('analysis.calendarLabel')}>
+            <div className="cal" role={interactive ? 'group' : 'img'} aria-label={t('analysis.calendarLabel')} onKeyDown={interactive ? moveFocus : undefined}>
               <span />
               {months.map((m) => (
                 <span key={m} className="cal-axis">{m}</span>
@@ -83,18 +109,38 @@ export default function AnalysisView({ zone, drawnArea }) {
                 <React.Fragment key={y}>
                   <span className="cal-axis">{y}</span>
                   {data.calendar[y].map((v, m) => {
-                    if (v === null) return <span key={m} className="cal-cell" />;
+                    // Sin dato armonizado (antes de nov. 2000, meses futuros): apagado y sin clic
+                    if (v === null) return <span key={m} className="cal-cell" title={interactive ? t('analysis.noMonthData') : undefined} />;
                     const now = y === data.lastYear && m === data.currentMonth;
                     const isPeak = y === data.peak.year && m === data.peak.month;
+                    const title = `${months[m]} ${y}: ${t('analysis.cellTitle', { days: v })}`;
+                    const style = { background: cellColor(v, data.max), color: textOn(v, data.max) };
+                    if (!interactive) {
+                      return (
+                        <span key={m} className={`cal-cell filled${now ? ' now' : ''}`} style={style} title={title}>
+                          {isPeak ? v : ''}
+                        </span>
+                      );
+                    }
+                    // Mes en curso incompleto: se ve, pero no se puede elegir
+                    const locked = Boolean(data.partial?.[y]?.[m]);
+                    const picked = selectedMonth && selectedMonth.year === y && selectedMonth.month === m;
                     return (
-                      <span
+                      <button
                         key={m}
-                        className={`cal-cell filled${now ? ' now' : ''}`}
-                        style={{ background: cellColor(v, data.max), color: textOn(v, data.max) }}
-                        title={`${months[m]} ${y}: ${t('analysis.cellTitle', { days: v })}`}
+                        type="button"
+                        data-y={y}
+                        data-m={m}
+                        className={`cal-cell filled${now ? ' now' : ''}${locked ? ' locked' : ' pick'}${picked ? ' picked' : ''}`}
+                        style={style}
+                        title={locked ? `${months[m]} ${y}: ${t('analysis.monthIncomplete')}` : title}
+                        disabled={locked}
+                        aria-pressed={locked ? undefined : Boolean(picked)}
+                        tabIndex={y === tabY && m === tabM ? 0 : -1}
+                        onClick={() => onSelectMonth(y, m)}
                       >
                         {isPeak ? v : ''}
-                      </span>
+                      </button>
                     );
                   })}
                 </React.Fragment>
@@ -105,12 +151,20 @@ export default function AnalysisView({ zone, drawnArea }) {
               <span className="cal-axis">0</span>
               <div
                 className="cal-ramp"
-                style={{ background: `linear-gradient(90deg, ${Array.from({ length: 12 }, (_, i) => ramp(FLOOR + ((1 - FLOOR) * i) / 11)).join(',')})` }}
+                style={{ background: rampGradient() }}
               />
               <span className="cal-axis">
                 {data.max}+ ({t('analysis.maxLabel')}: {data.peak.value}, {months[data.peak.month]} {data.peak.year})
               </span>
             </div>
+
+            {interactive && (
+              <p className="analysis-pick">
+                {selectedMonth
+                  ? t('analysis.pickShown', { month: monthsLong[selectedMonth.month], year: selectedMonth.year })
+                  : t('analysis.pickHint')}
+              </p>
+            )}
 
             <figcaption className="analysis-caption">
               <b>{t('analysis.fig1')}</b>

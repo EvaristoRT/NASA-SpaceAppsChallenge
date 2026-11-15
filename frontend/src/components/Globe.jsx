@@ -5,6 +5,7 @@ import { ZONES, MAP_STYLES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
 import { continentIdOf } from '../utils/continents';
+import { fireColorExpression } from '../utils/fireRamp';
 import { zoneByIso, zoneFilter, isoListOf, WORLDVIEW_FILTER } from '../utils/countryIso';
 import {
   calculatePolygonArea,
@@ -43,7 +44,8 @@ const Globe = forwardRef(function Globe(
     onUpdateHUD,
     onMapError,
     onCameraSettled,
-    onFlightChange
+    onFlightChange,
+    activity
   },
   ref
 ) {
@@ -81,6 +83,8 @@ const Globe = forwardRef(function Globe(
   const projectionRef = useRef(projection);
   const orbitBearingRef = useRef(0);
   const hoveredZoneIdRef = useRef('');
+  // Última actividad mensual recibida: se vuelve a dibujar tras cada cambio de vista (setStyle borra las capas)
+  const activityRef = useRef(activity);
   // Hover fluido: códigos ISO con el estado de hover encendido, y temporizadores para procesarlo una vez por cuadro
   const hoverIsosRef = useRef([]);
   const hoverEventRef = useRef(null);
@@ -757,6 +761,49 @@ const Globe = forwardRef(function Globe(
     applyZoneHighlight(map, 'highlight', selectedZoneRef.current);
   };
 
+  // Capa de actividad del mes elegido: hexágonos H3 con fuego, coloreados con la misma rampa del calendario.
+  // Va debajo de las fronteras para que sigan visibles; aparece con un fundido corto.
+  const EMPTY_COLLECTION = { type: 'FeatureCollection', features: [] };
+  const activityCollection = (act) => (act && act.data && act.data.features ? { type: 'FeatureCollection', features: act.data.features } : EMPTY_COLLECTION);
+
+  const setupActivityLayers = (map) => {
+    if (!map) return;
+    ['fire-activity-line', 'fire-activity-fill'].forEach((id) => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    if (map.getSource('fire-activity')) map.removeSource('fire-activity');
+
+    map.addSource('fire-activity', { type: 'geojson', data: activityCollection(activityRef.current) });
+    const before = map.getLayer('zones-fill') ? 'zones-fill' : undefined;
+    map.addLayer(
+      {
+        id: 'fire-activity-fill',
+        type: 'fill',
+        source: 'fire-activity',
+        paint: { 'fill-color': fireColorExpression, 'fill-opacity': 0, 'fill-opacity-transition': { duration: 400, delay: 0 } }
+      },
+      before
+    );
+    map.addLayer(
+      {
+        id: 'fire-activity-line',
+        type: 'line',
+        source: 'fire-activity',
+        // Un hexágono de ~36 km² es menor que un píxel al alejar el mapa: el trazo, del mismo color, lo hace visible de lejos
+        // y se desvanece al acercar, donde el relleno ya se distingue.
+        paint: {
+          'line-color': fireColorExpression,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.8, 5, 1, 7, 0.5],
+          'line-opacity': 0,
+          'line-opacity-transition': { duration: 400, delay: 0 }
+        }
+      },
+      before
+    );
+    map.setPaintProperty('fire-activity-fill', 'fill-opacity', 0.85);
+    map.setPaintProperty('fire-activity-line', 'line-opacity', ['interpolate', ['linear'], ['zoom'], 3, 0.95, 7, 0.25]);
+  };
+
   // Capas para el trazado de dibujo manual (polígono, líneas guía y vértices)
   const setupDrawLayers = (map) => {
     if (!map) return;
@@ -878,6 +925,12 @@ const Globe = forwardRef(function Globe(
       setupZoneLayers(map);
     } catch (err) {
       console.warn('Error setting up zone layers:', err);
+    }
+
+    try {
+      setupActivityLayers(map);
+    } catch (err) {
+      console.warn('Error setting up activity layers:', err);
     }
 
     try {
@@ -1396,6 +1449,15 @@ const Globe = forwardRef(function Globe(
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  // Actividad del mes elegido: actualizar los hexágonos del mapa (vacío si no hay mes elegido o aún carga)
+  useEffect(() => {
+    activityRef.current = activity;
+    const map = mapRef.current;
+    const source = map && map.getSource ? map.getSource('fire-activity') : null;
+    if (source) source.setData(activityCollection(activity));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity]);
 
   // Cambiar estilo de cartografía de manera reactiva (solo si cambia tras el montaje)
   useEffect(() => {

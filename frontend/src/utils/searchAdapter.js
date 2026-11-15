@@ -25,11 +25,13 @@ export function adaptSearchResponse(response) {
   const source = {};
   const ci = {};
   const nrt = {};
+  const partial = {};
   for (let y = firstYear; y <= lastYear; y++) {
     calendar[y] = new Array(12).fill(null); // null = sin dato (meses futuros o fuera del rango)
     source[y] = new Array(12).fill(null);
     ci[y] = new Array(12).fill(null);
     nrt[y] = new Array(12).fill(false);
+    partial[y] = new Array(12).fill(false);
   }
 
   const yearTotals = {};
@@ -42,6 +44,7 @@ export function adaptSearchResponse(response) {
     source[p.year][p.month] = p.source ?? null;
     if (p.count_ci_lower != null && p.count_ci_upper != null) ci[p.year][p.month] = [p.count_ci_lower, p.count_ci_upper];
     if (p.is_nrt) nrt[p.year][p.month] = true;
+    if (p.is_partial) partial[p.year][p.month] = true; // mes en curso: no se puede elegir para el mapa
     total += value;
     monthTotals[p.month] += value;
     yearTotals[p.year] = (yearTotals[p.year] ?? 0) + value;
@@ -71,6 +74,7 @@ export function adaptSearchResponse(response) {
     // Nuevos (el panel aún no los dibuja): fuente por mes, banda de incertidumbre y meses preliminares
     source,
     ci,
-    nrt
+    nrt,
+    partial
   };
 }

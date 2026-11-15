@@ -4,7 +4,7 @@ import { buildDemoAnalysis } from './demoAnalysis';
 import { adaptSearchResponse } from './searchAdapter';
 
 // URL del backend (por ejemplo http://localhost:8000). Sin ella el panel sigue con los datos de demostración.
-const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+export const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 const closeRing = (coords) => {
   const first = coords[0];

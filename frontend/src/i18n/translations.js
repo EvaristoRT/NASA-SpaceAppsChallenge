@@ -151,6 +151,10 @@ export const translations = {
       loading: 'Cargando el análisis…',
       error: 'No se pudo cargar el análisis. Intenta de nuevo en unos minutos.',
       noData: 'Sin datos para esta zona. Por ahora solo hay análisis para Argentina y Chile.',
+      pickHint: 'Elige un mes para ver su actividad en el mapa.',
+      pickShown: 'Mostrando {month} {year} en el mapa.',
+      noMonthData: 'Sin datos armonizados para este mes',
+      monthIncomplete: 'mes en curso, todavía incompleto',
       collapse: 'Ocultar análisis',
       expand: 'Mostrar análisis',
       statementAbove: '{month} está {ratio}× por encima de lo normal.',
@@ -169,6 +173,16 @@ export const translations = {
       status: { normal: 'Normal', elevated: 'Elevado', low: 'Bajo' },
       monthsShort: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
       monthsLong: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    },
+    activity: {
+      close: 'Quitar la capa de actividad',
+      loading: 'Cargando la actividad…',
+      error: 'No se pudo cargar la actividad de este mes.',
+      empty: 'Sin fuego en este mes dentro de la zona.',
+      unit: 'Días-celda con fuego por hexágono (~36 km²), equivalente NOAA-20. No es número de incendios.',
+      summary: '{cells} hexágonos con fuego · {total} días-celda',
+      estimated: 'Estimado: antes de abril de 2018 no hay NOAA-20',
+      preliminary: 'Preliminar: NASA lo reemplaza en unos 5 meses'
     },
     panel: {
       tabSummary: 'Resumen',
@@ -334,6 +348,10 @@ export const translations = {
       loading: 'Loading the analysis…',
       error: 'The analysis could not be loaded. Try again in a few minutes.',
       noData: 'No data for this zone. For now the analysis only covers Argentina and Chile.',
+      pickHint: 'Pick a month to see its activity on the map.',
+      pickShown: 'Showing {month} {year} on the map.',
+      noMonthData: 'No harmonized data for this month',
+      monthIncomplete: 'current month, still incomplete',
       collapse: 'Hide analysis',
       expand: 'Show analysis',
       statementAbove: '{month} is {ratio}× above normal.',
@@ -352,6 +370,16 @@ export const translations = {
       status: { normal: 'Normal', elevated: 'Elevated', low: 'Low' },
       monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
       monthsLong: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    },
+    activity: {
+      close: 'Remove the activity layer',
+      loading: 'Loading activity…',
+      error: 'This month\'s activity could not be loaded.',
+      empty: 'No fire this month inside the zone.',
+      unit: 'Burning cell-days per hexagon (~36 km²), NOAA-20 equivalent. Not a number of fires.',
+      summary: '{cells} hexagons with fire · {total} cell-days',
+      estimated: 'Estimated: there is no NOAA-20 before April 2018',
+      preliminary: 'Preliminary: NASA replaces it in about 5 months'
     },
     panel: {
       tabSummary: 'Summary',
