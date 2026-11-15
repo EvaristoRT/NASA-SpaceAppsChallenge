@@ -20,7 +20,7 @@ El despliegue en Cloud Run queda para después (`DESPLIEGUE.md`). Argentina + Ch
 
 ## 2. Carlos — datos de América (bloquea todo lo demás)
 
-- [ ] **2026 de Norte y Centroamérica** con el `00b` corregido, cada zona en su carpeta (como hice con Europa):
+- [x] **2026 de Norte y Centroamérica** con el `00b` corregido, cada zona en su carpeta (como hice con Europa):
   ```bash
   BBOX="-170,14,-50,72" OUT="<FIRE_DATA_DIR>/datos_2026/api/zona_norte"  bash pipeline/scripts/00b_descargar_2026.sh
   BBOX="-95,5,-85,14"   OUT="<FIRE_DATA_DIR>/datos_2026/api/zona_centro" bash pipeline/scripts/00b_descargar_2026.sh
@@ -30,8 +30,8 @@ El despliegue en Cloud Run queda para después (`DESPLIEGUE.md`). Argentina + Ch
   `sudamerica` y al sur de `zona_centro`) y el **este de Groenlandia** (−50 a −30). El Caribe sí está cubierto: Cuba y las Antillas Mayores
   por `zona_norte` (≥ 14° N) y las Antillas Menores del sur por `sudamerica`. Para 2000–2025 no hay huecos (el bronze es global).
   Decidir si se baja una zona chica para Galápagos o se anota como limitación.
-- [ ] **Cadena:** `01 --years 2026` → `03 --region america` → `04` → `05` → `06` → `07 --zip`, todo con `--region america`.
-- [ ] **Industrias y mecheros de gas (importante para América).** En Europa la limpieza dejó pasar **737 celdas r8 industriales**
+- [x] **Cadena:** `01 --years 2026` → `03 --region america` → `04` → `05` → `06` → `07 --zip`, todo con `--region america`.
+- [x] **Industrias y mecheros de gas (importante para América).** En Europa la limpieza dejó pasar **737 celdas r8 industriales**
   (1.7% de los días-celda; acerías de Avilés, Gante y Alchevsk) porque FIRMS no las marca como `type` 2 (`REGIONES.md` §4, rama `datos/europa`).
   En América hay que revisar sobre todo los **mecheros de gas de Permian (Texas / Nuevo México), Bakken (Dakota del Norte), Alberta y el
   golfo de México**, y las refinerías y acerías.
@@ -39,18 +39,18 @@ El despliegue en Cloud Run queda para después (`DESPLIEGUE.md`). Argentina + Ch
   Si es más del ~1%, **reforzar la máscara del 03**: agregar las celdas r8 con fuego en ≥ N meses distintos repartidos en ≥ 10 años
   (N ≈ 60; ajustarlo mirando que no caigan zonas de quema agrícola reales), regenerar `aux/static_mask.parquet` y volver a correr 03 → 07.
   Con eso también quedan limpias Europa y Argentina + Chile.
-- [ ] **Validación de `america`** (`models/region=america/metrics.json`), comparada con las otras regiones:
+- [x] **Validación de `america`** (`models/region=america/metrics.json`), comparada con las otras regiones:
 
   | Región | Sesgo MODIS → NOAA-20 | Error mediano | r | Cobertura de la banda |
   |---|---|---|---|---|
   | Argentina + Chile | +1.9% | 8.7% | 0.995 | 95.7% |
   | Sudamérica | +7.3% | 5.9% | 0.996 | 95.7% |
   | Europa | −2.0% | 11.5% | 0.993 | 89.4% |
-  | **América** | | | | |
+  | **América** | **+5.4%** | **6.3%** | **0.995** | **97.9%** |
 
   Revisar también la deriva del factor por año y que **no haya saltos en 2002, 2012 y 2018** en la serie anual (como en Europa: llevar MODIS y
   S-NPP a NOAA-20 en 2012–2017 y ver que den lo mismo).
-- [ ] **Medir el tamaño de la entrega:** zips y pico de memoria del backend con `gold/entrega_america/`. Sudamérica sola da ~1.35 GB;
+- [x] **Medir el tamaño de la entrega:** zips y pico de memoria del backend con `gold/entrega_america/`. Sudamérica sola da ~1.35 GB;
   se espera 2–3 GB. En local alcanza; para Cloud Run es el dato que decide `--memory`.
 - [ ] **Pasarle la entrega a Evaristo** para la prueba local completa (sección 4). Por USB o red: la carpeta `gold/entrega_america/`.
 - [ ] **Lámina de validación para los jueces** (tarea C5): gráfica MODIS armonizado vs NOAA-20 de `america` y la tabla de arriba, con
@@ -78,3 +78,29 @@ Las tareas de Manuel van con detalle en `PLAN_INTEGRACION_WEB.md` (en `main`); a
 ## 5. Resultados
 
 _(Carlos y Evaristo anotan aquí: validación de `america`, celdas industriales, tamaños, backtest de la predicción y prueba local)_
+
+### 2026-11-15 · Carlos · datos y validación de `america`
+
+**2026:** `zona_norte` y `zona_centro` bajadas con el `00b` corregido (258 y 254 partes, sin errores). Días con focos de NOAA-20:
+319 en `zona_norte`, 319 en `sudamerica` y 289 en `zona_centro` (franja chica: hay días sin ningún fuego, no es hueco).
+Bronze 2026: 8.4 M de focos. **Galápagos y el este de Groenlandia** quedan sin 2026: se anotan como limitación (casi no tienen fuegos
+de vegetación; en Galápagos lo que hay es sobre todo volcánico, que la limpieza quita igual).
+
+**Cadena `america`:** silver ~100 M focos limpios · calibración 6.9 M filas, 125,636 hex r5 · `k_modis` 2.64 [2.57–2.70] ·
+`k_snpp` 1.01 · `f_terra` 2.63. Validación en la tabla de la sección 2. S-NPP → NOAA-20: sesgo −1.1%, error mediano 2.1%, r 0.990.
+
+**Por franja de latitud** (mismo modelo): boreal > 50° N factor 2.27, sesgo +6.9%, error mediano 12.6%, r 0.992 ·
+EE. UU. y México 2.66, −1.1%, 7.3%, 0.993 · Sudamérica 2.66, +7.3%, 6.0%, 0.996. Los factores por H3 res 3 capturan la diferencia boreal.
+
+**Saltos en 2002 / 2012 / 2018:** no hay. En 2013–2017 (sin NOAA-20) el mismo año llevado a NOAA-20 por MODIS y por S-NPP da
+−0.1%, −3.2%, +1.3%, +0.8%, +4.4%. Deriva anual de `k_modis`: 2.49–2.72, sin tendencia.
+
+**Industrias y mecheros:** celdas r8 con fuego en ≥ 60 meses y ≥ 10 años = 1,388 celdas, **0.37%** de los días-celda (≥ 36 meses: 0.84%;
+≥ 100 meses: 0.06%). Debajo del umbral de 1%: **no se refuerza la máscara**. Los primeros son industriales (Cleveland, Coatzacoalcos,
+Mobile); los mecheros de Permian, Bakken y Alberta casi no aparecen porque FIRMS ya los marca `type` 2.
+Tabla por celda en `aux/celdas_america_meses.parquet` (máquina de Carlos) por si se quiere usar un umbral más estricto.
+
+**Tamaño:** `ignis-backend-america.zip` 152 MB · `ignis-hotspots-america.zip` 1,346 MB (< 2 GB de GitHub) · backend en reposo 779 MB,
+pico 1.85 GB con `/api/search` de toda la región (máquina de Carlos). Para Cloud Run, `--memory 4Gi`.
+
+**Entrega:** `gold/entrega_america/` lista en la máquina de Carlos para la prueba local de Evaristo (pendiente pasarla por USB o red).
