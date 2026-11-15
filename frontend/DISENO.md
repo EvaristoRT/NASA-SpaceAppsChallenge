@@ -19,7 +19,10 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
 
 ## Idioma y relieve (rama `view_tests`, de Mauricio, integrada)
 - **Idioma:** `src/context/LanguageContext.jsx` (español por defecto, inglés, se recuerda en `localStorage`) y `src/i18n/translations.js`; selector ES/EN en la barra superior.
-  Se traduce la interfaz; **los nombres de países, capitales y continentes siguen en español** (solo el nombre del continente usa `nativeName` en inglés).
+  Se traduce la interfaz y también el contenido de países y continentes: `src/i18n/zoneText.js` (`localizeZone(zone, lang)`) devuelve una copia en inglés al vuelo,
+  sin duplicar los datos. Nombres de país con `Intl.DisplayNames` (el código ISO sale de la bandera del campo `icon`), capitales con la tabla `CAPITALS_EN`
+  (solo las que cambian), descripción y puntos destacados por plantilla, y los 7 continentes con texto propio. El buscador acepta el nombre en ambos idiomas.
+  Los datos originales siguen en español (el GeoJSON exportado conserva `paises_detectados` en español para la API).
   Al cambiar el texto del explorador, editar las dos lenguas en `translations.js` (`sidebarZones`).
 - **Relieve:** `applyTerrain` en `Globe.jsx` activa Mapbox Terrain-DEM en los estilos Satélite (exageración 1.35) y Relieve (1.95).
 

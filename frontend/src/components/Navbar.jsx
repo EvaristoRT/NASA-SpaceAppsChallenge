@@ -9,6 +9,7 @@ import {
   Languages
 } from 'lucide-react';
 import { MAP_STYLES, ZONES } from '../data/zonesData';
+import { localizeZone } from '../i18n/zoneText';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function Navbar({
@@ -30,15 +31,16 @@ export default function Navbar({
   const styleDropdownRef = useRef(null);
   const searchRef = useRef(null);
 
-  // Filtrar sugerencias de búsqueda
-  const searchResults = searchQuery.trim()
-    ? ZONES.filter((z) =>
-        z.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (z.capital && z.capital.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        z.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (z.continent && z.continent.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (z.highlights && z.highlights.some(h => h.toLowerCase().includes(searchQuery.toLowerCase())))
-      ).slice(0, 10)
+  // Filtrar sugerencias de búsqueda (por el nombre en español y en el idioma activo)
+  const query = searchQuery.trim().toLowerCase();
+  const searchResults = query
+    ? ZONES.map((z) => ({ zone: z, text: localizeZone(z, lang) }))
+        .filter(({ zone, text }) =>
+          [zone.name, text.name, zone.capital, text.capital, zone.continent, text.continent].some(
+            (v) => v && v.toLowerCase().includes(query)
+          )
+        )
+        .slice(0, 10)
     : [];
 
   // Cerrar dropdowns al hacer clic fuera
@@ -107,17 +109,17 @@ export default function Navbar({
         {/* Dropdown de resultados de búsqueda */}
         {showSearchResults && searchResults.length > 0 && (
           <div className="search-results-dropdown panel">
-            {searchResults.map((zone) => (
+            {searchResults.map(({ zone, text }) => (
               <div
                 key={zone.id}
                 className="search-result-item"
                 onClick={() => handleSelectSearchResult(zone)}
               >
                 <div className="search-result-text">
-                  <span className="search-result-title">{zone.name}</span>
+                  <span className="search-result-title">{text.name}</span>
                   <span className="search-result-sub">
-                    {zone.capital ? `${zone.capital} • ` : ''}
-                    {zone.continent || zone.category}
+                    {text.capital ? `${text.capital} • ` : ''}
+                    {text.continent || text.category}
                   </span>
                 </div>
               </div>

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { formatCoords } from '../utils/geoUtils';
 import { useLanguage } from '../context/LanguageContext';
+import { localizeZone } from '../i18n/zoneText';
 
 export default function DrawnAreaDrawer({
   drawnData, // { type, coords, area, perimeter, bounds, center, coveredCountries }
@@ -47,7 +48,7 @@ export default function DrawnAreaDrawer({
 
   const handleCopyCoords = () => {
     if (!center) return;
-    const text = `Centro: ${center[1].toFixed(4)}, ${center[0].toFixed(4)} | BBox: [${bounds.minLng.toFixed(2)}, ${bounds.minLat.toFixed(2)}, ${bounds.maxLng.toFixed(2)}, ${bounds.maxLat.toFixed(2)}]`;
+    const text = `${lang === 'es' ? 'Centro' : 'Center'}: ${center[1].toFixed(4)}, ${center[0].toFixed(4)} | BBox: [${bounds.minLng.toFixed(2)}, ${bounds.minLat.toFixed(2)}, ${bounds.maxLng.toFixed(2)}, ${bounds.maxLat.toFixed(2)}]`;
     navigator.clipboard.writeText(text);
     setCopiedCoords(true);
     setTimeout(() => setCopiedCoords(false), 1600);
@@ -68,7 +69,7 @@ export default function DrawnAreaDrawer({
         tipo: typeLabel,
         superficie_km2: Math.round(area),
         perimetro_km: Math.round(perimeter),
-        paises_detectados: coveredCountries.map((c) => c.name)
+        paises_detectados: coveredCountries.map((c) => c.name) // nombres en español, estables para la API
       },
       geometry: {
         type: 'Polygon',
@@ -102,7 +103,7 @@ export default function DrawnAreaDrawer({
           <div className="coords-info">
             <MapPin size={14} className="text-amber-400" />
             <span className="font-mono text-sm">
-              {t('drawnAreaDrawer.center')}: {formatCoords(center[1], center[0])}
+              {t('drawnAreaDrawer.center')}: {formatCoords(center[1], center[0], lang)}
             </span>
           </div>
           <button
@@ -157,7 +158,7 @@ export default function DrawnAreaDrawer({
             <div className="tags-container">
               {coveredCountries.map((c) => (
                 <span key={c.id} className="tag-pill country-pill">
-                  {c.name}
+                  {localizeZone(c, lang).name}
                 </span>
               ))}
             </div>

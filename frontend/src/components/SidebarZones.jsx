@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { ZONES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
+import { localizeZone } from '../i18n/zoneText';
 
 export default function SidebarZones({
   isOpen,
@@ -14,24 +15,26 @@ export default function SidebarZones({
   selectedZone,
   onSelectZone
 }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Solo países, de la A a la Z (los continentes se buscan desde la barra superior o se eligen en el globo)
+  // Solo países, de la A a la Z en el idioma activo (los continentes se buscan desde la barra superior o se eligen en el globo).
+  // Se busca por el nombre en ambos idiomas.
   const countries = useMemo(
-    () => ZONES.filter((z) => z.category === 'País').sort((x, y) => x.name.localeCompare(y.name, 'es')),
-    []
+    () =>
+      ZONES.filter((z) => z.category === 'País')
+        .map((z) => ({ zone: z, text: localizeZone(z, lang) }))
+        .sort((x, y) => x.text.name.localeCompare(y.text.name, lang)),
+    [lang]
   );
 
   const filteredZones = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return countries;
-    return countries.filter(
-      (zone) =>
-        zone.name.toLowerCase().includes(q) ||
-        (zone.nativeName && zone.nativeName.toLowerCase().includes(q)) ||
-        (zone.capital && zone.capital.toLowerCase().includes(q)) ||
-        (zone.continent && zone.continent.toLowerCase().includes(q))
+    return countries.filter(({ zone, text }) =>
+      [zone.name, text.name, zone.capital, text.capital, zone.continent, text.continent].some(
+        (v) => v && v.toLowerCase().includes(q)
+      )
     );
   }, [countries, searchTerm]);
 
@@ -71,7 +74,7 @@ export default function SidebarZones({
             <p>{t('sidebarZones.noZonesFound')}</p>
           </div>
         ) : (
-          filteredZones.map((zone) => {
+          filteredZones.map(({ zone, text }) => {
             const isSelected = selectedZone?.id === zone.id;
             return (
               <div
@@ -80,8 +83,8 @@ export default function SidebarZones({
                 onClick={() => onSelectZone(zone)}
               >
                 <div className="zone-item-content">
-                  <div className="zone-item-name">{zone.name}</div>
-                  {zone.continent && <div className="zone-item-meta">{zone.continent}</div>}
+                  <div className="zone-item-name">{text.name}</div>
+                  {text.continent && <div className="zone-item-meta">{text.continent}</div>}
                 </div>
                 <ChevronRight size={16} className="zone-item-arrow" />
               </div>

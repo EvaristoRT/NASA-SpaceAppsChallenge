@@ -4,7 +4,7 @@ import { formatCoords } from '../utils/geoUtils';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function CoordinatesHUD({ cursorCoords, zoom, pitch, bearing, projection }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const normalizedBearing = bearing !== null && bearing !== undefined ? Math.round(((bearing % 360) + 360) % 360) : 0;
 
   return (
@@ -13,7 +13,7 @@ export default function CoordinatesHUD({ cursorCoords, zoom, pitch, bearing, pro
         <Navigation2 size={13} className="hud-icon accent" />
         <span className="hud-label">{t('hud.coord')}</span>
         <span className="hud-value font-mono">
-          {cursorCoords ? formatCoords(cursorCoords.lat, cursorCoords.lng) : t('hud.hoverPrompt')}
+          {cursorCoords ? formatCoords(cursorCoords.lat, cursorCoords.lng, lang) : t('hud.hoverPrompt')}
         </span>
       </div>
 

@@ -15,9 +15,10 @@ import {
 } from 'lucide-react';
 import { formatCoords } from '../utils/geoUtils';
 import { useLanguage } from '../context/LanguageContext';
+import { localizeZone } from '../i18n/zoneText';
 
 export default function ZoneDrawer({
-  zone,
+  zone: rawZone,
   onClose,
   onDeepZoom,
   onStartOrbit,
@@ -26,7 +27,10 @@ export default function ZoneDrawer({
   const { lang, t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
-  if (!zone) return null;
+  if (!rawZone) return null;
+
+  const zone = localizeZone(rawZone, lang);
+  const displayName = zone.name;
 
   const handleCopyCoords = () => {
     if (!zone.coords) return;
@@ -36,16 +40,12 @@ export default function ZoneDrawer({
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const displayName = (lang === 'en' && zone.nativeName && zone.category === 'Continente')
-    ? zone.nativeName
-    : zone.name;
-
   return (
     <div className="zone-drawer panel">
       <div className="zone-drawer-header">
         <div className="zone-title-box">
           <div>
-            <div className="zone-category-badge" data-category={zone.category}>{zone.category}</div>
+            <div className="zone-category-badge" data-category={rawZone.category}>{zone.category}</div>
             <h2 className="zone-title">{displayName}</h2>
             {zone.nativeName && zone.nativeName !== displayName && (
               <span className="zone-native-title">{zone.nativeName}</span>
@@ -63,7 +63,7 @@ export default function ZoneDrawer({
           <div className="coords-info">
             <MapPin size={14} className="accent" />
             <span className="font-mono text-sm">
-              {formatCoords(zone.coords[1], zone.coords[0])}
+              {formatCoords(zone.coords[1], zone.coords[0], lang)}
             </span>
           </div>
           <button

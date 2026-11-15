@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { ZONES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
+import { localizeZone } from '../i18n/zoneText';
 import {
   generateZonesGeoJSON,
   generateZonesOutlineGeoJSON,
@@ -402,6 +403,10 @@ const Globe = forwardRef(function Globe(
     }
   };
 
+  // Idioma activo para las etiquetas de los marcadores (se leen al crearlos; ver el efecto de abajo)
+  const langRef = useRef(lang);
+  langRef.current = lang;
+
   // Marcadores de referencia para los continentes
   const renderZoneMarkers = (map) => {
     clearMarkers();
@@ -414,7 +419,7 @@ const Globe = forwardRef(function Globe(
       el.className = 'custom-zone-marker';
       el.innerHTML = `
         <div class="marker-dot"></div>
-        <div class="marker-label">${zone.name}</div>
+        <div class="marker-label">${localizeZone(zone, langRef.current).name}</div>
       `;
 
       el.addEventListener('click', (e) => {
@@ -433,6 +438,12 @@ const Globe = forwardRef(function Globe(
       markersRef.current.push(marker);
     });
   };
+
+  // Al cambiar de idioma, volver a dibujar las etiquetas de los continentes
+  useEffect(() => {
+    if (mapRef.current && markersRef.current.length > 0) renderZoneMarkers(mapRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   // Marcador dinámico para el país o zona seleccionada
   const renderSelectedZoneMarker = (map, zone) => {
