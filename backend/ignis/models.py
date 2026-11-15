@@ -14,15 +14,20 @@ class SearchRequest(BaseModel):
     start: Optional[str] = MonthStr
     end: Optional[str] = MonthStr
     baseline_start: int = Field(2003, description="First year of the climatological baseline")
-    baseline_end: Optional[int] = Field(None, description="Last year of baseline (default: last complete year)")
+    baseline_end: Optional[int] = Field(
+        None, description="Last year of baseline (default: the delivery's baseline end, 2020; else last complete year)")
 
 
 class MonthPoint(BaseModel):
     month: str = Field(description="YYYY-MM")
-    count: float = Field(description="Harmonized MODIS-equivalent burning cell-days")
+    count: float = Field(description="Burning cell-days, NOAA-20 equivalent (not a number of fires or hotspots)")
     raw_modis: int
     raw_viirs: int
-    source: Literal["MODIS", "MODIS Terra-only (scaled)", "VIIRS (scaled to MODIS)"]
+    source: Literal[
+        "NOAA-20", "S-NPP (escalado)", "MODIS (escalado)", "Terra (escalado)",
+        "MODIS", "MODIS Terra-only (scaled)", "VIIRS (scaled to MODIS)",  # legacy labels of the synthetic demo
+    ]
+    is_partial: Optional[bool] = Field(None, description="Month still in progress (not all days observed); do not compare it whole against the median")
     median: Optional[float] = Field(None, description="Baseline median for this calendar month")
     anomaly_ratio: Optional[float] = Field(None, description="count / median")
     anomaly_z: Optional[float] = Field(None, description="Robust z-score (MAD based)")

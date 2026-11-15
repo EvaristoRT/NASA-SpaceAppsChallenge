@@ -47,7 +47,10 @@ def _run(req: SearchRequest):
         raise HTTPException(422, "start must be <= end")
     # Select the full history so the baseline is stable, then trim to the requested range.
     sel_all = st.select(rings, None, None)
-    series, clim, base = analytics.timeline(sel_all, st.months, m_lo, m_hi, req.baseline_start, req.baseline_end)
+    # Default baseline end: the one the pipeline delivery used (info.json baseline_years), else the last complete year.
+    delivered = st.info.get("baseline_years")
+    b_end = req.baseline_end if req.baseline_end is not None else (delivered[1] if delivered else None)
+    series, clim, base = analytics.timeline(sel_all, st.months, m_lo, m_hi, req.baseline_start, b_end)
     in_range = sel_all[(sel_all["m"] >= m_lo) & (sel_all["m"] <= m_hi)]
     return st, rings, sel_all, in_range, series, clim, base
 

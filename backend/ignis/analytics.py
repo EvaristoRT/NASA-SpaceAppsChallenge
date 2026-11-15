@@ -6,15 +6,27 @@ import pandas as pd
 
 from .harmonize import SOURCE_LABELS, month_label
 
+# Label per `source` value of the pipeline delivery (months.parquet); only NOAA-20 is measured as is.
+DELIVERY_LABELS = {"NOAA-20": "NOAA-20", "S-NPP": "S-NPP (escalado)", "MODIS": "MODIS (escalado)", "Terra": "Terra (escalado)"}
+
 
 def _src_label(months: pd.DataFrame, m: int) -> str:
     r = months.loc[months["m"] == m]
     if r.empty:
         return SOURCE_LABELS[0]
     r = r.iloc[0]
+    if "source" in r.index and r["source"] in DELIVERY_LABELS:
+        return DELIVERY_LABELS[r["source"]]
     if r["viirs_sats"] > 0:
         return SOURCE_LABELS[2]
     return SOURCE_LABELS[1] if r["terra_only"] else SOURCE_LABELS[0]
+
+
+def _is_partial(months: pd.DataFrame, m: int) -> bool | None:
+    if "is_partial" not in months.columns:
+        return None
+    r = months.loc[months["m"] == m]
+    return bool(r.iloc[0]["is_partial"]) if not r.empty else None
 
 
 def timeline(sel: pd.DataFrame, months: pd.DataFrame, m_lo: int, m_hi: int,
@@ -56,7 +68,7 @@ def timeline(sel: pd.DataFrame, months: pd.DataFrame, m_lo: int, m_hi: int,
         series.append(dict(
             month=month_label(m), count=round(v, 2),
             raw_modis=int(g.at[m, "modis_ta"]), raw_viirs=int(g.at[m, "viirs"]),
-            source=_src_label(months, m), median=round(md, 2),
+            source=_src_label(months, m), is_partial=_is_partial(months, m), median=round(md, 2),
             anomaly_ratio=round(v / md, 3) if md > 0 else None,
             anomaly_z=round((v - md) / (1.4826 * mdev), 2) if mdev > 0 else None,
             percentile=round(float((col <= v).mean() * 100), 1) if col.size else None,
@@ -71,7 +83,9 @@ def kpis(series: list[dict], clim: list[dict], n_cells: int) -> dict:
         by_year[int(p["month"][:4])] = by_year.get(int(p["month"][:4]), 0.0) + p["count"]
     peak_year = max(by_year, key=by_year.get) if by_year and total > 0 else None
     peak_cm = max(clim, key=lambda c: c["median"])["month"] if any(c["median"] > 0 for c in clim) else None
-    last = series[-1] if series else None
+    # The month in progress is not compared whole against the median: latest_* use the last complete month.
+    complete = [p for p in series if not p.get("is_partial")]
+    last = complete[-1] if complete else (series[-1] if series else None)
     return dict(
         total=round(total, 1), peak_year=peak_year, peak_year_total=round(by_year.get(peak_year, 0.0), 1),
         peak_calendar_month=peak_cm,
