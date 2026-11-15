@@ -162,6 +162,11 @@ export const translations = {
       monthsShort: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
       monthsLong: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
     },
+    panel: {
+      tabSummary: 'Resumen',
+      tabArea: 'Área',
+      tabAnalysis: 'Análisis'
+    },
     errorToast: {
       mapboxNotice: 'Aviso de Mapbox:',
       dismiss: 'Descartar',
@@ -331,6 +336,11 @@ export const translations = {
       status: { normal: 'Normal', elevated: 'Elevated', low: 'Low' },
       monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
       monthsLong: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    },
+    panel: {
+      tabSummary: 'Summary',
+      tabArea: 'Area',
+      tabAnalysis: 'Analysis'
     },
     errorToast: {
       mapboxNotice: 'Mapbox Notice:',

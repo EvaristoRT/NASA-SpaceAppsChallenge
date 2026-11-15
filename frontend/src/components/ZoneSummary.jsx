@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  X,
   Maximize2,
   Orbit,
   Copy,
@@ -17,9 +16,8 @@ import { formatCoords } from '../utils/geoUtils';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
 
-export default function ZoneDrawer({
+export default function ZoneSummary({
   zone: rawZone,
-  onClose,
   onDeepZoom,
   onStartOrbit,
   isOrbiting
@@ -30,7 +28,6 @@ export default function ZoneDrawer({
   if (!rawZone) return null;
 
   const zone = localizeZone(rawZone, lang);
-  const displayName = zone.name;
 
   const handleCopyCoords = () => {
     if (!zone.coords) return;
@@ -41,22 +38,6 @@ export default function ZoneDrawer({
   };
 
   return (
-    <div className="zone-drawer panel">
-      <div className="zone-drawer-header">
-        <div className="zone-title-box">
-          <div>
-            <div className="zone-category-badge" data-category={rawZone.category}>{zone.category}</div>
-            <h2 className="zone-title">{displayName}</h2>
-            {zone.nativeName && zone.nativeName !== displayName && (
-              <span className="zone-native-title">{zone.nativeName}</span>
-            )}
-          </div>
-        </div>
-        <button className="btn-close" onClick={onClose} aria-label={t('zoneDrawer.close')}>
-          <X size={18} />
-        </button>
-      </div>
-
       <div className="zone-drawer-body">
         {/* Coordenadas & Copiar */}
         <div className="zone-coords-bar">
@@ -162,6 +143,5 @@ export default function ZoneDrawer({
           </button>
         </div>
       </div>
-    </div>
   );
 }

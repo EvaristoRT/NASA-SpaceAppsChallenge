@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  X,
   Maximize2,
   Copy,
   Check,
@@ -16,9 +15,8 @@ import { formatCoords } from '../utils/geoUtils';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
 
-export default function DrawnAreaDrawer({
+export default function AreaSummary({
   drawnData, // { type, coords, area, perimeter, bounds, center, coveredCountries }
-  onClose,
   onFocusArea,
   onClear
 }) {
@@ -82,21 +80,6 @@ export default function DrawnAreaDrawer({
   };
 
   return (
-    <div className="zone-drawer panel drawn-area-drawer">
-      <div className="zone-drawer-header">
-        <div className="zone-title-box">
-          <div>
-            <div className="zone-category-badge text-amber-400">
-              {t('drawnAreaDrawer.aoiTitle')} ({typeLabel})
-            </div>
-            <h2 className="zone-title">{t('drawnAreaDrawer.drawnZone')}</h2>
-          </div>
-        </div>
-        <button className="btn-close" onClick={onClose} aria-label={t('drawnAreaDrawer.close')}>
-          <X size={18} />
-        </button>
-      </div>
-
       <div className="zone-drawer-body">
         {/* Coordenadas del Centro */}
         <div className="zone-coords-bar">
@@ -187,6 +170,5 @@ export default function DrawnAreaDrawer({
           <span>{t('drawnAreaDrawer.clearArea')}</span>
         </button>
       </div>
-    </div>
   );
 }

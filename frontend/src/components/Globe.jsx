@@ -29,7 +29,8 @@ const Globe = forwardRef(function Globe(
     onFinishDrawing,
     onDrawPointsChange,
     onUpdateHUD,
-    onMapError
+    onMapError,
+    onCameraSettled
   },
   ref
 ) {
@@ -438,6 +439,8 @@ const Globe = forwardRef(function Globe(
   const langRef = useRef(lang);
   langRef.current = lang;
   const labelOriginalsRef = useRef(new Map());
+  const onCameraSettledRef = useRef(onCameraSettled);
+  onCameraSettledRef.current = onCameraSettled;
 
   // Marcadores de referencia para los continentes
   const renderZoneMarkers = (map) => {
@@ -1314,6 +1317,10 @@ const Globe = forwardRef(function Globe(
         duration: 2500,
         curve: 1.4,
         speed: 1.1
+      });
+      // Avisar cuando la cámara se detiene (o la interrumpe el usuario): ahí aparece el panel de información
+      mapRef.current.once('moveend', () => {
+        if (onCameraSettledRef.current) onCameraSettledRef.current();
       });
 
       renderSelectedZoneMarker(mapRef.current, selectedZone);

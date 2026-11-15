@@ -7,7 +7,7 @@ a esa base. **No cambia la lógica ni el comportamiento**, solo la presentación
 - `src/styles/tokens.css`: copia de `../design/tokens.css`; si cambia allá, copiar de nuevo.
 - `src/index.css`, `src/main.jsx`, `index.html`: tokens y Source Sans 3 incluida en el paquete (`@fontsource/source-sans-3`), sin Inter ni Google Fonts.
 - `src/App.css`: reescrito sobre los tokens, incluidas las herramientas de dibujo y la ficha del área trazada.
-- `Navbar`, `SidebarZones`, `ZoneDrawer`, `DrawnAreaDrawer`: sin emojis; `data-category` para el cuadrito de color de cada categoría.
+- `Navbar`, `SidebarZones`, `ZoneSummary`, `AreaSummary` (antes ZoneDrawer y DrawnAreaDrawer): sin emojis; `data-category` para el cuadrito de color de cada categoría.
 - `Globe.jsx`: colores de atmósfera, categorías, hover, selección y dibujo; marcadores como punto con etiqueta.
 - La clase `glass-panel` pasó a llamarse `panel`.
 
@@ -38,10 +38,13 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
   continente (en el mapa, en el buscador o en la lista) abre el explorador en sus países, y elegir un país abre su continente. No tiene buscador propio: **hay un solo buscador, el de la barra superior**
   ("Buscar lugar..."), que ignora acentos y mayúsculas (`normalizeSearch`), agrupa los resultados en Continentes y Países y busca los países solo por nombre y capital (así un continente no arrastra
   todos sus países). América del Sur y América del Norte se separan en `utils/continents.js` (los datos solo dicen "América"). El explorador ya no tapa el cuadro de coordenadas (`bottom: 76px`).
-- **Panel de análisis** (`AnalysisDock.jsx`): aparece abajo a la izquierda al elegir una zona o trazar un área; encima de las coordenadas, a la derecha del explorador abierto y a la izquierda de la
-  ficha. Frase que los datos respaldan, lista de hechos con líneas finas, calendario años × meses (rampa Inferno, mes en curso con recuadro amarillo, pie "Fig. 1") y aviso de demostración.
-  Se adapta al ancho del propio panel (`@container`): con el explorador abierto pasa a una columna. **Los datos son de demostración** (`utils/demoAnalysis.js`, deterministas por zona);
-  cuando el backend responda (`POST /api/search`), el panel debe recibir un objeto con la misma forma (`calendar[año][mes]`, `max`, `peak`, `total`, `ratio`, `status`…) y se borra esa función.
+- **Cómo se despliega la información** (definido el 14-nov para que se aprecie el movimiento de la cámara): al elegir una zona **solo vuela la cámara**; no hay recuadros encima. Cuando la cámara
+  se detiene (`moveend`, con respaldo de 3.5 s) aparece **un único panel a la derecha** (`InfoPanel.jsx`) con pestañas: *Resumen | Análisis* para un país o continente (`ZoneSummary.jsx`) y *Área | Análisis*
+  para un área trazada (`AreaSummary.jsx`, que aparece de inmediato porque no hay vuelo). **Elegir un continente deja el explorador abierto** (para escoger uno de sus países); **elegir un país lo cierra**.
+  La pestaña *Análisis* (`AnalysisView.jsx`) lleva la frase que los datos respaldan, el calendario años × meses (rampa Inferno, mes en curso con recuadro amarillo, pie "Fig. 1"), la lista de
+  hechos y el aviso de demostración; el panel se ensancha a 440 px en esa pestaña. **Los datos son de demostración** (`utils/demoAnalysis.js`, deterministas por zona); cuando el backend responda
+  (`POST /api/search`), el panel debe recibir un objeto con la misma forma (`calendar[año][mes]`, `max`, `peak`, `total`, `ratio`, `status`…) y se borra esa función. Para añadir más pestañas
+  (por ejemplo, comparación MODIS/VIIRS o descarga CSV) basta agregar un elemento a `tabs` en `InfoPanel.jsx`.
 
 ## Colores del mapa (en `Globe.jsx` y en `App.css`; si cambian en uno, cambiar el otro)
 - **Amarillo neón** = lo activo: zona seleccionada, área que se dibuja, herramienta activa, fila seleccionada, controles encendidos.

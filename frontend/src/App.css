@@ -1265,66 +1265,10 @@
   }
 }
 
-/* --- PANEL DE ANÁLISIS (calendario de quemas y hechos clave) ---
-   Abajo a la izquierda, encima del cuadro de coordenadas y a la izquierda de la ficha de la zona (380 px + controles).
+/* --- ANÁLISIS (calendario de quemas y hechos clave), pestaña del panel de información ---
    Estilo "informe": una frase que los datos respaldan, lista de hechos con líneas finas, calendario con pie "Fig. N". */
-.analysis-dock {
-  position: absolute;
-  left: 16px;
-  right: 468px;
-  bottom: 76px;
-  max-height: calc(100vh - 80px - 76px - 16px);
-  z-index: 24;
-  display: flex;
-  flex-direction: column;
-  animation: slide-up 0.25s var(--ease) both;
-  container: analysis / inline-size; /* el diseño interior depende del ancho del panel, no del de la ventana */
-}
-
-/* con el explorador abierto, el panel empieza a su derecha */
-.app-container:has(.sidebar-zones.open) .analysis-dock {
-  left: 382px;
-}
-
-.analysis-dock.collapsed {
-  right: auto;
-  width: 340px;
-}
-
-.analysis-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
-}
-
-.analysis-dock.open .analysis-head {
-  border-bottom: 1px solid var(--rule);
-}
-
-.analysis-titles {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  min-width: 0;
-}
-
-.analysis-title {
-  margin: 0;
-  font-size: 16px;
-}
-
-.analysis-area {
-  color: var(--text-muted);
-  font-size: 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.analysis-scroll {
-  overflow-y: auto;
+.info-panel.tab-analysis {
+  width: 440px;
 }
 
 .analysis-demo {
@@ -1469,55 +1413,45 @@
 .analysis-status-low { color: var(--info); }
 .analysis-status-low::before { content: "○"; }
 
-/* pantallas medianas y angostas: el panel ocupa todo el ancho y los hechos pasan debajo */
-@media (max-width: 1100px) {
-  .analysis-dock {
-    right: 72px;
-  }
+/* el panel es angosto (380-440 px): una sola columna, los hechos debajo del calendario */
+.analysis-view .analysis-body {
+  grid-template-columns: 1fr;
+  padding: 0;
 }
 
-/* panel estrecho (ventana angosta o explorador abierto): una sola columna, los hechos debajo del calendario */
-@container analysis (max-width: 760px) {
-  .analysis-body {
-    grid-template-columns: 1fr;
-  }
-
-  .analysis-statement {
-    font-size: 1.2rem;
-  }
+.analysis-view .analysis-demo {
+  margin: -16px -16px 16px;
 }
 
-@media (max-width: 700px) {
-  .analysis-dock {
-    right: 16px;
-  }
+.analysis-view .analysis-statement {
+  font-size: 1.2rem;
 }
 
-/* Explorador por niveles: botón de regreso a los continentes */
-.zones-back {
+/* pestañas del panel de información: texto con subrayado, como el resto */
+.info-tabs {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 12px;
+  gap: 20px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.info-tab {
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--rule);
-  color: var(--link);
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 10px 0;
+  color: var(--text-muted);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  text-align: left;
 }
 
-.zones-back:hover {
-  background: var(--surface-2);
+.info-tab:hover {
+  color: var(--text);
 }
 
-/* Encabezados de grupo en los resultados de la barra de búsqueda (Continentes / Países) */
-.search-result-group {
-  padding: 6px 16px;
-  background: var(--surface-2);
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 700;
+.info-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
 }

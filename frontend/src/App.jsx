@@ -2,12 +2,10 @@ import React, { useState, useRef } from 'react';
 import Globe from './components/Globe';
 import Navbar from './components/Navbar';
 import SidebarZones from './components/SidebarZones';
-import ZoneDrawer from './components/ZoneDrawer';
-import DrawnAreaDrawer from './components/DrawnAreaDrawer';
+import InfoPanel from './components/InfoPanel';
 import DrawToolbar from './components/DrawToolbar';
 import MapControls from './components/MapControls';
 import CoordinatesHUD from './components/CoordinatesHUD';
-import AnalysisDock from './components/AnalysisDock';
 import { MAP_STYLES } from './data/zonesData';
 import { AlertCircle, X } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
@@ -50,6 +48,10 @@ function MainApp() {
   // Notificación de error de Mapbox
   const [mapError, setMapError] = useState(null);
 
+  // El panel de información de una zona aparece cuando la cámara termina de volar
+  const [panelReady, setPanelReady] = useState(true);
+  const panelTimerRef = useRef(null);
+
   const activeStyle = MAP_STYLES.find((s) => s.id === currentStyleId) || MAP_STYLES[0];
 
   // Cambiar estilo de cartografía (si es modo topografía, activar inclinación para apreciar relieve 3D)
@@ -62,8 +64,16 @@ function MainApp() {
 
   // Seleccionar una zona
   const handleSelectZone = (zone) => {
+    // El panel de información espera a que la cámara termine de volar, para que el movimiento se aprecie
+    if (zone?.id !== selectedZone?.id) {
+      setPanelReady(false);
+      if (panelTimerRef.current) clearTimeout(panelTimerRef.current);
+      panelTimerRef.current = setTimeout(() => setPanelReady(true), 3500); // respaldo si la cámara no avisa
+    }
     setSelectedZone(zone);
     setOrbitMode(false);
+    // Al elegir un país el explorador se cierra y deja el mapa libre
+    if (zone?.category === 'País') setIsSidebarOpen(false);
     // Al elegir un continente se abre el explorador para poder elegir uno de sus países
     if (zone?.category === 'Continente') setIsSidebarOpen(true);
   };
@@ -181,6 +191,7 @@ function MainApp() {
         onDrawPointsChange={setPolygonPointsCount}
         onUpdateHUD={(data) => setHudData((prev) => ({ ...prev, ...data }))}
         onMapError={(err) => setMapError(err)}
+        onCameraSettled={() => setPanelReady(true)}
       />
 
       {/* Barra de herramientas flotante de dibujo (tipo Paint) */}
@@ -210,33 +221,23 @@ function MainApp() {
         onSelectZone={handleSelectZone}
       />
 
-      {/* Tarjeta flotante con detalles de la zona de catálogo seleccionada */}
-      {!drawnArea && (
-        <ZoneDrawer
+      {/* Panel único de información: resumen (o área trazada) y análisis, en pestañas. Una zona del catálogo espera a que la cámara termine */}
+      {(drawnArea || (selectedZone && panelReady)) && (
+        <InfoPanel
+          key={drawnArea ? 'area' : selectedZone.id}
           zone={selectedZone}
-          onClose={() => {
+          drawnArea={drawnArea}
+          onCloseZone={() => {
             setSelectedZone(null);
             setOrbitMode(false);
           }}
+          onCloseArea={() => setDrawnArea(null)}
           onDeepZoom={handleDeepZoom}
           onStartOrbit={() => setOrbitMode((prev) => !prev)}
           isOrbiting={orbitMode}
-        />
-      )}
-
-      {/* Tarjeta de detalles del Área Dibujada Manualmente */}
-      {drawnArea && (
-        <DrawnAreaDrawer
-          drawnData={drawnArea}
-          onClose={() => setDrawnArea(null)}
           onFocusArea={handleFocusDrawnArea}
-          onClear={handleClearDrawing}
+          onClearArea={handleClearDrawing}
         />
-      )}
-
-      {/* Panel de análisis (calendario de quemas, hechos clave). Por ahora con datos de demostración */}
-      {(selectedZone || drawnArea) && (
-        <AnalysisDock key={drawnArea ? 'area' : selectedZone.id} zone={selectedZone} drawnArea={drawnArea} />
       )}
 
       {/* Controles de cámara flotantes */}
