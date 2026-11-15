@@ -175,3 +175,69 @@ Para el modelo no importa (factores por h3_r3); en el mapa, sí. Para 2026 queda
 silver de decenas de minutos, y un backend que en local cabe (16 GB) pero que en Cloud Run pediría `--memory 8Gi` o más.
 
 Cuando agregues la línea (en esta rama o en `main`), Evaristo corre `03 → 07 --region africa` y anota los resultados en una sección 6.
+
+## 6. Resultados de África (Evaristo)
+
+_En curso en la máquina de Evaristo (rama local `datos/africa`): 2026 descargado completo; silver de ~19–20 M focos limpios por año.
+Resultados aquí cuando termine 03 → 07._
+
+**Para Carlos, sobre `00b_descargar_2026.sh`:** con África la MAP_KEY llegó a su límite (5000 transacciones cada 10 min; una petición de
+una zona con mucho fuego cuenta como decenas). Dos fallos del script:
+1. Cuando FIRMS responde `Exceeding allowed transaction limit` (HTTP 400), el bloque se anota como **"sin datos"** y el script sigue, así que
+   la descarga parece completa sin estarlo. En África faltaron NOAA-21 y S-NPP enteros.
+2. Con la clave saturada, la consulta inicial de `data_availability` falla y el script sale con "ERROR: FIRMS no informó hasta dónde llega…".
+
+**Propuesta:** antes de cada petición, leer el uso de la clave en
+`https://firms.modaps.eosdis.nasa.gov/mapserver/mapkey_status/?MAP_KEY=<clave>` (`current_transactions`). Si pasa de ~4500, esperar.
+Y si llega un `Exceeding…`, esperar 10 min y repetir el mismo bloque en vez de anotarlo vacío.
+Mientras tanto, Evaristo usa un envoltorio que hace eso por fuera: un satélite por vez, esperando a que la clave baje de 300.
+
+## 7. Propuesta: Asia y Oceanía, para tener el mundo completo — **Carlos reparte**
+
+**Fecha:** 2026-11-15 · **De:** Evaristo · **Para:** Carlos. Decide tú el reparto en tu siguiente mensaje (aquí o en `MVP_AMERICA.md`).
+**Prioridad:** sin frenar el MVP de América. Esto va en paralelo.
+
+### Reparto sugerido
+| Quién | Qué | Por qué |
+|---|---|---|
+| **Carlos** | **Asia** | Es lo más grande que falta (Siberia, India, Sudeste Asiático) y tu máquina está libre. La de Evaristo está ocupada con África (~10 GB de RAM en el silver) |
+| **Evaristo** | **Oceanía** | Más chica. **La descarga de 2026 ya está corriendo** (zonas `oceania` y `pacifico`, abajo); la cadena va cuando termine África |
+
+### Zonas de descarga de 2026 (no se solapan con ninguna ya bajada)
+Ya bajadas: `sudamerica` (−85, −57, −32, 14) · `zona_norte` (−170, 14, −50, 72) · `zona_centro` (−95, 5, −85, 14) · `zona_europa` (−25, 34, 45, 72) · `zona_africa` (−26, −36, 63, 34).
+
+| Zona | bbox (O, S, E, N) | Cubre | Quién |
+|---|---|---|---|
+| `zona_asia_norte` | 45, 34, 180, 82 | Rusia al este de 45° E, Asia central, China, Corea, Japón, norte de Irán | Carlos |
+| `zona_asia_sur` | 63, −11, 180, 34 | India, Sudeste Asiático, Indonesia, Filipinas, Papúa Nueva Guinea, Micronesia | Carlos |
+| `zona_oceania` | 110, −50, 180, −11 | Australia, Nueva Zelanda, Nueva Caledonia, Vanuatu, Fiyi (parte oeste) | Evaristo ✅ en curso |
+| `zona_pacifico` | −180, −50, −120, 14 | Tonga, Samoa, Fiyi (parte este), Polinesia | Evaristo ✅ en curso |
+
+```bash
+BBOX="45,34,180,82"  OUT="<FIRE_DATA_DIR>/datos_2026/api/zona_asia_norte" bash pipeline/scripts/00b_descargar_2026.sh
+BBOX="63,-11,180,34" OUT="<FIRE_DATA_DIR>/datos_2026/api/zona_asia_sur"   bash pipeline/scripts/00b_descargar_2026.sh
+```
+Ojo con el límite de la clave (sección 6). Asia va a chocar con él como África: conviene un satélite por vez (`SOURCES=VIIRS_NOAA20`, etc.).
+Huecos que quedan: Svalbard y el Ártico ruso al oeste de 45° E (al norte de 72° N), y el Índico entre 63° y 110° E al sur del ecuador. Casi sin fuegos.
+
+### Regiones para `config.py` (tuyo)
+```python
+    # Asia (Carlos): de 45° E al Pacífico; incluye Indonesia y Papúa Nueva Guinea.
+    "asia": (45.0, -11.0, 180.0, 82.0),
+    # Oceanía (Evaristo): Australia, Nueva Zelanda y el Pacífico oeste. Las islas al este de 180° (Tonga, Samoa, Polinesia)
+    # no caben en un rectángulo que no cruza el antimeridiano: van en la región aparte "pacifico".
+    "oceania": (110.0, -50.0, 180.0, -11.0),
+    "pacifico": (-180.0, -50.0, -120.0, 14.0),
+```
+`pacifico` es opcional: tiene muy poco fuego. Puede quedar como limitación declarada.
+
+### La entrega final: una sola corrida `global`
+Juntar las entregas por continente tiene un problema: **los recuadros se solapan** (`europa` incluye el norte de África y `africa` el sur
+de Europa, Sicilia y Creta; `asia` y `europa` comparten Turquía y el Cáucaso). Esos hexágonos saldrían dos veces y con factores distintos.
+Propuesta:
+1. **Cada uno valida su continente** con su región (cifras por continente para los jueces, como Europa, América y África).
+2. Con todas las zonas de 2026 en `datos_2026/api/`, **la entrega final sale de una sola corrida `--region global`** en la máquina de
+   Carlos. Los factores ya son por H3 res 3 × mes, así que no se pierde precisión regional, y no hay duplicados.
+3. Costo esperado: el silver global va a tardar horas (África sola tarda ~11 min por año en la máquina de Evaristo), la calibración de `05`
+   en pandas puede rondar los 8–10 GB de RAM, y el backend global ~3–5 GB (Cloud Run con `--memory 8Gi`).
+   Vale la pena medir la RAM del `05` con África antes de intentar `global`: Evaristo lo anota en la sección 6.
