@@ -994,6 +994,19 @@ const Globe = forwardRef(function Globe(
     });
   };
 
+  // Sin carreteras, senderos, ferris ni aeropuertos (ni sus nombres): el tema es el fuego y las vías le estorban a la vista.
+  // Salen de las capas `road` y `aeroway` del propio estilo, así que ocultarlas no cuesta ninguna descarga.
+  const hideRoads = (map) => {
+    try {
+      for (const layer of map.getStyle().layers) {
+        const source = layer['source-layer'];
+        if (source === 'road' || source === 'aeroway') map.setLayoutProperty(layer.id, 'visibility', 'none');
+      }
+    } catch (e) {
+      console.warn('No se pudieron ocultar las carreteras:', e);
+    }
+  };
+
   // Configuración integral tras carga de cualquier estilo cartográfico
   const applyMapConfiguration = (map) => {
     if (!map) return;
@@ -1025,6 +1038,7 @@ const Globe = forwardRef(function Globe(
     // 3b. Etiquetas del mapa en el idioma activo (el estilo nuevo trae sus textos originales)
     labelOriginalsRef.current = new Map();
     applyMapLanguage(map);
+    hideRoads(map);
 
     // 4. Recrear capas de zonas y dibujo con protección de errores
     try {
