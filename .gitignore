@@ -9,3 +9,13 @@ __pycache__/
 data/raw/
 data/processed/
 .DS_Store
+.ipynb_checkpoints/
+
+# Bitácora local y configuración personal de Claude Code
+MEMORY.md
+.claude/settings.local.json
+
+# Archivos de datos del pipeline (viven fuera del repo, en FIRE_DATA_DIR)
+*.parquet
+*.zip
+*.joblib
