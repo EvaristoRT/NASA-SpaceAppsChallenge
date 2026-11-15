@@ -1,53 +1,101 @@
-# Data Pipeline — Harmonization of MODIS and VIIRS Hot Spots
+# Pipeline de datos — armonización MODIS / VIIRS
 
-Este módulo implementa el pipeline de datos geoespaciales para la ingesta, indexación espacial (H3), agrupamiento espacio-temporal (ST-DBSCAN), calibración estadística y exportación a GeoParquet y DuckDB.
+Convierte los focos de calor de NASA FIRMS (2000 → hoy) en una serie de tiempo única,
+expresada en **equivalente NOAA-20**, lista para la app web.
 
----
-
-## ☁️ Arquitectura de Extracción en la Nube
-
-Para evitar saturar la memoria RAM y el disco local con archivos CSV gigantescos de NASA FIRMS (2001–2026):
-1. **Acceso Streaming / Out-of-Core:** Se leen los archivos directamente desde el almacenamiento remoto (**AWS S3**, **Google Cloud Storage**, **Azure Blob** o **HTTP/HTTPS**) mediante **DuckDB** y **fsspec**.
-2. **Filtrado Espacial Temprano (Pushdown Predicates):** La consulta filtra por la latitud y longitud del Área de Interés (AOI) y nivel de confianza directamente sobre el stream de lectura antes de cargar los datos en memoria.
+El plan, las decisiones y quién hace qué están en [PLAN_EQUIPO.md](PLAN_EQUIPO.md).
+Este archivo es solo **cómo ponerlo a andar** y **cómo trabajar sin pisarnos**.
 
 ---
 
-## 🚀 Configuración del Entorno
+## 1. Preparar tu máquina (una vez)
 
-### 1. Requisitos Previos
-* Python 3.10 o superior instalado.
-
-### 2. Crear y Activar Entorno Virtual
-```bash
-cd data-pipeline
-python -m venv venv
-
-# En Windows (PowerShell):
-.\venv\Scripts\Activate.ps1
-
-# En Linux / macOS:
-source venv/bin/activate
-```
-
-### 3. Instalar Dependencias
-```bash
+```powershell
+cd pipeline
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-### 4. Configurar Variables de Entorno y Credenciales Cloud
-Copia la plantilla `.env.example` a un archivo `.env`:
-```bash
-cp .env.example .env
+Crea el archivo `pipeline\.env` con la ruta donde vas a guardar los datos (git lo ignora):
+
 ```
-Edita `.env` con las credenciales de tu proveedor de nube:
-* **`STORAGE_PROVIDER`:** `s3`, `gcs`, `azure`, `http` o `local`.
-* **Credenciales S3:** `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`.
-* **Rutas remotas:** `REMOTE_MODIS_PATH`, `REMOTE_VIIRS_PATH`.
+FIRE_DATA_DIR=C:\ruta\a\tus\datos
+```
 
----
+Los datos **no viven en el repo ni en Drive**: cada quien los tiene en su disco, en esa carpeta.
 
-## 🧪 Verificación de la Configuración
-Ejecuta el script de prueba para verificar que el entorno y los conectores estén listos:
-```bash
-python test_setup.py
+## 2. Conseguir los datos (una vez)
+
+| Qué | Tamaño | Cómo |
+|---|---|---|
+| Archivo histórico 2000–2025 (48 zips) | ~9.3 GB | `python pipeline/scripts/00_get_raw.py` — los baja de NASA, sin cuenta. Si alguien te pasa la carpeta de zips, ponla dentro de `FIRE_DATA_DIR` y el script solo baja lo que falte |
+| Año 2026 (bloques de la API) | ~350 MB | copia la carpeta `datos_2026\` de Carlos dentro de tu `FIRE_DATA_DIR` |
+
+No hace falta descomprimir nada: el paso 01 lee los zips directamente.
+Para comprobar que tienes todo: `python pipeline/scripts/00_get_raw.py --check`
+
+## 3. Correr el pipeline
+
+Siempre desde la raíz del repo, con el entorno activado:
+
+| Paso | Script | Qué hace | Estado |
+|---|---|---|---|
+| 00 | `00_get_raw.py` | baja los zips del archivo histórico | ✅ funciona |
+| 00b | `00b_descargar_2026.sh` | baja / refresca 2026 por la API (necesita MAP_KEY) | ✅ funciona |
+| 01 | `01_to_parquet.py` | zips + bloques 2026 → **bronze** (todos los focos, sin filtrar) | ✅ funciona |
+| 02 | `02_qa.py` | revisión de calidad de bronze | ✅ funciona |
+| 03 | `03_silver.py` | limpieza + celdas H3 + región → **silver** | ⏳ Paco |
+| 04 | `04_calibration_set.py` | días-celda por hexágono × mes × satélite | ⏳ Evaristo |
+| 05 | `05_model.py` | factores hacia NOAA-20 + validación | ⏳ Carlos |
+| 06 | `06_apply_gold.py` | serie armonizada → **gold** | ⏳ Evaristo |
+| 07 | `07_export.py` | anomalías + focos para el CSV → entrega al equipo web | ⏳ Paco |
+
+```powershell
+python pipeline/scripts/01_to_parquet.py      # ~40 min la primera vez (todo el archivo, global)
+python pipeline/scripts/02_qa.py
+```
+
+Cada script explica sus entradas, salidas y reglas al inicio del archivo (`--help` lo muestra).
+Las plantillas pendientes ya traen ese contrato escrito: **se programa dentro de ese archivo, no en uno nuevo**.
+
+Capas, dentro de `FIRE_DATA_DIR`:
+
+```
+bronze/        un registro por foco, todos los sensores, sin filtrar        (paso 01)
+silver/        focos limpios con h3_r8 / r6 / r5 / r3, por región           (paso 03)
+aux/           máscara de fuentes estáticas                                 (paso 03)
+calibration/   días-celda, focos y FRP por hexágono r5 × mes × satélite     (paso 04)
+models/        factores, métricas y gráficas de validación                  (paso 05)
+gold/          serie armonizada y entrega al equipo web                     (pasos 06 y 07)
+qa/            tablas de la revisión de calidad                             (paso 02)
+```
+
+## 4. Reglas para no pisarnos
+
+Lo que pasó el 14 de noviembre: se subieron archivos por la página de GitHub ("Add files via upload")
+sin traer antes los cambios de los demás. Eso borró un script de otro compañero y metió al repo un
+entorno virtual, un `.env` y datos. Para que no se repita:
+
+1. **Nada de subir archivos por la web de GitHub.** Siempre con git, desde tu clone.
+2. **Antes de empezar y antes de cada push:** `git pull --rebase`.
+3. **Cada quien edita solo sus scripts** (los que llevan su nombre en la tabla). Si necesitas un cambio
+   en el script de otro, se lo pides o lo avisas en el grupo antes de tocarlo.
+4. **`config.py` y `PLAN_EQUIPO.md` no se cambian sin avisar a los tres.** Ahí están las decisiones comunes.
+5. **Nunca se sube:** `.venv/`, `.env`, la MAP_KEY, datos (`.csv`, `.parquet`, `.zip`). El `.gitignore`
+   ya los bloquea; si `git status` te muestra uno de esos, algo anda mal: no hagas `git add -f`.
+6. **Antes de cada commit mira `git status`.** Si aparecen cientos de archivos, detente y pregunta.
+7. Los datos se comparten entre nosotros por USB o por red local, nunca por el repo ni por Drive.
+8. Mensajes de commit en inglés con el formato de `.gitmessage` (`feat:`, `fix:`, `docs:`, `chore:`).
+
+Flujo de cada día:
+
+```powershell
+git pull --rebase
+# ... trabajas en tu script ...
+git status                      # revisa qué vas a subir
+git add pipeline/scripts/03_silver.py
+git commit
+git pull --rebase
+git push
 ```

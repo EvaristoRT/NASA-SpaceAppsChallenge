@@ -1,80 +1,58 @@
-# Plan del equipo de datos — Armonización MODIS → VIIRS
+# Plan del equipo de datos — Armonización MODIS / VIIRS
 
-**Equipo:** 3 personas, solo conversión de datos y entrenamiento. El front y la API los hace otro equipo.
-**Lo que entregamos:**
-- `harmonized.parquet`: la serie armonizada de 2001 hasta el mes más reciente (agregada por hexágono y día).
+**Equipo de datos:** Paco, Evaristo y Carlos. El front y la API los hace el equipo web (los otros dos compañeros).
+**Versión del plan:** 2026-11-14 (reemplaza a la anterior: cambia el sensor de referencia y dónde viven los datos).
+
+**Lo que entregamos al equipo web:**
+- `harmonized.parquet`: la serie armonizada de 2000-11 hasta hoy, por hexágono y día, con la anomalía ya calculada.
 - `hotspots.parquet`: los focos individuales limpios, para el CSV de descarga que pide el reto.
-- La descripción de las columnas de ambos.
+- `LEEME_ENTREGA.md`: columnas, unidades, fecha de corte y versión del modelo.
+
+Cómo instalar y correr: [README.md](README.md). Las constantes de este plan viven en [config.py](config.py).
 
 ---
 
 ## Decisiones que todos respetan
 
-| Tema | Decisión |
-|---|---|
-| Dirección | MODIS 2001–2011 se convierte a **unidades VIIRS**. De 2012 en adelante la serie es VIIRS real |
-| VIIRS de referencia | **Solo S-NPP**: es el único que existe desde 2012. Si se suman NOAA-20/21, los conteos "suben" en 2018 y 2023 sin que haya más fuego |
-| MODIS | Terra + Aqua, collection 6.1, tipo **archive** (no NRT) |
-| Región | **La conversión (bronze) es global desde el inicio**, una sola vez. El filtro de región se aplica a partir de la capa silver (`--region argentina_chile` o `--region global`). MVP con Argentina + Chile; para pasar a global solo se vuelven a correr silver → calibración → modelo → gold, sin reconvertir |
-| Estratos del modelo | Con Argentina + Chile basta `terreno × mes`. En global se agrega **hemisferio o banda de latitud** (enero es verano en el sur e invierno en el norte). El código debe aceptar ese estrato desde el principio |
-| Limpieza | Fuera `type` 1 (volcán) y 3 (offshore). Fuera confianza `low`. `type` 2 (fuente estática) se marca aparte |
-| Unidad para calibrar | Hexágono **H3 resolución 5 × mes** |
-| Corte de prueba | Entrenar **2012–2019**, probar **2020–2025**. Nadie lo cambia |
-| Dónde viven los datos | **Fuera del repo** (Romero: `C:\NASA`). Cada quien pone su ruta en la variable `FIRE_DATA_DIR` |
-| Qué se comparte entre nosotros | **Parquet**, nunca CSV, por USB o Drive. En git solo van scripts |
-| Scripts | **Uno solo por paso, en el repo.** Nadie hace su versión propia |
-| Datos recientes | El archive llega con meses de retraso. Los meses que falten hasta hoy se completan con **VIIRS NRT** (y MODIS NRT si se quiere el crudo) |
-| Continuidad de S-NPP | **Por confirmar en FIRMS** si S-NPP sigue entregando datos (el README del backend dice que paró el 2026-11-02). Si paró, NOAA-20 se armoniza a la escala de S-NPP con el traslape 2018+ y lo sustituye desde esa fecha |
-
----
-
-## Huecos frente al reto (y quién los cubre)
-
-| # | Hueco | Por qué importa | Quién |
-|---|---|---|---|
-| 1 | **No hay datos de 2026** (solo archive hasta 2025) | El caso de uso principal es comparar *el mes actual* con la mediana histórica | Dev B |
-| 2 | **S-NPP podría haber dejado de operar** | Es nuestra referencia; sin ella la serie se corta hoy | Dev B (datos) + Dev C (factor) |
-| 3 | **La tabla gold está agregada, no tiene puntos** | El reto pide un CSV con los *hotspots* de la búsqueda | Dev A |
+| Tema | Decisión | Por qué |
+|---|---|---|
+| **Referencia** | Toda la serie se expresa en **equivalente NOAA-20** | S-NPP dejó de operar el 2026-11-02 (última fila en FIRMS) y ya venía perdiendo sensibilidad: NOAA-20 / S-NPP pasó de 0.98 en enero a 1.26 en julio de 2026. MODIS se está apagando y Terra detecta 48% de lo que detecta Aqua. NOAA-20 está activo, tiene 8 años de traslape con MODIS y NOAA-21 concuerda con él al 1%. Además así **el mes actual es dato medido** y lo estimado es el pasado |
+| **Unidad de conteo** | **Día-celda en quema**: celda H3 res 8 con ≥ 1 foco ese día | Quita la diferencia de huella (VIIRS 375 m vs MODIS 1 km). Medido: baja la brecha NOAA-20/MODIS de 3.98× (focos) a 2.84× (días-celda). Idea tomada de `backend/ignis/harmonize.py` |
+| **Segunda métrica** | **FRP** (potencia radiativa, MW) | Casi no depende del sensor: en ene–jul 2026 el FRP total de MODIS y NOAA-20 difiere 4% mientras los focos difieren 4×. Sirve como métrica y como control independiente de la armonización |
+| **Satélites** | Cada satélite en su columna; **nunca se suman** VIIRS entre sí ni se mezclan en una métrica | Sumarlos hace "subir" los conteos en 2018 y 2023 sin que haya más fuego |
+| **Cadena** | NOAA-20 tal cual desde 2018-04 · S-NPP × k 2012–2018 · MODIS (Terra+Aqua) × k 2002-07–2011 · Terra × f × k antes de 2002-07 | Un solo salto en todo, salvo Terra solo (dos), porque nunca coincidió con VIIRS |
+| **Terra solo** | 2000-11 a 2002-06 lleva factor propio | Aqua entra en 2002-07 y la capacidad de observación se duplica de golpe |
+| **Limpieza** | En silver, nunca en bronze. Fuera `type` 1, 2 y 3; fuera confianza `low`. Los NRT (sin `type`) se filtran con una máscara de celdas estáticas armada con el archive | Sin esto, los mecheros de gas (p. ej. Vaca Muerta) aparecen como fuego todo el año |
+| **Estratos del modelo** | Región = hexágono padre **H3 res 3** × **mes calendario**, con encogimiento hacia el factor global | No depende de una capa de cobertura del suelo, así el MVP no se bloquea. Landcover queda como mejora |
+| **Validación** | **Temporal**: ajustar 2018–2022, probar 2023–2026. Factores de S-NPP solo hasta 2026-03 | Años alternos no detectan deriva, y hay deriva (Terra, S-NPP) |
+| **Anomalías** | Mediana del mismo mes calendario sobre **2003–2020**, calculada en el pipeline | Evita el tramo Terra solo y los años con NRT; todos ven el mismo número |
+| **Región** | Bronze global. De silver en adelante, `--region` (por defecto `argentina_chile`) | El MVP es Argentina + Chile. **Los datos de 2026 cubren solo Sudamérica** (bbox de la API); para ir a global hay que bajar 2026 con `BBOX=world` |
+| **Datos** | **Locales**, en `FIRE_DATA_DIR` de cada quien. Ni en el repo ni en Drive | Los zips son públicos en NASA: los tres partimos de los mismos bytes |
+| **Archive vs NRT** | Se usa archive (calidad estándar) donde exista; NRT solo en la cola reciente, marcado con `source = 'nrt'` / `is_nrt` hasta la entrega | NRT es el mismo dato procesado de prisa; NASA lo reemplaza ~5 meses después |
+| **Scripts** | Uno solo por paso, en `pipeline/scripts/`. Nadie hace su versión propia | Ver reglas en el README |
 
 ---
 
 ## Quién hace qué
 
-### Dev A — MODIS + tabla de calibración (Romero)
-1. ~~Descargar MODIS 2000–2025~~ ✅ ya está (global, todos los países).
-2. Escribir y probar el script de conversión `scripts/01_to_parquet.py` (lo usa también Dev B). Probar primero con un año.
-3. ~~Convertir **todo MODIS, global** → `bronze/sensor=MODIS/`~~ ✅ (111.4 M focos, 2000-11-01 a 2025-12-31).
-4. Revisión de calidad de MODIS (`scripts/02_qa.py`): años completos, duplicados, nulos, rangos de fecha por satélite.
-5. Cuando tenga el bronze de VIIRS de Dev B: armar la **capa silver** (`03_silver.py`) y la **tabla de calibración** (`04_calibration_set.py`), y repartirla.
-6. Al final, con el modelo de Dev C: aplicar a 2001–2011 y exportar `harmonized.parquet` (`06_apply_gold.py`, `07_export.py`).
-7. **Hueco 3:** exportar `hotspots.parquet`, los focos individuales ya limpios (mismas reglas de limpieza que el silver), ordenados por `h3_r6, acq_date`, para que el front filtre por área y fechas y lo baje como CSV.
+Propuesta según lo que cada quien ya tenía avanzado. Se puede intercambiar, pero **cada paso tiene un solo dueño**.
 
-**Entrega:** `bronze/sensor=MODIS/`, `calibration.parquet`, `harmonized.parquet`, `hotspots.parquet`.
+### Evaristo — conversión, tabla de calibración y serie final
+1. ✅ `01_to_parquet.py` (su script, ahora también lee los bloques de 2026).
+2. Correr el 01 completo en su máquina y confirmar los totales con el 02.
+3. `04_calibration_set.py`: días-celda, focos y FRP por hexágono r5 × mes, **una columna por satélite**.
+4. `06_apply_gold.py`: aplicar los factores y armar `harmonized.parquet`.
 
-### Dev B — VIIRS + cobertura del suelo
-1. ~~Descargar VIIRS S-NPP 2012–2025~~ ✅ ya está (global, todos los países).
-2. Con el script de Dev A, convertir **todo VIIRS S-NPP, global** → `bronze/sensor=VIIRS/` (dejarlo corriendo; es lo más pesado).
-3. Revisión de calidad de VIIRS con el mismo `02_qa.py`.
-4. **Capa de cobertura del suelo por hexágono** (`scripts/aux_landcover.py`): para cada hexágono H3 r5, cuál es el tipo de terreno dominante (bosque, pastizal, cultivo, etc.). Fuente sugerida: MODIS Land Cover **MCD12Q1** (sirve también para lo global). Salida: `aux/h3_landcover.parquet` con `h3_r5, landcover_class, pct`.
-   → Esto **no depende de los datos de fuego**, así que se puede empezar desde ya.
-5. Pasarle a Dev A el bronze de VIIRS y el landcover.
-6. **Hueco 2 (primero, es rápido):** confirmar en FIRMS hasta qué fecha hay datos de S-NPP. Si paró, convertir también **VIIRS NOAA-20 2018–hoy** (ya se tienen 2018–2025) con `satellite` distinto, para que Dev C calcule el factor NOAA-20 → S-NPP.
-7. **Hueco 1:** bajar **VIIRS NRT** de los meses de 2026 que el archive aún no cubre y convertirlo con el mismo script (marcar el origen en una columna `source = 'archive' | 'nrt'`). Al empalmar, quitar duplicados por `(satellite, acq_date, acq_time, latitude, longitude)`.
+### Paco — limpieza, H3 y entrega al equipo web
+1. `03_silver.py`: limpieza, máscara de fuentes estáticas, celdas H3 (r8, r6, r5, r3) y filtro de región. Aquí va lo que ya tenía de ingesta canónica e indexación H3; el H3 se calcula con la extensión `h3` de DuckDB, no fila por fila en Python.
+2. `07_export.py`: anomalías, `hotspots.parquet` y `LEEME_ENTREGA.md`.
+3. Acordar con Manuel cómo lee el backend la entrega (ver "Punto abierto").
 
-**Entrega:** `bronze/sensor=VIIRS/` (archive + NRT), `aux/h3_landcover.parquet`.
-
-### Dev C — Modelo y validación
-1. **Desde ya**, con una tabla de calibración falsa que tenga las mismas columnas (ver abajo):
-   - `05_model.py` **Nivel 1**: factor `sum(viirs)/sum(modis)` por `landcover × mes`.
-   - Evaluación sobre 2020–2025: error medio, sesgo, correlación de la serie mensual.
-   - **La gráfica clave:** VIIRS real vs MODIS crudo vs MODIS armonizado (2012–2025).
-2. **Nivel 2**: quantile mapping por tipo de terreno. Corrige el problema del cero (celdas con 0 focos MODIS donde VIIRS sí ve fuegos chicos).
-3. Intervalo de confianza del 95% (bootstrap sobre los factores o regresión por cuantiles).
-4. Cuando llegue la tabla real: correr el mismo código, comparar niveles, elegir el ganador.
-5. Guardar el modelo ganador en `models/` (`factores_nivel1.parquet`, o `.joblib` si es Random Forest) junto con un `metrics.json`.
-6. **Hueco 2 (solo si S-NPP paró):** con el mismo método, calcular el factor **NOAA-20 → S-NPP** usando 2018 hasta la fecha en que S-NPP paró, validarlo igual y guardarlo como `models/factores_n20_a_snpp.parquet`.
-
-**Entrega:** el archivo del modelo, `metrics.json` y las gráficas de validación.
+### Carlos — datos, calidad y modelo
+1. ✅ Datos de 2026: 4.4 M de focos de cuatro satélites, 1 ene → 14 nov (S-NPP hasta el 2 nov).
+2. ✅ `02_qa.py`. Correrlo sobre todo el bronze y avisar de lo que salga raro.
+3. `05_model.py`: factores nivel 1, validación temporal, gráfica clave y control con FRP. Empezar con una tabla de calibración falsa para no esperar al paso 04.
+4. Refrescar la cola NRT de 2026 (`00b_descargar_2026.sh`) antes de la entrega final.
 
 ---
 
@@ -82,82 +60,59 @@
 
 | # | Punto de control | Quién | Depende de |
 |---|---|---|---|
-| 1 | Script de conversión funcionando con 1 año de prueba | A | — |
-| 2 | Bronze MODIS y bronze VIIRS (Arg+Chile) listos y revisados | A, B | 1 |
-| 2' | Landcover por hexágono listo | B | — (en paralelo) |
-| 2'' | Nivel 1 + validación funcionando con datos falsos | C | — (en paralelo) |
-| 2''' | Confirmado si S-NPP sigue activo (hueco 2) | B | — (hacerlo primero) |
-| 3 | Tabla de calibración **real** repartida | A | 2, 2' |
-| 4 | Nivel 1 con datos reales + gráfica de validación | C | 3 |
-| 5 | `harmonized.parquet` + `hotspots.parquet` entregados al equipo de front | A | 4 |
-| 6 | Serie extendida hasta hoy con NRT (y NOAA-20 si S-NPP paró) | B, C | 5 |
-| 7 | **Versión global**: landcover global, silver → calibración → modelo (con estrato de hemisferio) → gold con `--region global` | todos | 5 |
-| 8 | Nivel 2 / intervalos | C | 5 |
+| 1 | Los tres con datos locales y bronze completo (`00`, `01`, `02` sin sorpresas) | todos | — |
+| 2 | Silver de `argentina_chile` + máscara de estáticas | Paco | 1 |
+| 2' | Nivel 1 y validación corriendo con tabla falsa | Carlos | — (en paralelo) |
+| 3 | Tabla de calibración real | Evaristo | 2 |
+| 4 | Factores con datos reales + gráfica de validación | Carlos | 3 |
+| 5 | `harmonized.parquet` | Evaristo | 4 |
+| 6 | **Entrega al equipo web** (anomalías + `hotspots.parquet`) | Paco | 5 |
+| 7 | Mejoras: intervalos de confianza, quantile mapping, región `sudamerica` | quien quede libre | 6 |
 
-**Costo estimado de pasar a global** (con el bronze global ya hecho): unas **3–5 horas**, casi todo tiempo de cómputo y la capa de cobertura del suelo global. No hay que reconvertir ni reescribir scripts.
+**Regla de oro:** llegar al punto 6 con el nivel 1 antes de mejorar nada. Una serie simple entregada vale más que una fina a medias.
 
-**Regla de oro:** llegar al punto 5 con el Nivel 1 antes de invertir tiempo en el Nivel 2 o en lo global.
+---
+
+## Punto abierto con el equipo web
+
+Hoy hay **dos armonizaciones** en el repo: la del backend (`backend/ignis/harmonize.py`, referencia MODIS, hecha con datos sintéticos para que el front pudiera avanzar) y la de este pipeline (referencia NOAA-20). En la demo solo puede quedar una. Propuesta: el backend sirve lo que entrega el paso 07 y deja de calcular la suya. Lo cierra Paco con Manuel antes del punto 5.
 
 ---
 
 ## Contratos (las columnas que todos usan)
 
-### Bronze — un registro por foco
-`sensor, satellite, source, version, country, acq_date, acq_time, acq_datetime_utc, latitude, longitude, bright_mir, bright_tir, frp, confidence_raw, confidence_level, scan, track, daynight, type, year`
-- Un archivo por zip: `bronze/sensor=MODIS/year=2005/modis.parquet`, `bronze/sensor=VIIRS/year=2015/viirs-snpp.parquet`, `.../viirs-jpss1.parquet`.
-- `satellite`: `Terra`, `Aqua`, `S-NPP`, `NOAA-20`, `NOAA-21`. `source` = `archive` o `nrt`. `country` sale del nombre del CSV.
-- Leer: `read_parquet('bronze/**/*.parquet', hive_partitioning=true)`.
+### Bronze — un registro por foco, sin filtrar · `bronze/sensor=<S>/year=<A>/<producto>.parquet`
+`satellite, source, origin, version, country, acq_date, acq_time, acq_datetime_utc, latitude, longitude, bright_mir, bright_tir, frp, confidence_raw, confidence_level, scan, track, daynight, type` + particiones `sensor`, `year`.
 
-**Cómo correr la conversión** (Windows, desde la raíz del repo):
-```powershell
-py -m venv .venv
-.venv\Scripts\python -m pip install -r pipeline\requirements.txt
-$env:FIRE_DATA_DIR = "C:\ruta\a\tus\zips"          # busca los zips en subcarpetas
-.venv\Scripts\python pipeline\scripts\01_to_parquet.py --sensor MODIS
-.venv\Scripts\python pipeline\scripts\01_to_parquet.py --product viirs-snpp
-.venv\Scripts\python pipeline\scripts\01_to_parquet.py --product viirs-jpss1 --years 2018-2025
-```
-Si se interrumpe, se vuelve a correr y salta lo ya convertido (`--overwrite` para rehacer).
-Referencia (12 núcleos): MODIS completo 4.5 min (111 M focos, 1.5 GB); un año de VIIRS S-NPP ≈ 40 s (≈ 21 M focos, 340 MB).
+- `satellite`: `Terra` | `Aqua` | `S-NPP` | `NOAA-20` | `NOAA-21`
+- `source`: `archive` | `nrt` · `origin`: `country_zip` | `api_bbox`
+- `confidence_level`: `low` | `nominal` | `high` (MODIS: <30, 30–79, ≥80)
+- `type`: 0 vegetación, 1 volcán, 2 fuente estática, 3 offshore; **NULL en NRT**
+- `country`: NULL en los datos de la API
 
-### Tabla de calibración — una fila por hexágono r5 × mes (2012–2025)
-| columna | tipo | qué es |
-|---|---|---|
-| `h3_r5` | UBIGINT | hexágono |
-| `year`, `month` | INT | |
-| `landcover_class` | VARCHAR | de Dev B |
-| `modis_count` | INT | focos MODIS (Terra+Aqua) en el mes |
-| `modis_frp` | DOUBLE | suma de FRP MODIS (MW) |
-| `modis_days` | INT | días del mes con al menos un foco MODIS |
-| `viirs_count` | INT | focos VIIRS S-NPP — **lo que el modelo aprende a estimar** |
-| `viirs_frp` | DOUBLE | suma de FRP VIIRS (MW) |
-| `lat`, `lon` | DOUBLE | centro del hexágono |
+### Silver — focos limpios · `silver/region=<R>/year=<A>/silver.parquet`
+Las columnas de bronze más `h3_r8, h3_r6, h3_r5, h3_r3` (UBIGINT).
 
-### Gold — lo que se entrega al front (esquema del CONTEXT.md)
-`h3_index, date, year, month, dekad, modis_raw_count, viirs_raw_count, harmonized_count, harmonized_ci_lower, harmonized_ci_upper, harmonized_frp_mw, fire_regime`
+### Calibración — una fila por `h3_r5 × year × month` · `calibration/region=<R>/calibration.parquet`
+`h3_r5, h3_r3, year, month, lat, lon` y, para cada satélite `S` en `terra, aqua, modis, snpp, n20, n21`: `cd_S` (días-celda), `n_S` (focos), `frp_S` (MW). `modis` = Terra ∪ Aqua.
 
-### Hotspots — los focos individuales para el CSV (hueco 3)
-`h3_r6, acq_date, acq_time, latitude, longitude, sensor, satellite, source, frp, confidence_level, daynight, type`
-Ya limpios (sin volcanes, offshore ni confianza `low`), ordenados por `h3_r6, acq_date` y particionados por `year`.
+### Modelo · `models/factores.parquet`
+`origen` (`modis` | `snpp` | `terra`), `h3_r3`, `mes`, `factor`, `factor_global`, `n_meses`, `metrica` (`cd` | `frp`). Más `metrics.json` y `figs/`.
+
+### Gold — lo que recibe el equipo web · `gold/entrega/harmonized.parquet`
+`h3_index, date, year, month, dekad, modis_raw_count, viirs_raw_count, harmonized_count, harmonized_ci_lower, harmonized_ci_upper, harmonized_frp_mw, primary_source, is_nrt, fire_regime, median_same_month, anomaly_pct`
+
+### Hotspots — focos para el CSV · `gold/entrega/hotspots.parquet`
+`h3_r6, acq_date, acq_time, latitude, longitude, sensor, satellite, source, frp, confidence_level, daynight, type`, ordenado por `h3_r6, acq_date`, particionado por `year`.
 
 ---
 
-## Estructura en el repo
-```
-pipeline/
-├── PLAN_EQUIPO.md        ← este archivo
-├── scripts/              ← cada script lee FIRE_DATA_DIR (y --region a partir de silver)
-│   ├── 01_to_parquet.py  ✅
-│   ├── 02_qa.py
-│   ├── 03_silver.py
-│   ├── 04_calibration_set.py
-│   ├── 05_model.py
-│   ├── 06_apply_gold.py
-│   ├── 07_export.py
-│   └── aux_landcover.py
-└── requirements.txt
-```
-Fuera del repo, en `FIRE_DATA_DIR`:
-```
-raw/  bronze/  silver/  aux/  calibration/  models/  gold/
-```
+## Trampas de estos datos (medidas, no supuestas)
+
+1. **`type` no existe en NRT** y los CSV de 7 días de FIRMS traen otra codificación (`T`/`A`, `nominal`). El paso 01 ya unifica todo.
+2. **`acq_time` viene sin ceros a la izquierda** (`55` = 00:55). El paso 01 lo rellena.
+3. **Aqua entra en 2002-07**: sin tratarlo, aparece un salto falso de ~100%.
+4. **Terra se degrada**: Terra/Aqua ≈ 0.48 en 2026. Revisar si `k_modis` cambia con los años.
+5. **S-NPP se degrada en 2026** y termina el 2026-11-02.
+6. **El FRP de NOAA-21 sale ~17% más alto que el de NOAA-20** con casi los mismos focos: no mezclar su FRP sin calibrar.
+7. **2026 es un año incompleto y regional** (Sudamérica): comparar siempre el mismo mes contra el mismo mes, nunca totales anuales.
