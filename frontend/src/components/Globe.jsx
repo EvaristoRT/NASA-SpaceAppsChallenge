@@ -568,12 +568,6 @@ const Globe = forwardRef(function Globe(
     const paint = isContinent ? soft : strong;
     map.setPaintProperty(`zones-${kind}-line`, 'line-width', paint.width);
     map.setPaintProperty(`zones-${kind}-line`, 'line-opacity', paint.opacity);
-    // Contorno oscuro bajo la selección: la separa del fondo en las vistas claras
-    if (kind === 'highlight' && map.getLayer('zones-highlight-casing')) {
-      map.setFilter('zones-highlight-casing', filter);
-      map.setPaintProperty('zones-highlight-casing', 'line-width', paint.width + 2.6);
-      map.setPaintProperty('zones-highlight-casing', 'line-opacity', paint.opacity * 0.7);
-    }
   };
 
   // Hover con feature-state: encender o apagar el estado de los polígonos es barato y las capas de hover lo animan con una transición
@@ -656,7 +650,7 @@ const Globe = forwardRef(function Globe(
     if (!map) return;
     const ov = overlayForStyle();
 
-    ['zones-highlight-line', 'zones-highlight-casing', 'zones-highlight-fill', 'zones-hover-line', 'zones-hover-fill', 'zones-line', 'zones-fill'].forEach((id) => {
+    ['zones-highlight-line', 'zones-highlight-fill', 'zones-hover-line', 'zones-hover-fill', 'zones-line', 'zones-fill'].forEach((id) => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
     ['country-boundaries', 'zones-geojson', 'zones-outline'].forEach((id) => {
@@ -741,14 +735,6 @@ const Globe = forwardRef(function Globe(
       type: 'fill',
       filter: zoneFilter(selectedZoneRef.current),
       paint: { 'fill-color': '#e7f434', 'fill-opacity': ov.highlightFill }
-    });
-    map.addLayer({
-      ...base,
-      id: 'zones-highlight-casing',
-      type: 'line',
-      filter: zoneFilter(selectedZoneRef.current),
-      layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': ov.casing, 'line-width': 5.6, 'line-opacity': 0.7 }
     });
     map.addLayer({
       ...base,

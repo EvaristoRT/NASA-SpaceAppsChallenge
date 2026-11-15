@@ -15,7 +15,19 @@ pytest
 ```
 Los datos de demostración están generados artificialmente y la API lo indica con `synthetic: true`. No son observaciones reales.
 
-## Datos reales
+## Con la entrega del equipo de datos (datos reales, Argentina y Chile)
+Apunta `DATA_DIR` a la carpeta `entrega` (la que trae `cells.parquet`, `monthly.parquet`, `months.parquet` e `info.json`) y arranca la API:
+```powershell
+cd backend
+.venv\Scripts\Activate.ps1
+$env:DATA_DIR = "C:\ruta\a\entrega"
+uvicorn main:app --port 8000
+```
+Para que el front la use, crea `frontend\.env.local` con `VITE_API_URL=http://localhost:8000` (junto a `VITE_MAPBOX_TOKEN`) y reinicia `npm run dev`
+(Vite solo lee ese archivo al arrancar). Con eso los meses del calendario del panel de análisis se pueden pulsar y se pintan en el mapa.
+Sin `VITE_API_URL` el panel muestra datos de demostración. Endpoints de la entrega: `POST /api/search`, `POST /api/activity` (hexágonos de un mes).
+
+## Datos reales desde cero
 Descargar los CSV del archivo de FIRMS (https://firms.modaps.eosdis.nasa.gov/download/, requiere Earthdata Login), guardarlos en `data/raw/`
 con "modis" o "viirs" en el nombre y correr `python ..\data\build_from_firms.py`.
 
