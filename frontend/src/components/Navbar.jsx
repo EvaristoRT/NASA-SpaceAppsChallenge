@@ -89,7 +89,7 @@ export default function Navbar({
           <Search size={16} className="search-icon" />
           <input
             type="text"
-            placeholder="Buscar país (ej. México, España, Japón...), capital o zona..."
+            placeholder="Buscar país (ej. México, España, Japón...), capital o continente..."
             className="navbar-search-input"
             value={searchQuery}
             onChange={(e) => {

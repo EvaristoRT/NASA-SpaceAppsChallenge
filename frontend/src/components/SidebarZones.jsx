@@ -13,51 +13,31 @@ export default function SidebarZones({
   selectedZone,
   onSelectZone
 }) {
-  const [activeCategory, setActiveCategory] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const categories = [
-    'Todos',
-    'América',
-    'Europa',
-    'Asia',
-    'África',
-    'Oceanía',
-    'Continentes',
-    'Maravillas'
-  ];
+  // Solo países, de la A a la Z (los continentes se buscan desde la barra superior o se eligen en el globo)
+  const countries = useMemo(
+    () => ZONES.filter((z) => z.category === 'País').sort((x, y) => x.name.localeCompare(y.name, 'es')),
+    []
+  );
 
   const filteredZones = useMemo(() => {
-    return ZONES.filter((zone) => {
-      let matchCategory = true;
-      if (activeCategory === 'Todos') {
-        matchCategory = true;
-      } else if (activeCategory === 'Continentes') {
-        matchCategory = zone.category === 'Continente';
-      } else if (activeCategory === 'Maravillas') {
-        matchCategory = zone.category.includes('Zona');
-      } else {
-        matchCategory = zone.continent === activeCategory;
-      }
-
-      const matchSearch =
-        zone.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (zone.capital && zone.capital.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        zone.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (zone.continent && zone.continent.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (zone.description && zone.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (zone.highlights && zone.highlights.some((h) => h.toLowerCase().includes(searchTerm.toLowerCase())));
-
-      return matchCategory && matchSearch;
-    });
-  }, [activeCategory, searchTerm]);
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return countries;
+    return countries.filter(
+      (zone) =>
+        zone.name.toLowerCase().includes(q) ||
+        (zone.capital && zone.capital.toLowerCase().includes(q)) ||
+        (zone.continent && zone.continent.toLowerCase().includes(q))
+    );
+  }, [countries, searchTerm]);
 
   return (
     <aside className={`sidebar-zones panel ${isOpen ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
         <div className="sidebar-title-group">
           <Layers size={18} className="accent" />
-          <h3 className="sidebar-title">Explorador de Países y Zonas</h3>
+          <h3 className="sidebar-title">Explorador de países</h3>
         </div>
         <button className="btn-close" onClick={onClose} aria-label="Cerrar barra lateral">
           <X size={18} />
@@ -69,7 +49,7 @@ export default function SidebarZones({
         <Search size={15} className="search-icon" />
         <input
           type="text"
-          placeholder="Buscar entre más de 190 países..."
+          placeholder="Buscar país, capital o continente..."
           className="sidebar-search-input"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -81,24 +61,11 @@ export default function SidebarZones({
         )}
       </div>
 
-      {/* Filtros por Continente y Categoría */}
-      <div className="category-chips-scroll">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            className={`category-chip ${activeCategory === cat ? 'active' : ''}`}
-            onClick={() => setActiveCategory(cat)}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Lista de Zonas y Países */}
+      {/* Lista de países */}
       <div className="zones-list-container">
         {filteredZones.length === 0 ? (
           <div className="no-results">
-            <p>No se encontraron países ni zonas con ese término.</p>
+            <p>No se encontraron países con ese término.</p>
           </div>
         ) : (
           filteredZones.map((zone) => {
@@ -111,14 +78,7 @@ export default function SidebarZones({
               >
                 <div className="zone-item-content">
                   <div className="zone-item-name">{zone.name}</div>
-                  <div className="zone-item-meta">
-                    <span className="zone-item-category" data-category={zone.category}>
-                      {zone.capital ? `Cap: ${zone.capital}` : zone.category}
-                    </span>
-                    {zone.population && (
-                      <span className="zone-item-area">{zone.population}</span>
-                    )}
-                  </div>
+                  {zone.continent && <div className="zone-item-meta">{zone.continent}</div>}
                 </div>
                 <ChevronRight size={16} className="zone-item-arrow" />
               </div>
@@ -129,7 +89,7 @@ export default function SidebarZones({
 
       <div className="sidebar-footer">
         <span className="sidebar-count">
-          {filteredZones.length} {filteredZones.length === 1 ? 'país / zona' : 'países y zonas disponibles'}
+          {filteredZones.length} {filteredZones.length === 1 ? 'país' : 'países'}
         </span>
       </div>
     </aside>

@@ -337,14 +337,12 @@ const Globe = forwardRef(function Globe(
     }
   };
 
-  // Marcadores de referencia para continentes y maravillas
+  // Marcadores de referencia para los continentes
   const renderZoneMarkers = (map) => {
     clearMarkers();
     if (!map) return;
 
-    const primaryZones = ZONES.filter(
-      (z) => z.category === 'Continente' || z.category.includes('Zona')
-    );
+    const primaryZones = ZONES.filter((z) => z.category === 'Continente');
 
     primaryZones.forEach((zone) => {
       const el = document.createElement('div');
@@ -432,9 +430,6 @@ const Globe = forwardRef(function Globe(
           ['get', 'category'],
           'Continente', '#2491ff',
           'País', '#dfe1e2',
-          'Zona Ecológica', '#4fd1a1',
-          'Zona Marina', '#7aa7ff',
-          'Zona Geológica', '#8c93d9',
           '#6a76bd'
         ],
         'fill-opacity': 0.08
@@ -468,9 +463,6 @@ const Globe = forwardRef(function Globe(
           'match',
           ['get', 'category'],
           'Continente', '#2491ff',
-          'Zona Ecológica', '#4fd1a1',
-          'Zona Marina', '#7aa7ff',
-          'Zona Geológica', '#8c93d9',
           '#6a76bd'
         ],
         'line-width': ['interpolate', ['linear'], ['zoom'], 1, 1, 4, 1.5, 7, 2.2],

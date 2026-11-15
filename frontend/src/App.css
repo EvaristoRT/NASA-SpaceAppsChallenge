@@ -395,42 +395,6 @@
   padding: 4px;
 }
 
-/* Filtros por categoría: texto con subrayado, no píldoras */
-.category-chips-scroll {
-  display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  padding: 8px 16px 0;
-  border-bottom: 1px solid var(--rule);
-  scrollbar-width: none;
-}
-
-.category-chips-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.category-chip {
-  flex-shrink: 0;
-  background: transparent;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  padding: 4px 0 8px;
-  color: var(--text-muted);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.category-chip:hover {
-  color: var(--text);
-}
-
-.category-chip.active {
-  color: var(--text);
-  border-bottom-color: var(--accent);
-}
-
 /* Lista: filas separadas por línea fina, sin tarjetas */
 .zones-list-container {
   flex: 1;
@@ -470,9 +434,6 @@
 }
 [data-category="Continente"] { --cat: #2491ff; }
 [data-category="País"] { --cat: #dfe1e2; }
-[data-category="Zona Ecológica"] { --cat: #4fd1a1; }
-[data-category="Zona Marina"] { --cat: #7aa7ff; }
-[data-category="Zona Geológica"] { --cat: #8c93d9; }
 
 .zone-item-content {
   flex: 1;
@@ -489,10 +450,9 @@
 }
 
 .zone-item-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .zone-item-category {

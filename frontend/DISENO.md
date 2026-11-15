@@ -11,10 +11,16 @@ a esa base. **No cambia la lógica ni el comportamiento**, solo la presentación
 - `Globe.jsx`: colores de atmósfera, categorías, hover, selección y dibujo; marcadores como punto con etiqueta.
 - La clase `glass-panel` pasó a llamarse `panel`.
 
+## Qué regiones hay (acordado el 14-nov)
+Solo **países y continentes**. Se quitaron las 6 zonas especiales (Selva Amazónica, Himalaya, Gran Barrera de Coral, Cinturón de Fuego, Sahara, Fosa de las Marianas):
+ya no están en `zonesData.js`, ni en el GeoJSON, ni en los colores del mapa. El explorador lateral es **una sola lista de países de la A a la Z** con buscador (nombre,
+capital o continente) y el continente como texto secundario; sin pestañas ni categorías. Los continentes siguen en el mapa (contorno y etiqueta) y se encuentran
+desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve a generar las zonas.
+
 ## Colores del mapa (en `Globe.jsx` y en `App.css`; si cambian en uno, cambiar el otro)
 - **Amarillo neón** = lo activo: zona seleccionada, área que se dibuja, herramienta activa, fila seleccionada, controles encendidos.
 - **Blanco** = hover. **Verde** = primer vértice del polígono y "Cerrar polígono". **Rojo** = destructivo.
-- Los 196 países van en gris claro y suave. Zona Marina, Ecológica y Geológica usan azul claro, verde y lavanda; las tres azuladas se parecen entre sí.
+- Los 196 países van en gris claro y suave. 
 
 ## Contornos de continentes
 El dato original tenía cada continente como la suma de los polígonos de sus países (el contorno dibujaba todas las fronteras), Europa incluía toda Rusia y la

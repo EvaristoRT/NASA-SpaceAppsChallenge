@@ -8,7 +8,8 @@ What this script does (input is always the untouched original, so it can be re-r
   - moves French Guiana to South America;
   - splits Russia at 60 E (approximate Urals): west part stays in Europe, east part goes to Asia;
   - dissolves each continent into one outline, closing the tiny gaps between neighbouring countries (morphological closing);
-  - leaves Antarctica and every non-continent feature untouched (the runtime outline builder in src/utils/outlines.js
+  - drops the special zones (only countries and continents are kept);
+  - leaves Antarctica and every country untouched (the runtime outline builder in src/utils/outlines.js
     drops the edges that lie on the antimeridian or the pole).
 Country metadata (`continent` field) is NOT changed, so the explorer filters behave exactly as before.
 
@@ -123,6 +124,8 @@ def main():
         geom = MultiPolygon(out)
         by_id[cid]["geometry"] = {"type": "MultiPolygon", "coordinates": rounded(mapping(geom)["coordinates"])}
 
+    # solo países y continentes: se quitaron las zonas especiales (Amazonía, Himalaya, etc.)
+    data["features"] = [f for f in data["features"] if f["properties"].get("category") in ("País", "Continente")]
     DST.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print()
     print(f"written: {DST.relative_to(ROOT)} ({DST.stat().st_size:,} bytes)")
