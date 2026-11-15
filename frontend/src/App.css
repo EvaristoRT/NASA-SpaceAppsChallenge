@@ -97,8 +97,7 @@
 .btn-icon-toggle,
 .style-dropdown-btn,
 .projection-toggle-btn,
-.draw-toggle-btn,
-.token-badge-btn {
+.draw-toggle-btn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -123,8 +122,7 @@
 .btn-icon-toggle:hover,
 .style-dropdown-btn:hover,
 .projection-toggle-btn:hover,
-.draw-toggle-btn:hover,
-.token-badge-btn:hover {
+.draw-toggle-btn:hover {
   background: rgb(255 255 255 / 0.16);
 }
 
@@ -296,29 +294,6 @@
 
 .chevron-icon {
   color: #dfe1e2;
-}
-
-/* Estado del token: glifo + palabra, nunca solo color */
-.token-badge-btn::before {
-  font-size: 12px;
-}
-
-.token-badge-btn.is-demo {
-  color: #fafaad;
-  border-color: #fafaad;
-}
-
-.token-badge-btn.is-demo::before {
-  content: "▲";
-}
-
-.token-badge-btn.is-custom {
-  color: #8ce6c1;
-  border-color: #8ce6c1;
-}
-
-.token-badge-btn.is-custom::before {
-  content: "●";
 }
 
 /* --- EXPLORADOR LATERAL DE ZONAS --- */
@@ -901,175 +876,6 @@
   pointer-events: none;
 }
 
-/* --- MODAL DE TOKEN --- */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 16px;
-  animation: fade-in 0.15s ease;
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.modal-card {
-  width: 100%;
-  max-width: 480px;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--rule);
-}
-
-.modal-title-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.modal-icon-badge {
-  display: none;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.modal-subtitle {
-  margin: 2px 0 0;
-  font-size: 14px;
-  color: var(--text-muted);
-}
-
-.modal-body {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.token-status-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--text-2);
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  flex: none;
-}
-
-.status-dot.demo {
-  background: var(--warn);
-}
-
-.status-dot.custom {
-  background: var(--ok);
-}
-
-.input-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.input-wrapper input {
-  width: 100%;
-  height: 40px;
-  background: var(--bg);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 0 12px;
-  color: var(--text);
-  font-size: 14px;
-  outline: none;
-}
-
-.input-wrapper input:focus {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
-}
-
-.help-box {
-  display: flex;
-  gap: 10px;
-  border-left: 3px solid var(--link);
-  padding: 4px 0 4px 12px;
-  font-size: 14px;
-  color: var(--text-2);
-  line-height: 1.45;
-}
-
-.help-icon {
-  display: none;
-}
-
-.inline-link {
-  color: var(--link);
-  font-weight: 600;
-  text-underline-offset: 3px;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.btn-secondary,
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn-secondary {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  color: var(--text);
-}
-
-.btn-secondary:hover {
-  background: var(--surface-2);
-}
-
-.btn-primary {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: var(--on-accent);
-}
-
-.btn-primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-}
-
 .btn-close {
   background: transparent;
   border: none;
@@ -1134,11 +940,6 @@
   flex: none;
 }
 
-.btn-action {
-  border-color: var(--warn) !important;
-  color: var(--warn) !important;
-}
-
 .btn-close-sm {
   background: transparent;
   border: none;
@@ -1155,7 +956,6 @@
 
   .style-name-text,
   .projection-pill-text,
-  .token-btn-text,
   .brand-tag {
     display: none;
   }

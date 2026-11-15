@@ -396,5 +396,3 @@ export const MAP_STYLES = [
   }
 ];
 
-// Token de acceso por defecto (configurable via VITE_MAPBOX_TOKEN o modal)
-export const DEFAULT_MAPBOX_TOKEN = '';

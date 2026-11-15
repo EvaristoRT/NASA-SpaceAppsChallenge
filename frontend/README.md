@@ -9,7 +9,7 @@ Módulo de mapa interactivo con proyección de globo 3D para la selección y vis
 - Proyección de globo terráqueo 3D con atmósfera y estrellas vía Mapbox GL JS v3.
 - Selección e interacción con zonas y regiones de interés.
 - Panel informativo con métricas, coordenadas y modo órbita cinemática.
-- Soporte para token de acceso configurado mediante la variable de entorno `VITE_MAPBOX_TOKEN` o desde la interfaz.
+- Token de acceso de Mapbox leído solo de la variable de entorno `VITE_MAPBOX_TOKEN` (archivo `.env` en local, variables del proyecto en Vercel). La interfaz no lo pide ni lo guarda.
 - 5 estilos cartográficos conmutables (Satélite fotorrealista, Cyber dark, Calles, Topografía y Claro).
 
 ### Requisitos y Ejecución
@@ -18,7 +18,7 @@ Módulo de mapa interactivo con proyección de globo 3D para la selección y vis
    npm install
    ```
 
-2. Configura tu token de Mapbox en el archivo `.env` (opcional, incluye fallback por defecto):
+2. Crea el archivo `.env` (o `.env.local`) con tu token PÚBLICO de Mapbox (obligatorio; no hay token por defecto):
    ```env
    VITE_MAPBOX_TOKEN=tu_mapbox_access_token_aqui
    ```
@@ -33,3 +33,8 @@ Módulo de mapa interactivo con proyección de globo 3D para la selección y vis
    ```bash
    npm run build
    ```
+
+### Despliegue en Vercel
+- **Root Directory:** `frontend` (el proyecto está dentro de esa carpeta, no en la raíz del repositorio). Framework Vite, build `npm run build`, salida `dist`.
+- **Variable de entorno:** `VITE_MAPBOX_TOKEN` con el token público (`pk.…`), marcada para Production, Preview y Development.
+- Vite incrusta la variable al compilar: si se cambia, hay que volver a desplegar. Si falta, la compilación avisa y el mapa muestra un aviso en lugar del globo.

@@ -3,7 +3,6 @@ import {
   Globe,
   Map as MapIcon,
   Search,
-  KeyRound,
   ChevronDown,
   Menu,
   Pencil
@@ -15,8 +14,6 @@ export default function Navbar({
   onSelectStyle,
   projection,
   onToggleProjection,
-  onOpenTokenModal,
-  isCustomToken,
   onSelectZone,
   onToggleSidebar,
   isSidebarOpen,
@@ -125,7 +122,7 @@ export default function Navbar({
         )}
       </div>
 
-      {/* Right Controls: Map Style, 2D/3D Projection, Token */}
+      {/* Right Controls: Map Style, Draw, 2D/3D Projection */}
       <div className="navbar-actions">
         {/* Style Selector Dropdown */}
         <div className="style-selector-container" ref={styleDropdownRef}>
@@ -178,16 +175,6 @@ export default function Navbar({
         >
           {projection === 'globe' ? <Globe size={16} /> : <MapIcon size={16} />}
           <span className="projection-pill-text">{projection === 'globe' ? 'Globo 3D' : 'Plano 2D'}</span>
-        </button>
-
-        {/* Token Config Modal Trigger */}
-        <button
-          className={`token-badge-btn ${isCustomToken ? 'is-custom' : 'is-demo'}`}
-          onClick={onOpenTokenModal}
-          title="Configurar Mapbox Access Token"
-        >
-          <KeyRound size={15} />
-          <span className="token-btn-text">{isCustomToken ? 'Token Activo' : 'Configurar Token'}</span>
         </button>
       </div>
     </header>

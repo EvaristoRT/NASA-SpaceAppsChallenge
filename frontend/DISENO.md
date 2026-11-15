@@ -28,7 +28,9 @@ Guayana Francesa, y varias aristas sobre ±180° o el polo se dibujaban como tra
 - La línea Europa/Asia en Rusia es recta a 60° E; los Urales reales no lo son.
 
 ## Para ejecutarlo
-Token público de Mapbox en `.env.local` (ignorado por git): `VITE_MAPBOX_TOKEN=pk.…`. Luego `npm install` y `npm run dev`.
+Token público de Mapbox en `.env` o `.env.local` (ignorados por git): `VITE_MAPBOX_TOKEN=pk.…`. Luego `npm install` y `npm run dev`.
+El token se lee **solo** de esa variable: se quitaron el botón "Configurar Token", la ventana para pegarlo y el guardado en `localStorage`. En Vercel se define
+en las variables de entorno del proyecto. Si falta, `vite build` avisa y el mapa muestra un aviso con el nombre de la variable.
 
 ## Pendiente y límites
 - **Los recursos de marca de Space Apps no están incluidos** (condiciones de uso sin confirmar). La barra superior muestra el símbolo y un patrón si se colocan en

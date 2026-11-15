@@ -7,20 +7,17 @@ import DrawnAreaDrawer from './components/DrawnAreaDrawer';
 import DrawToolbar from './components/DrawToolbar';
 import MapControls from './components/MapControls';
 import CoordinatesHUD from './components/CoordinatesHUD';
-import TokenModal from './components/TokenModal';
-import { MAP_STYLES, DEFAULT_MAPBOX_TOKEN } from './data/zonesData';
-import { AlertCircle, KeyRound, X } from 'lucide-react';
+import { MAP_STYLES } from './data/zonesData';
+import { AlertCircle, X } from 'lucide-react';
 import './App.css';
+
+// El token de Mapbox sale SOLO de la variable de entorno VITE_MAPBOX_TOKEN: del archivo .env (o .env.local) en
+// desarrollo y de las variables del proyecto en Vercel. Vite la incrusta al compilar, así que si se cambia hay que
+// volver a compilar o desplegar. No se puede escribir desde la interfaz ni se guarda en el navegador.
+const MAPBOX_TOKEN = (import.meta.env.VITE_MAPBOX_TOKEN || '').trim();
 
 export default function App() {
   const globeRef = useRef(null);
-
-  // Estado del Token de Mapbox (lee desde VITE_MAPBOX_TOKEN o localStorage)
-  const [token, setToken] = useState(() => {
-    return import.meta.env.VITE_MAPBOX_TOKEN || localStorage.getItem('mapbox_token') || DEFAULT_MAPBOX_TOKEN;
-  });
-  const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
-  const isCustomToken = Boolean(token && token.trim());
 
   // Estado de Cartografía y Proyección
   const [currentStyleId, setCurrentStyleId] = useState('satellite');
@@ -51,13 +48,6 @@ export default function App() {
   const [mapError, setMapError] = useState(null);
 
   const activeStyle = MAP_STYLES.find((s) => s.id === currentStyleId) || MAP_STYLES[0];
-
-  // Guardar nuevo Token
-  const handleSaveToken = (newToken) => {
-    localStorage.setItem('mapbox_token', newToken);
-    setToken(newToken);
-    setMapError(null);
-  };
 
   // Seleccionar una zona
   const handleSelectZone = (zone) => {
@@ -153,8 +143,6 @@ export default function App() {
         onSelectStyle={setCurrentStyleId}
         projection={projection}
         onToggleProjection={handleToggleProjection}
-        onOpenTokenModal={() => setIsTokenModalOpen(true)}
-        isCustomToken={isCustomToken}
         onSelectZone={handleSelectZone}
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
         isSidebarOpen={isSidebarOpen}
@@ -165,7 +153,7 @@ export default function App() {
       {/* Visor principal del Globo 3D con Mapbox GL */}
       <Globe
         ref={globeRef}
-        token={token}
+        token={MAPBOX_TOKEN}
         styleUrl={activeStyle.styleUrl}
         projection={projection}
         selectedZone={selectedZone}
@@ -256,14 +244,6 @@ export default function App() {
         projection={projection}
       />
 
-      {/* Modal de configuración de Token */}
-      <TokenModal
-        isOpen={isTokenModalOpen}
-        onClose={() => setIsTokenModalOpen(false)}
-        currentToken={token}
-        onSaveToken={handleSaveToken}
-      />
-
       {/* Alerta flotante en caso de error de Mapbox */}
       {mapError && (
         <div className="error-toast panel">
@@ -271,12 +251,6 @@ export default function App() {
           <div className="error-text">
             <strong>Aviso de Mapbox:</strong> {mapError}
           </div>
-          <button
-            className="btn-tiny btn-action"
-            onClick={() => setIsTokenModalOpen(true)}
-          >
-            <KeyRound size={12} /> Configurar Token
-          </button>
           <button
             className="btn-close-sm"
             onClick={() => setMapError(null)}

@@ -628,7 +628,7 @@ const Globe = forwardRef(function Globe(
     if (!mapContainerRef.current) return;
     if (!token) {
       if (onMapError) {
-        onMapError('Mapbox Access Token no configurado. Haz clic en "Configurar Token" para activarlo.');
+        onMapError('No se encontró el token de Mapbox. Define VITE_MAPBOX_TOKEN en el archivo .env (o en las variables de entorno de Vercel) y vuelve a compilar o desplegar.');
       }
       return;
     }
