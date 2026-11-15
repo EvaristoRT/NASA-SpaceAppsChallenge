@@ -4,6 +4,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { ZONES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
+import { buildCountryDots } from '../utils/countryDots';
+import { continentIdOf } from '../utils/continents';
 import {
   generateZonesGeoJSON,
   generateZonesOutlineGeoJSON,
@@ -16,6 +18,10 @@ import {
 // Duración de los vuelos de cámara (ms). Antes eran de 2 a 2.5 s; se acortaron (1.4 s y luego 1 s) para que la navegación se sienta ágil.
 const FLY_MS = 1000;
 const FLY_CURVE = 1.2;
+
+// En el mapa plano el mundo se repite al desplazarse (como cualquier mapa web): el arrastre es libre. Con `false` el mapa queda en un
+// solo mundo, pero Mapbox obliga a que llene el ancho de la pantalla y al alejar el arrastre queda bloqueado en horizontal.
+const FLAT_WORLD_COPIES = true;
 
 const Globe = forwardRef(function Globe(
   {
@@ -448,14 +454,13 @@ const Globe = forwardRef(function Globe(
   const labelOriginalsRef = useRef(new Map());
   const onCameraSettledRef = useRef(onCameraSettled);
   onCameraSettledRef.current = onCameraSettled;
+  const onSelectZoneRef = useRef(onSelectZone);
+  onSelectZoneRef.current = onSelectZone;
   const onFlightChangeRef = useRef(onFlightChange);
   onFlightChangeRef.current = onFlightChange;
   const flightIdRef = useRef(0);
 
-  // Mapa plano (Mercator 2D): sin rotación ni inclinación, y un solo mundo (sin copias repetidas al desplazarse).
-  // Con `renderWorldCopies` en falso Mapbox limita el desplazamiento a los bordes del mundo y sube solo el zoom mínimo para que
-  // el mapa llene la pantalla; las zonas que cruzan el antimeridiano (Rusia, Fiyi, Alaska) se ven en los dos bordes.
-  // En el globo todo vuelve a ser libre.
+  // Mapa plano (Mercator 2D): sin rotación ni inclinación. Las copias del mundo dependen de FLAT_WORLD_COPIES. En el globo todo es libre.
   const applyFlatConstraints = (map, flat) => {
     if (!map) return;
     try {
@@ -463,7 +468,7 @@ const Globe = forwardRef(function Globe(
         map.dragRotate.disable();
         map.touchZoomRotate.disableRotation();
         map.setMaxPitch(0);
-        map.setRenderWorldCopies(false);
+        map.setRenderWorldCopies(FLAT_WORLD_COPIES);
         if (map.getPitch() !== 0 || map.getBearing() !== 0) map.easeTo({ pitch: 0, bearing: 0, duration: 400 });
       } else {
         map.dragRotate.enable();
@@ -518,10 +523,19 @@ const Globe = forwardRef(function Globe(
     });
   };
 
+  // Los puntos de países siguen la zona elegida (los del continente) y el idioma (el nombre)
+  useEffect(() => {
+    if (mapRef.current && mapRef.current.isStyleLoaded()) updateCountryDots(mapRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedZone]);
+
   // Al cambiar de idioma, volver a dibujar las etiquetas de los continentes
   useEffect(() => {
     if (mapRef.current && markersRef.current.length > 0) renderZoneMarkers(mapRef.current);
     if (mapRef.current && mapRef.current.isStyleLoaded()) applyMapLanguage(mapRef.current);
+    if (mapRef.current && mapRef.current.getSource('country-dots')) {
+      mapRef.current.getSource('country-dots').setData(buildCountryDots(lang));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
@@ -551,6 +565,65 @@ const Globe = forwardRef(function Globe(
   };
 
   // Capas poligonales de países y zonas
+  // Puntos de países: al elegir un continente (o un país) se ven discretos los puntos de los países de ese continente, para
+  // poder elegirlos tocando el mapa. Sin continente elegido no se dibuja ninguno, para no meter ruido.
+  const updateCountryDots = (map) => {
+    if (!map || !map.getLayer('country-dots')) return;
+    const zone = selectedZoneRef.current;
+    const cid = continentIdOf(zone) || '';
+    const filter = ['==', ['get', 'continent'], cid];
+    ['country-dots-halo', 'country-dots', 'country-dots-label'].forEach((id) => map.setFilter(id, filter));
+    map.setPaintProperty('country-dots', 'circle-color', [
+      'case',
+      ['==', ['get', 'id'], zone && zone.category === 'País' ? zone.id : ''],
+      '#e7f434',
+      '#ffffff'
+    ]);
+  };
+
+  const setupCountryDots = (map) => {
+    if (!map) return;
+    ['country-dots-label', 'country-dots', 'country-dots-halo'].forEach((id) => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    if (map.getSource('country-dots')) map.removeSource('country-dots');
+    map.addSource('country-dots', { type: 'geojson', data: buildCountryDots(langRef.current) });
+    const none = ['==', ['get', 'continent'], ''];
+
+    // halo oscuro para que el punto se lea sobre satélite y sobre mapas claros
+    map.addLayer({
+      id: 'country-dots-halo',
+      type: 'circle',
+      source: 'country-dots',
+      filter: none,
+      paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 4.5, 6, 8], 'circle-color': '#151622', 'circle-opacity': 0.55 }
+    });
+    map.addLayer({
+      id: 'country-dots',
+      type: 'circle',
+      source: 'country-dots',
+      filter: none,
+      paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 2.6, 6, 4.6], 'circle-color': '#ffffff', 'circle-opacity': 0.9 }
+    });
+    // el nombre solo aparece al acercarse
+    map.addLayer({
+      id: 'country-dots-label',
+      type: 'symbol',
+      source: 'country-dots',
+      filter: none,
+      minzoom: 3.6,
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+        'text-size': 11,
+        'text-anchor': 'top',
+        'text-offset': [0, 0.9]
+      },
+      paint: { 'text-color': '#ffffff', 'text-halo-color': '#151622', 'text-halo-width': 1.2 }
+    });
+    updateCountryDots(map);
+  };
+
   const setupZoneLayers = (map) => {
     if (!map) return;
     const geojsonData = generateZonesGeoJSON();
@@ -775,6 +848,7 @@ const Globe = forwardRef(function Globe(
     // 4. Recrear capas de zonas y dibujo con protección de errores
     try {
       setupZoneLayers(map);
+      setupCountryDots(map);
     } catch (err) {
       console.warn('Error setting up zone layers:', err);
     }
@@ -853,6 +927,14 @@ const Globe = forwardRef(function Globe(
         });
         resizeObserver.observe(mapContainerRef.current);
       }
+
+      // Cursor de mano sobre los puntos de países
+      map.on('mouseenter', 'country-dots', () => {
+        if (!drawModeRef.current) map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'country-dots', () => {
+        map.getCanvas().style.cursor = '';
+      });
 
       // En el mapa plano el rumbo siempre es norte arriba
       map.on('rotate', () => {
@@ -962,6 +1044,22 @@ const Globe = forwardRef(function Globe(
         }
 
         if (drawModeRef.current) return;
+
+        // Un punto de país tiene prioridad sobre el polígono que hay debajo
+        if (map.getLayer('country-dots')) {
+          // área de clic de unos 10 px alrededor del punto: el punto es pequeño
+          const box = [
+            [e.point.x - 10, e.point.y - 10],
+            [e.point.x + 10, e.point.y + 10]
+          ];
+          const hit = map.queryRenderedFeatures(box, { layers: ['country-dots'] });
+          const dotZone = hit.length > 0 ? ZONES.find((z) => z.id === hit[0].properties.id) : null;
+          if (dotZone) {
+            onSelectZoneRef.current(dotZone);
+            return;
+          }
+        }
+
         if (!map.getLayer('zones-fill')) return;
 
         const features = map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] });
