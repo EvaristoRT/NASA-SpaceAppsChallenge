@@ -4,7 +4,6 @@ import {
   Orbit,
   Copy,
   Check,
-  Sparkles,
   MapPin,
   Thermometer,
   Users,
@@ -109,23 +108,6 @@ export default function ZoneSummary({
           <h4 className="section-title">{t('zoneDrawer.about')}</h4>
           <p className="zone-description">{zone.description}</p>
         </div>
-
-        {/* Puntos destacados / Highlights */}
-        {zone.highlights && zone.highlights.length > 0 && (
-          <div className="zone-section">
-            <h4 className="section-title flex-center">
-              <Sparkles size={14} className="accent mr-1" />
-              {t('zoneDrawer.highlights')}
-            </h4>
-            <div className="tags-container">
-              {zone.highlights.map((highlight, idx) => (
-                <span key={idx} className="tag-pill">
-                  {highlight}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Acciones interactivas */}
         <div className="zone-actions-grid">

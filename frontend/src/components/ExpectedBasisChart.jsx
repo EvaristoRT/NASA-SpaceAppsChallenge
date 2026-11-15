@@ -2,8 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
 const W = 340;
-const H = 200;
-const PAD = { l: 38, r: 8, t: 14, b: 46 };
+const H = 180;
+const PAD = { l: 38, r: 8, t: 14, b: 24 };
 
 const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(Math.round(n)));
 const quantile = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
@@ -88,14 +88,8 @@ export default function ExpectedBasisChart({ data }) {
               <circle key={d.year} cx={d.x} cy={d.y} r={d.recent ? 3.4 : 2.6} className={d.recent ? 'basis-dot recent' : 'basis-dot'} />
             ))}
             <line x1={c.cx - 32} x2={c.cx + 32} y1={y(c.n.median)} y2={y(c.n.median)} className="basis-median" />
-            <text x={c.cx} y={H - 30} textAnchor="middle" className="estimate-label basis-month">
+            <text x={c.cx} y={H - 6} textAnchor="middle" className="estimate-label basis-month">
               {monthsLong[c.n.month]}
-            </text>
-            <text x={c.cx} y={H - 17} textAnchor="middle" className={`estimate-label basis-level basis-level-${c.n.level}`}>
-              {t(`analysis.level.${c.n.level}`)}
-            </text>
-            <text x={c.cx} y={H - 4} textAnchor="middle" className="estimate-label">
-              {t('prediction.expectedLabel', { n: fmt(c.n.median) })}
             </text>
           </g>
         ))}

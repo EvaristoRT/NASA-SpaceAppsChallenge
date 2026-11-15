@@ -36,15 +36,6 @@ export default function InfoPanel({
   // Ruta: Mundo > continente > país. Cada tramo anterior al actual es un botón.
   const parent = !isArea && zone && zone.category === 'País' ? ZONES.find((z) => z.id === continentIdOf(zone)) : null;
   const parentName = parent ? localizeZone(parent, lang).name : '';
-  const typeLabel = isArea
-    ? t(
-        drawnArea.type === 'rectangle'
-          ? 'drawnAreaDrawer.types.rectangle'
-          : drawnArea.type === 'polygon'
-          ? 'drawnAreaDrawer.types.polygon'
-          : 'drawnAreaDrawer.types.freehand'
-      )
-    : '';
 
   const tabs = [
     { id: 'main', label: t(isArea ? 'panel.tabArea' : 'panel.tabSummary') },
@@ -58,9 +49,6 @@ export default function InfoPanel({
         <div className="zone-title-box">
           {isArea ? (
             <div>
-              <div className="zone-category-badge">
-                {t('drawnAreaDrawer.aoiTitle')} ({typeLabel})
-              </div>
               <h2 className="zone-title">{t('drawnAreaDrawer.drawnZone')}</h2>
             </div>
           ) : (
@@ -76,7 +64,6 @@ export default function InfoPanel({
                 <span aria-hidden="true">›</span>
                 <span aria-current="location">{localized.name}</span>
               </nav>
-              <div className="zone-category-badge" data-category={zone.category}>{localized.category}</div>
               <h2 className="zone-title">{localized.name}</h2>
               {localized.nativeName && localized.nativeName !== localized.name && (
                 <span className="zone-native-title">{localized.nativeName}</span>

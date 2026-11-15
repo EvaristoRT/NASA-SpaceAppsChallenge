@@ -31,11 +31,13 @@ export default function PredictionView({ zone, drawnArea }) {
 
   return shell(
     <>
-      <p className="analysis-statement">{t('prediction.statement', { list })}</p>
+      <section className="panel-section">
+        <p className="analysis-statement">{t('prediction.statement', { list })}</p>
+      </section>
 
-      <section className="analysis-next" aria-label={t('prediction.listTitle')}>
-        <h3 className="analysis-section-title">{t('prediction.listTitle')}</h3>
-        <ul>
+      <section className="panel-section" aria-label={t('prediction.listTitle')}>
+        <h3 className="panel-section-title">{t('prediction.listTitle')}</h3>
+        <ul className="analysis-next">
           {next.map((n) => (
             <li key={`${n.year}-${n.month}`}>
               <span>
@@ -50,11 +52,13 @@ export default function PredictionView({ zone, drawnArea }) {
         <p className="analysis-note">{t('prediction.peakMonth', { month: monthsLong[data.riskMonth] })}</p>
       </section>
 
-      <h3 className="analysis-section-title">{t('prediction.chartTitle')}</h3>
-      <ExpectedBasisChart data={data} />
+      <section className="panel-section">
+        <h3 className="panel-section-title">{t('prediction.chartTitle')}</h3>
+        <ExpectedBasisChart data={data} />
+      </section>
 
-      <section className="pred-how" aria-label={t('prediction.howTitle')}>
-        <h3 className="analysis-section-title">{t('prediction.howTitle')}</h3>
+      <section className="panel-section pred-how" aria-label={t('prediction.howTitle')}>
+        <h3 className="panel-section-title">{t('prediction.howTitle')}</h3>
         <ol>
           <li>{t('prediction.how1', { from, to })}</li>
           <li>{t('prediction.how2')}</li>

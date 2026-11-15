@@ -163,6 +163,9 @@ export const translations = {
       hotspotsLine: 'Focos detectados, {period}: {n} focos',
       cellExpected: 'Esperado: {median} días-celda (rango {low}–{high})',
       level: { low: '↓ Bajo', medium: '→ Medio', high: '↑ Alto' },
+      sectionSummary: 'Resumen',
+      sectionCalendar: 'Calendario',
+      sectionSeries: 'Serie mensual',
       rangeLabel: 'Periodo',
       rangeFrom: 'Desde',
       rangeTo: 'Hasta',
@@ -206,7 +209,7 @@ export const translations = {
       preliminary: 'Preliminar (se reemplaza en ~5 meses)'
     },
     estimate: {
-      fig: 'Fig. 2',
+      fig: 'Fig. 1',
       caption: 'Serie mensual con su intervalo al 95 %. Medido desde abril de 2018 (NOAA-20); antes, estimado.',
       interval: 'intervalo',
       measured: 'Medido (NOAA-20)',
@@ -441,6 +444,9 @@ export const translations = {
       hotspotsLine: 'Hotspots detected, {period}: {n} hotspots',
       cellExpected: 'Expected: {median} cell-days (range {low}–{high})',
       level: { low: '↓ Low', medium: '→ Medium', high: '↑ High' },
+      sectionSummary: 'Summary',
+      sectionCalendar: 'Calendar',
+      sectionSeries: 'Monthly series',
       rangeLabel: 'Period',
       rangeFrom: 'From',
       rangeTo: 'To',
@@ -484,7 +490,7 @@ export const translations = {
       preliminary: 'Preliminary (replaced in ~5 months)'
     },
     estimate: {
-      fig: 'Fig. 2',
+      fig: 'Fig. 1',
       caption: 'Monthly series with its 95% interval. Measured since April 2018 (NOAA-20); before that, estimated.',
       interval: 'interval',
       measured: 'Measured (NOAA-20)',

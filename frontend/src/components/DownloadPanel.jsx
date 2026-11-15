@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronDown, Download } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { geometryFor } from '../utils/useAnalysis';
 import { downloadCsv } from '../utils/downloadCsv';
@@ -12,8 +13,23 @@ const spanMonths = (from, to) => (Number(to.slice(0, 4)) - Number(from.slice(0, 
 export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth, data, range, ranged }) {
   const { t } = useLanguage();
   const meta = useMeta();
-  // Estado por fila: { loading, message }
-  const [state, setState] = useState({});
+  const [open, setOpen] = useState(false);
+  // Último resultado de una descarga: { loading, message, error }
+  const [status, setStatus] = useState(null);
+  const rootRef = useRef(null);
+
+  // El menú se cierra con Esc o al hacer clic fuera
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => e.key === 'Escape' && setOpen(false);
+    const onDown = (e) => rootRef.current && !rootRef.current.contains(e.target) && setOpen(false);
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+    };
+  }, [open]);
 
   const months = t('analysis.monthsShort');
   const monthLabelOf = (key) => `${months[Number(key.slice(5)) - 1]} ${key.slice(0, 4)}`;
@@ -25,15 +41,16 @@ export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth
   // Focos: el mes elegido o, si no hay, el periodo cuando cabe en 12 meses (el límite del servidor)
   const shortRange = range ? spanMonths(range.from, range.to) <= 12 : false;
 
-  const run = async (id, action) => {
-    setState((s) => ({ ...s, [id]: { loading: true } }));
+  const run = async (action) => {
+    setOpen(false);
+    setStatus({ loading: true });
     try {
       await action();
-      setState((s) => ({ ...s, [id]: { message: t('download.done') } }));
+      setStatus({ message: t('download.done') });
     } catch (error) {
       const message =
         error.status === 413 ? t('download.tooMany') : error.status === 503 ? t('download.unavailable') : t('download.error');
-      setState((s) => ({ ...s, [id]: { message, error: true } }));
+      setStatus({ message, error: true });
     }
   };
 
@@ -97,38 +114,36 @@ export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth
     }
   ];
 
-  const renderRows = (rows) =>
-    rows.map((row) => {
-      const s = state[row.id] || {};
-      const disabled = Boolean(row.disabledReason) || Boolean(s.loading);
-      return (
-        <li key={row.id}>
-          <button type="button" className="download-row" disabled={disabled} onClick={() => run(row.id, row.action)}>
-            <span className="download-text">
-              <b>{row.label}</b>
-              {row.disabledReason && <small>{row.disabledReason}</small>}
-            </span>
-          </button>
-          {(s.loading || s.message) && (
-            <p className={`download-status${s.error ? ' error' : ''}`} role="status">
-              {s.loading ? t('download.working') : s.message}
-            </p>
-          )}
-        </li>
-      );
-    });
+  const renderItems = (rows) =>
+    rows.map((row) => (
+      <button key={row.id} type="button" role="menuitem" className="download-item" disabled={Boolean(row.disabledReason)} onClick={() => run(row.action)}>
+        <span>{row.label}</span>
+        {row.disabledReason && <small>{row.disabledReason}</small>}
+      </button>
+    ));
 
   return (
-    <details className="analysis-fold">
-      <summary>{t('download.title')}</summary>
-      <section className="analysis-downloads" aria-label={t('download.csvTitle')}>
-        <h3 className="analysis-section-title">{t('download.csvTitle')}</h3>
-        <ul>{renderRows(csvRows)}</ul>
-      </section>
-      <section className="analysis-downloads" aria-label={t('download.imagesTitle')}>
-        <h3 className="analysis-section-title">{t('download.imagesTitle')}</h3>
-        <ul>{renderRows(imageRows)}</ul>
-      </section>
-    </details>
+    <div className="download-menu" ref={rootRef}>
+      <button type="button" className="download-trigger" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <Download size={15} aria-hidden="true" />
+        <span>{t('download.title')}</span>
+        <ChevronDown size={14} aria-hidden="true" />
+      </button>
+
+      {open && (
+        <div className="download-popover" role="menu" aria-label={t('download.title')}>
+          <p className="download-group">{t('download.csvTitle')}</p>
+          {renderItems(csvRows)}
+          <p className="download-group">{t('download.imagesTitle')}</p>
+          {renderItems(imageRows)}
+        </div>
+      )}
+
+      {status && (
+        <p className={`download-status${status.error ? ' error' : ''}`} role="status">
+          {status.loading ? t('download.working') : status.message}
+        </p>
+      )}
+    </div>
   );
 }

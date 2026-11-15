@@ -128,175 +128,174 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
 
   return (
     <div className="zone-drawer-body analysis-view" aria-label={t('analysis.title')}>
-      <p className="analysis-statement">{statement}</p>
-
-      {range && (
-        <div className="analysis-range" role="group" aria-label={t('analysis.rangeLabel')}>
-          <label>
-            {t('analysis.rangeFrom')}
-            <input type="month" value={rangeFrom} min={bounds.from} max={bounds.to} onChange={(e) => changeFrom(e.target.value)} />
-          </label>
-          <label>
-            {t('analysis.rangeTo')}
-            <input type="month" value={rangeTo} min={bounds.from} max={bounds.to} onChange={(e) => changeTo(e.target.value)} />
-          </label>
-          {ranged && (
-            <button type="button" className="analysis-range-reset" onClick={() => setRange(bounds.from, bounds.to)}>
-              {t('analysis.rangeReset')}
-            </button>
+      <section className="panel-section">
+        <div className="panel-section-head">
+          <h3 className="panel-section-title">{t('analysis.sectionSummary')}</h3>
+          {range && (
+            <div className="analysis-range" role="group" aria-label={t('analysis.rangeLabel')}>
+              <input type="month" aria-label={t('analysis.rangeFrom')} value={rangeFrom} min={bounds.from} max={bounds.to} onChange={(e) => changeFrom(e.target.value)} />
+              <span aria-hidden="true">–</span>
+              <input type="month" aria-label={t('analysis.rangeTo')} value={rangeTo} min={bounds.from} max={bounds.to} onChange={(e) => changeTo(e.target.value)} />
+              {ranged && (
+                <button type="button" className="analysis-range-reset" onClick={() => setRange(bounds.from, bounds.to)}>
+                  {t('analysis.rangeReset')}
+                </button>
+              )}
+            </div>
           )}
         </div>
-      )}
 
-      <dl className="analysis-facts">
-        <div>
-          <dt>{t('analysis.factTotal', { from: data.firstYear, to: data.lastYear })}</dt>
-          <dd>
-            {fmt(data.total)} <small>{t('analysis.unitCellDays')}</small>
-          </dd>
-        </div>
-        <div>
-          <dt>{t('analysis.factPeakYear')}</dt>
-          <dd>{data.peakYear}</dd>
-        </div>
-        <div>
-          <dt>{t('analysis.factStatus')}</dt>
-          <dd>
-            <span className={`analysis-status analysis-status-${data.status}`}>{t(`analysis.status.${data.status}`)}</span>
-            {data.ratio !== null && <small> {ratioText}×</small>}
-          </dd>
-        </div>
-      </dl>
+        <p className="analysis-statement">{statement}</p>
 
-      {hotspotsOn && hotspotCount.status !== 'off' && (
-        <p className="analysis-note" aria-live="polite">
-          {t('analysis.hotspotsLine', { period: hotspotPeriod, n: hotspotCount.status === 'ready' ? fmt(hotspotCount.count) : '…' })}
-        </p>
-      )}
+        <dl className="analysis-facts">
+          <div>
+            <dt>{t('analysis.factTotal', { from: data.firstYear, to: data.lastYear })}</dt>
+            <dd>
+              {fmt(data.total)} <small>{t('analysis.unitCellDays')}</small>
+            </dd>
+          </div>
+          <div>
+            <dt>{t('analysis.factPeakYear')}</dt>
+            <dd>{data.peakYear}</dd>
+          </div>
+          <div>
+            <dt>{t('analysis.factStatus')}</dt>
+            <dd>
+              <span className={`analysis-status analysis-status-${data.status}`}>{t(`analysis.status.${data.status}`)}</span>
+              {data.ratio !== null && <small> {ratioText}×</small>}
+            </dd>
+          </div>
+        </dl>
 
-      <p className="analysis-note">
-        {data.synthetic ? (
-          <>
-            <b>{t('analysis.demoTitle')}</b> {t('analysis.demoText')}
-          </>
-        ) : (
-          t('analysis.unitLine')
+        {hotspotsOn && hotspotCount.status !== 'off' && (
+          <p className="analysis-note" aria-live="polite">
+            {t('analysis.hotspotsLine', { period: hotspotPeriod, n: hotspotCount.status === 'ready' ? fmt(hotspotCount.count) : '…' })}
+          </p>
         )}
-      </p>
-      {!data.synthetic && (
-        <details className="analysis-explain">
-          <summary>{t('analysis.explainTitle')}</summary>
-          <p>{t('analysis.explainText')}</p>
-        </details>
-      )}
 
-      <figure className="analysis-figure">
-        <div className="mcal-head">
-          <button type="button" aria-label={t('analysis.yearPrev')} disabled={shownYear <= data.firstYear} onClick={() => goToYear(shownYear - 1)}>
-            ‹
-          </button>
-          <input
-            type="text"
-            inputMode="numeric"
-            className="mcal-year"
-            aria-label={t('analysis.yearInput', { from: data.firstYear, to: data.lastYear })}
-            value={yearDraft ?? String(shownYear)}
-            onChange={onYearTyped}
-            onBlur={() => setYearDraft(null)}
-            onKeyDown={onYearKey}
-          />
-          <button type="button" aria-label={t('analysis.yearNext')} disabled={shownYear >= data.lastYear} onClick={() => goToYear(shownYear + 1)}>
-            ›
-          </button>
-          <span className="mcal-span">{data.firstYear}–{data.lastYear}</span>
-        </div>
+        {data.synthetic ? (
+          <p className="analysis-note">
+            <b>{t('analysis.demoTitle')}</b> {t('analysis.demoText')}
+          </p>
+        ) : (
+          <details className="analysis-explain">
+            <summary>{t('analysis.explainTitle')}</summary>
+            <p>{t('analysis.explainText')}</p>
+          </details>
+        )}
+      </section>
 
-        <div className="mcal" role={interactive ? 'group' : 'img'} aria-label={t('analysis.calendarYearLabel', { year: shownYear })} onKeyDown={interactive ? moveFocus : undefined}>
-          {monthsLong.map((name, m) => {
-            const v = yearRow[m];
-            if (v === null) {
-              // Mes futuro del último año: se pinta tenue con el valor esperado (mediana histórica), no medido
-              const ex = data.expected?.[shownYear]?.[m];
-              if (ex) {
-                const text = `${name} ${shownYear}: ${t('analysis.cellExpected', { median: fmt(Math.round(ex.median)), low: fmt(Math.round(ex.p25)), high: fmt(Math.round(ex.p75)) })}`;
+      <section className="panel-section">
+        <h3 className="panel-section-title">{t('analysis.sectionCalendar')}</h3>
+        <figure className="analysis-figure">
+          <div className="mcal-head">
+            <button type="button" aria-label={t('analysis.yearPrev')} disabled={shownYear <= data.firstYear} onClick={() => goToYear(shownYear - 1)}>
+              ‹
+            </button>
+            <input
+              type="text"
+              inputMode="numeric"
+              className="mcal-year"
+              aria-label={t('analysis.yearInput', { from: data.firstYear, to: data.lastYear })}
+              value={yearDraft ?? String(shownYear)}
+              onChange={onYearTyped}
+              onBlur={() => setYearDraft(null)}
+              onKeyDown={onYearKey}
+            />
+            <button type="button" aria-label={t('analysis.yearNext')} disabled={shownYear >= data.lastYear} onClick={() => goToYear(shownYear + 1)}>
+              ›
+            </button>
+            <span className="mcal-span">{data.firstYear}–{data.lastYear}</span>
+          </div>
+
+          <div className="mcal" role={interactive ? 'group' : 'img'} aria-label={t('analysis.calendarYearLabel', { year: shownYear })} onKeyDown={interactive ? moveFocus : undefined}>
+            {monthsLong.map((name, m) => {
+              const v = yearRow[m];
+              if (v === null) {
+                // Mes futuro del último año: se pinta tenue con el valor esperado (mediana histórica), no medido
+                const ex = data.expected?.[shownYear]?.[m];
+                if (ex) {
+                  const text = `${name} ${shownYear}: ${t('analysis.cellExpected', { median: fmt(Math.round(ex.median)), low: fmt(Math.round(ex.p25)), high: fmt(Math.round(ex.p75)) })}`;
+                  return (
+                    <span key={m} className="mcal-tile expected" role="img" aria-label={text} title={text} style={{ background: cellColor(ex.median, data.max), color: textOn(ex.median, data.max) }}>
+                      <b>{name}</b>
+                      <span className="mcal-value">{t('analysis.expectedShort', { n: fmt(Math.round(ex.median)) })}</span>
+                    </span>
+                  );
+                }
                 return (
-                  <span key={m} className="mcal-tile expected" role="img" aria-label={text} title={text} style={{ background: cellColor(ex.median, data.max), color: textOn(ex.median, data.max) }}>
+                  <span key={m} className="mcal-tile empty" title={interactive ? t('analysis.noMonthData') : undefined}>
                     <b>{name}</b>
-                    <span className="mcal-value">{t('analysis.expectedShort', { n: fmt(Math.round(ex.median)) })}</span>
+                    <span className="mcal-value">—</span>
                   </span>
                 );
               }
-              return (
-                <span key={m} className="mcal-tile empty" title={interactive ? t('analysis.noMonthData') : undefined}>
+              const title = `${name} ${shownYear}: ${t('analysis.cellTitle', { days: v })}`;
+              const style = { background: cellColor(v, data.max), color: textOn(v, data.max) };
+              const content = (
+                <>
                   <b>{name}</b>
-                  <span className="mcal-value">—</span>
-                </span>
+                  <span className="mcal-value">{fmt(v)}</span>
+                </>
               );
-            }
-            const title = `${name} ${shownYear}: ${t('analysis.cellTitle', { days: v })}`;
-            const style = { background: cellColor(v, data.max), color: textOn(v, data.max) };
-            const content = (
-              <>
-                <b>{name}</b>
-                <span className="mcal-value">{fmt(v)}</span>
-              </>
-            );
-            if (!interactive) {
+              if (!interactive) {
+                return (
+                  <span key={m} className="mcal-tile" style={style} title={title}>
+                    {content}
+                  </span>
+                );
+              }
+              // Mes en curso incompleto: se ve, pero no se puede elegir
+              const locked = Boolean(data.partial?.[shownYear]?.[m]);
+              const picked = selectedMonth && selectedMonth.year === shownYear && selectedMonth.month === m;
               return (
-                <span key={m} className="mcal-tile" style={style} title={title}>
+                <button
+                  key={m}
+                  type="button"
+                  data-m={m}
+                  className={`mcal-tile${locked ? ' locked' : ' pick'}${picked ? ' picked' : ''}`}
+                  style={style}
+                  title={locked ? `${name} ${shownYear}: ${t('analysis.monthIncomplete')}` : title}
+                  disabled={locked}
+                  aria-pressed={locked ? undefined : Boolean(picked)}
+                  tabIndex={m === tabM ? 0 : -1}
+                  onClick={() => onSelectMonth(shownYear, m)}
+                >
                   {content}
-                </span>
+                </button>
               );
-            }
-            // Mes en curso incompleto: se ve, pero no se puede elegir
-            const locked = Boolean(data.partial?.[shownYear]?.[m]);
-            const picked = selectedMonth && selectedMonth.year === shownYear && selectedMonth.month === m;
-            return (
-              <button
-                key={m}
-                type="button"
-                data-m={m}
-                className={`mcal-tile${locked ? ' locked' : ' pick'}${picked ? ' picked' : ''}`}
-                style={style}
-                title={locked ? `${name} ${shownYear}: ${t('analysis.monthIncomplete')}` : title}
-                disabled={locked}
-                aria-pressed={locked ? undefined : Boolean(picked)}
-                tabIndex={m === tabM ? 0 : -1}
-                onClick={() => onSelectMonth(shownYear, m)}
-              >
-                {content}
-              </button>
-            );
-          })}
-        </div>
+            })}
+          </div>
 
-        <div className="cal-scale">
-          <span className="cal-axis">0</span>
-          <div className="cal-ramp" style={{ background: rampGradient() }} />
-          <span className="cal-axis">{fmt(data.max)}</span>
-        </div>
+          <div className="cal-scale">
+            <span className="cal-axis">0</span>
+            <div className="cal-ramp" style={{ background: rampGradient() }} />
+            <span className="cal-axis">{fmt(data.max)}</span>
+          </div>
 
-        {interactive && !selectedMonth && <p className="analysis-pick">{t('analysis.pickHint')}</p>}
-        {!interactive && data.synthetic && <p className="analysis-pick">{t('analysis.pickNeedsApi')}</p>}
+          {interactive && !selectedMonth && <p className="analysis-pick">{t('analysis.pickHint')}</p>}
+          {!interactive && data.synthetic && <p className="analysis-pick">{t('analysis.pickNeedsApi')}</p>}
 
-        <figcaption className="analysis-caption">
-          <b>{t('analysis.fig1')}</b>
-          {t('analysis.fig1Text')}
-        </figcaption>
-      </figure>
+        </figure>
+      </section>
 
       {!data.synthetic && (
         <>
-          <EstimateChart points={data.points} />
-          <DownloadPanel
-            zone={zone}
-            drawnArea={drawnArea}
-            zoneName={drawnArea ? t('analysis.customArea') : localizeZone(zone, lang).name}
-            selectedMonth={activeMonth}
-            data={data}
-            range={range}
-            ranged={ranged}
-          />
+          <section className="panel-section">
+            <h3 className="panel-section-title">{t('analysis.sectionSeries')}</h3>
+            <EstimateChart points={data.points} />
+          </section>
+          <section className="panel-section">
+            <DownloadPanel
+              zone={zone}
+              drawnArea={drawnArea}
+              zoneName={drawnArea ? t('analysis.customArea') : localizeZone(zone, lang).name}
+              selectedMonth={activeMonth}
+              data={data}
+              range={range}
+              ranged={ranged}
+            />
+          </section>
         </>
       )}
     </div>
