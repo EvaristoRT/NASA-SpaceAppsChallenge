@@ -9,6 +9,7 @@
 // - Los 7 continentes llevan texto escrito a mano en `CONTINENTS_EN`.
 
 import { continentIdOf } from '../utils/continents';
+import { isoFromFlag } from '../utils/countryIso';
 
 const CONTINENT_NAMES_EN = {
   'América': 'Americas',
@@ -91,13 +92,6 @@ const CONTINENTS_EN = {
 };
 
 const regionNames = typeof Intl !== 'undefined' && Intl.DisplayNames ? new Intl.DisplayNames(['en'], { type: 'region' }) : null;
-
-// La bandera (dos símbolos regionales) codifica el código ISO del país
-function isoFromFlag(flag) {
-  const points = [...(flag || '')].map((c) => c.codePointAt(0) - 0x1f1e6);
-  if (points.length !== 2 || points.some((p) => p < 0 || p > 25)) return null;
-  return String.fromCharCode(65 + points[0], 65 + points[1]);
-}
 
 const COUNTRY_FIXES = {
   'Congo - Brazzaville': 'Republic of the Congo',

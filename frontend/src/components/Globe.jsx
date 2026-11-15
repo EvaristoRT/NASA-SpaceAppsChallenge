@@ -5,9 +5,8 @@ import { ZONES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
 import { continentIdOf } from '../utils/continents';
+import { zoneByIso, zoneFilter, WORLDVIEW_FILTER } from '../utils/countryIso';
 import {
-  generateZonesGeoJSON,
-  generateZonesOutlineGeoJSON,
   calculatePolygonArea,
   calculatePolygonPerimeter,
   getPolygonBoundsAndCenter,
@@ -526,22 +525,35 @@ const Globe = forwardRef(function Globe(
     });
   };
 
-  // Bajo el cursor hay a la vez un país y su continente (los continentes están al final de los datos, así que Mapbox los devuelve primero).
-  // Se elige por niveles, igual que en el explorador:
+  // Los polígonos de Mapbox son de países (cada uno con su código ISO). Bajo el cursor hay un país y, por tanto, su continente. Se elige por
+  // niveles, igual que en el explorador:
   //  - lejos (zoom < COUNTRY_ZOOM) y sin continente elegido: el continente;
   //  - dentro del continente ya elegido (o de un país suyo): el país;
   //  - cerca (zoom >= COUNTRY_ZOOM): siempre el país.
-  // Así se puede elegir el continente y después uno de sus países tocando el mapa. Sin país debajo (la Antártida) queda el continente.
-  const pickZoneFeature = (features, map) => {
-    if (!features || features.length === 0) return null;
-    const country = features.find((f) => f.properties.category === 'País');
-    const continent = features.find((f) => f.properties.category === 'Continente');
-    if (!country || !continent) return country || continent || features[0];
-
-    const activeContinent = continentIdOf(selectedZoneRef.current);
-    const countryContinent = continentIdOf(ZONES.find((z) => z.id === country.properties.id));
-    const insideActive = Boolean(activeContinent) && (activeContinent === continent.properties.id || activeContinent === countryContinent);
+  // Así se puede elegir el continente y después uno de sus países tocando el mapa. La Antártida (sin países) siempre elige su continente.
+  const pickZone = (features, map) => {
+    const country = (features || []).map((f) => zoneByIso.get(f.properties.iso_3166_1)).find(Boolean);
+    if (!country) return null;
+    const countryContinentId = continentIdOf(country);
+    const continent = ZONES.find((z) => z.id === countryContinentId);
+    if (!continent || continent.id === country.id) return country;
+    const insideActive = continentIdOf(selectedZoneRef.current) === countryContinentId;
     return map.getZoom() >= COUNTRY_ZOOM || insideActive ? country : continent;
+  };
+
+  // Resalta una zona (un país o todos los países de un continente) en la capa de hover o en la de selección.
+  // Un continente se ilumina con relleno y bordes suaves (iluminar sus fronteras interiores con el trazo fuerte sería ruido).
+  const applyZoneHighlight = (map, kind, zone) => {
+    if (!map || !map.getLayer(`zones-${kind}-fill`)) return;
+    const filter = zoneFilter(zone);
+    const isContinent = Boolean(zone) && zone.category === 'Continente';
+    map.setFilter(`zones-${kind}-fill`, filter);
+    map.setFilter(`zones-${kind}-line`, filter);
+    const strong = kind === 'highlight' ? { width: 3, opacity: 1 } : { width: 2, opacity: 0.9 };
+    const soft = kind === 'highlight' ? { width: 1.2, opacity: 0.6 } : { width: 1, opacity: 0.5 };
+    const paint = isContinent ? soft : strong;
+    map.setPaintProperty(`zones-${kind}-line`, 'line-width', paint.width);
+    map.setPaintProperty(`zones-${kind}-line`, 'line-opacity', paint.opacity);
   };
 
   // Etiqueta con el nombre de la zona bajo el cursor (en el idioma activo). Sigue al cursor.
@@ -598,122 +610,78 @@ const Globe = forwardRef(function Globe(
     selectedMarkerRef.current = marker;
   };
 
-  // Capas poligonales de países y zonas
+  // Capas de países y continentes, con los límites de Mapbox (`mapbox.country-boundaries-v1`): costas y fronteras exactas a cualquier zoom.
+  // Un continente no tiene polígono propio: se ilumina con los de todos sus países (ver applyZoneHighlight).
   const setupZoneLayers = (map) => {
     if (!map) return;
-    const geojsonData = generateZonesGeoJSON();
 
-    if (map.getLayer('zones-highlight-line')) map.removeLayer('zones-highlight-line');
-    if (map.getLayer('zones-highlight-fill')) map.removeLayer('zones-highlight-fill');
-    if (map.getLayer('zones-hover-line')) map.removeLayer('zones-hover-line');
-    if (map.getLayer('zones-hover-fill')) map.removeLayer('zones-hover-fill');
-    if (map.getLayer('zones-line')) map.removeLayer('zones-line');
-    if (map.getLayer('zones-fill')) map.removeLayer('zones-fill');
-    if (map.getSource('zones-geojson')) map.removeSource('zones-geojson');
-    if (map.getSource('zones-outline')) map.removeSource('zones-outline');
-
-    map.addSource('zones-geojson', {
-      type: 'geojson',
-      data: geojsonData
+    ['zones-highlight-line', 'zones-highlight-fill', 'zones-hover-line', 'zones-hover-fill', 'zones-line', 'zones-fill'].forEach((id) => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    ['country-boundaries', 'zones-geojson', 'zones-outline'].forEach((id) => {
+      if (map.getSource(id)) map.removeSource(id);
     });
 
-    // Los contornos salen de una fuente propia, sin las aristas artificiales del antimeridiano y el polo
-    map.addSource('zones-outline', {
-      type: 'geojson',
-      data: generateZonesOutlineGeoJSON()
-    });
+    map.addSource('country-boundaries', { type: 'vector', url: 'mapbox://mapbox.country-boundaries-v1' });
+    const base = { source: 'country-boundaries', 'source-layer': 'country_boundaries' };
 
+    // Relleno casi transparente: sirve para detectar el país bajo el cursor
     map.addLayer({
+      ...base,
       id: 'zones-fill',
       type: 'fill',
-      source: 'zones-geojson',
-      paint: {
-        'fill-color': [
-          'match',
-          ['get', 'category'],
-          'Continente', '#2491ff',
-          'País', '#dfe1e2',
-          '#6a76bd'
-        ],
-        'fill-opacity': 0.08
-      }
+      filter: WORLDVIEW_FILTER,
+      paint: { 'fill-color': '#dfe1e2', 'fill-opacity': 0.08 }
     });
 
-    // Contornos de países y continentes (colores, anchos y opacidad originales); uniones y extremos redondeados
+    // Fronteras y costas (colores, anchos y opacidad originales); uniones y extremos redondeados
     map.addLayer({
+      ...base,
       id: 'zones-line',
       type: 'line',
-      source: 'zones-outline',
+      filter: WORLDVIEW_FILTER,
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: {
-        'line-color': [
-          'match',
-          ['get', 'category'],
-          'Continente', 'rgba(36, 145, 255, 0.75)',
-          'País', 'rgba(223, 225, 226, 0.45)',
-          'rgba(106, 118, 189, 0.55)'
-        ],
-        'line-width': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          1, 0.9,
-          4, 1.4,
-          7, 2.0
-        ],
+        'line-color': 'rgba(223, 225, 226, 0.45)',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 1, 0.9, 4, 1.4, 7, 2.0],
         'line-opacity': 0.8
       }
     });
 
-    // Capa de hover interactivo al pasar el cursor sobre cualquier país o territorio
+    // Hover: el país (o el continente) bajo el cursor
     map.addLayer({
+      ...base,
       id: 'zones-hover-fill',
       type: 'fill',
-      source: 'zones-geojson',
-      filter: ['==', ['get', 'id'], ''],
-      paint: {
-        'fill-color': '#ffffff',
-        'fill-opacity': 0.14
-      }
+      filter: zoneFilter(null),
+      paint: { 'fill-color': '#ffffff', 'fill-opacity': 0.14 }
     });
-
     map.addLayer({
+      ...base,
       id: 'zones-hover-line',
       type: 'line',
-      source: 'zones-outline',
-      filter: ['==', ['get', 'id'], ''],
+      filter: zoneFilter(null),
       layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: {
-        'line-color': '#ffffff',
-        'line-width': 2.0,
-        'line-opacity': 0.9
-      }
+      paint: { 'line-color': '#ffffff', 'line-width': 2.0, 'line-opacity': 0.9 }
     });
 
+    // Selección = amarillo neón de la marca
     map.addLayer({
+      ...base,
       id: 'zones-highlight-fill',
       type: 'fill',
-      source: 'zones-geojson',
-      filter: ['==', ['get', 'id'], selectedZoneRef.current ? selectedZoneRef.current.id : ''],
-      paint: {
-        // Selección = amarillo neón de la marca
-        'fill-color': '#e7f434',
-        'fill-opacity': 0.2
-      }
+      filter: zoneFilter(selectedZoneRef.current),
+      paint: { 'fill-color': '#e7f434', 'fill-opacity': 0.2 }
     });
-
     map.addLayer({
+      ...base,
       id: 'zones-highlight-line',
       type: 'line',
-      source: 'zones-outline',
-      filter: ['==', ['get', 'id'], selectedZoneRef.current ? selectedZoneRef.current.id : ''],
+      filter: zoneFilter(selectedZoneRef.current),
       layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: {
-        'line-color': '#e7f434',
-        'line-width': 3,
-        'line-opacity': 1.0
-      }
+      paint: { 'line-color': '#e7f434', 'line-width': 3, 'line-opacity': 1.0 }
     });
+    applyZoneHighlight(map, 'highlight', selectedZoneRef.current);
   };
 
   // Capas para el trazado de dibujo manual (polígono, líneas guía y vértices)
@@ -843,12 +811,7 @@ const Globe = forwardRef(function Globe(
     if (selectedZoneRef.current) {
       try {
         renderSelectedZoneMarker(map, selectedZoneRef.current);
-        if (map.getLayer('zones-highlight-fill')) {
-          map.setFilter('zones-highlight-fill', ['==', ['get', 'id'], selectedZoneRef.current.id]);
-        }
-        if (map.getLayer('zones-highlight-line')) {
-          map.setFilter('zones-highlight-line', ['==', ['get', 'id'], selectedZoneRef.current.id]);
-        }
+        applyZoneHighlight(map, 'highlight', selectedZoneRef.current);
       } catch (err) {
         console.warn('Error rendering selected zone highlight:', err);
       }
@@ -1004,13 +967,8 @@ const Globe = forwardRef(function Globe(
 
         if (!map.getLayer('zones-fill')) return;
 
-        const picked = pickZoneFeature(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
-        if (picked) {
-          const found = ZONES.find((z) => z.id === picked.properties.id);
-          if (found) {
-            onSelectZoneRef.current(found);
-          }
-        }
+        const picked = pickZone(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
+        if (picked) onSelectZoneRef.current(picked);
       });
 
       // Doble clic para finalizar polígono por vértices
@@ -1113,19 +1071,14 @@ const Globe = forwardRef(function Globe(
 
         // Puntero y realce interactivo al posar el cursor sobre cualquier país
         if (!drawModeRef.current && map.getLayer('zones-fill')) {
-          const picked = pickZoneFeature(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
-          const hoverId = picked ? picked.properties.id : '';
+          const picked = pickZone(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
+          const hoverId = picked ? picked.id : '';
           map.getCanvas().style.cursor = hoverId ? 'pointer' : '';
           showHoverLabel(map, e.lngLat, hoverId);
 
           if (hoverId !== hoveredZoneIdRef.current) {
             hoveredZoneIdRef.current = hoverId;
-            if (map.getLayer('zones-hover-fill')) {
-              map.setFilter('zones-hover-fill', ['==', ['get', 'id'], hoverId]);
-            }
-            if (map.getLayer('zones-hover-line')) {
-              map.setFilter('zones-hover-line', ['==', ['get', 'id'], hoverId]);
-            }
+            applyZoneHighlight(map, 'hover', picked);
           }
         }
 
@@ -1144,12 +1097,7 @@ const Globe = forwardRef(function Globe(
         if (hoverPopupRef.current) hoverPopupRef.current.remove();
         if (hoveredZoneIdRef.current) {
           hoveredZoneIdRef.current = '';
-          if (map.getLayer('zones-hover-fill')) {
-            map.setFilter('zones-hover-fill', ['==', ['get', 'id'], '']);
-          }
-          if (map.getLayer('zones-hover-line')) {
-            map.setFilter('zones-hover-line', ['==', ['get', 'id'], '']);
-          }
+          applyZoneHighlight(map, 'hover', null);
         }
       });
 
@@ -1419,23 +1367,9 @@ const Globe = forwardRef(function Globe(
 
       renderSelectedZoneMarker(mapRef.current, selectedZone);
 
-      if (mapRef.current.isStyleLoaded()) {
-        if (mapRef.current.getLayer('zones-highlight-fill')) {
-          mapRef.current.setFilter('zones-highlight-fill', ['==', ['get', 'id'], selectedZone.id]);
-        }
-        if (mapRef.current.getLayer('zones-highlight-line')) {
-          mapRef.current.setFilter('zones-highlight-line', ['==', ['get', 'id'], selectedZone.id]);
-        }
-      }
+      if (mapRef.current.isStyleLoaded()) applyZoneHighlight(mapRef.current, 'highlight', selectedZone);
     } else {
-      if (mapRef.current.isStyleLoaded()) {
-        if (mapRef.current.getLayer('zones-highlight-fill')) {
-          mapRef.current.setFilter('zones-highlight-fill', ['==', ['get', 'id'], '']);
-        }
-        if (mapRef.current.getLayer('zones-highlight-line')) {
-          mapRef.current.setFilter('zones-highlight-line', ['==', ['get', 'id'], '']);
-        }
-      }
+      if (mapRef.current.isStyleLoaded()) applyZoneHighlight(mapRef.current, 'highlight', null);
     }
   }, [selectedZone]);
 
