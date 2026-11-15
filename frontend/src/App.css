@@ -72,14 +72,14 @@
   color: #ffffff;
 }
 
-/* Patrón oficial Orbits al ~25% sobre el azul, como pide la guía de marca */
+/* Patrón oficial Orbits sobre el azul. Los PNG de public/brand son versiones para pantalla: líneas blancas más gruesas
+   sobre transparente (los originales de 1 px casi desaparecen al reducirlos), por eso van sin mezcla ni inversión. */
 .navbar::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: url('/brand/orbits.png') center / cover no-repeat;
-  opacity: 0.25;
-  mix-blend-mode: screen;
+  background: url('/brand/orbits.png') center / 1400px auto no-repeat;
+  opacity: 0.4;
   pointer-events: none;
 }
 
@@ -1086,9 +1086,9 @@
   border-color: var(--border-strong);
 }
 
-/* Bandas de marca en los paneles: degradado azul oficial con un patrón al ~25% (guía de marca).
+/* Bandas de marca en los paneles: degradado azul oficial con un patrón de líneas blancas (ver arriba).
    Explorador = Voronoi (celdas, territorios); ficha del área trazada = Waves (curvas de nivel).
-   Siempre azul con texto blanco, en ambos temas. Los patrones de líneas oscuras se invierten antes de mezclarse. */
+   Siempre azul con texto blanco, en ambos temas. */
 .sidebar-header,
 .drawn-area-drawer .zone-drawer-header {
   position: relative;
@@ -1105,10 +1105,8 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: center / cover no-repeat;
-  filter: invert(1);
-  opacity: 0.25;
-  mix-blend-mode: screen;
+  background: center / 900px auto no-repeat;
+  opacity: 0.4;
   pointer-events: none;
 }
 
