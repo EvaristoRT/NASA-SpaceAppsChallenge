@@ -71,10 +71,20 @@ export function adaptSearchResponse(response) {
     riskMonth,
     ratio,
     status: ratio === null ? 'normal' : ratio >= ELEVATED ? 'elevated' : ratio <= LOW ? 'low' : 'normal',
-    // Nuevos (el panel aún no los dibuja): fuente por mes, banda de incertidumbre y meses preliminares
+    // Fuente por mes, banda de incertidumbre y meses preliminares (los usan el calendario y la gráfica de la estimación)
     source,
     ci,
     nrt,
-    partial
+    partial,
+    // Serie mensual para la gráfica de la estimación del modelo: valor, intervalo al 95 %, fuente y estado de cada mes
+    points: series.map((p) => ({
+      month: p.month,
+      count: p.count,
+      lo: p.count_ci_lower ?? null,
+      hi: p.count_ci_upper ?? null,
+      source: p.source ?? null,
+      nrt: Boolean(p.is_nrt),
+      partial: Boolean(p.is_partial)
+    }))
   };
 }

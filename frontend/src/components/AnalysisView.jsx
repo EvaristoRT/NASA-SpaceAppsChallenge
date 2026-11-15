@@ -1,6 +1,9 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAnalysis } from '../utils/useAnalysis';
+import { localizeZone } from '../i18n/zoneText';
+import EstimateChart from './EstimateChart';
+import DownloadPanel from './DownloadPanel';
 
 import { FLOOR, ramp, rampGradient } from '../utils/fireRamp';
 
@@ -173,6 +176,18 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
               {t('analysis.fig1Text')}
             </figcaption>
           </figure>
+
+          {!data.synthetic && (
+            <>
+              <EstimateChart points={data.points} />
+              <DownloadPanel
+                zone={zone}
+                drawnArea={drawnArea}
+                zoneName={drawnArea ? t('analysis.customArea') : localizeZone(zone, lang).name}
+                selectedMonth={selectedMonth}
+              />
+            </>
+          )}
         </div>
 
         <dl className="analysis-facts">

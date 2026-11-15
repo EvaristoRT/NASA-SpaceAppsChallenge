@@ -184,6 +184,35 @@ export const translations = {
       estimated: 'Estimado: antes de abril de 2018 no hay NOAA-20',
       preliminary: 'Preliminar: NASA lo reemplaza en unos 5 meses'
     },
+    estimate: {
+      fig: 'Fig. 2',
+      caption: 'Estimación del modelo: días-celda con fuego por mes, equivalente NOAA-20. La banda es el intervalo al 95 %: solo se ensancha antes de abril de 2018, donde no hay NOAA-20 y el valor es una estimación; después es medido y la banda se cierra sobre la línea.',
+      hover: 'Pasa el cursor por la gráfica para ver cada mes.',
+      interval: 'intervalo',
+      measured: 'Medido (NOAA-20)',
+      estimated: 'Estimado',
+      band: 'Intervalo al 95 %',
+      zone: 'Antes de NOAA-20: estimado',
+      preliminary: 'Preliminar',
+      summary: 'Serie mensual de {from} a {to}, con su intervalo al 95 %. Mes con más fuego: {peak}.'
+    },
+    download: {
+      title: 'Descargar CSV',
+      monthly: 'Serie mensual de {zone}',
+      monthlyHint: 'Un valor por mes con su intervalo, su fuente y la anomalía',
+      cells: 'Hexágonos de {month}',
+      cellsAny: 'Hexágonos del mes elegido',
+      cellsHint: 'Los hexágonos con fuego que ves en el mapa',
+      hotspots: 'Focos de {month}',
+      hotspotsAny: 'Focos del mes elegido',
+      hotspotsHint: 'Cada detección individual de FIRMS dentro de la zona',
+      pickMonth: 'Elige un mes en el calendario',
+      unavailable: 'No disponible en este servidor',
+      tooMany: 'Hay demasiados focos para un solo archivo (más de 300,000). Dibuja un área más pequeña o elige otro mes.',
+      error: 'No se pudo descargar. Intenta de nuevo.',
+      working: 'Preparando el archivo…',
+      done: 'Archivo descargado'
+    },
     panel: {
       tabSummary: 'Resumen',
       tabArea: 'Área',
@@ -380,6 +409,35 @@ export const translations = {
       summary: '{cells} hexagons with fire · {total} cell-days',
       estimated: 'Estimated: there is no NOAA-20 before April 2018',
       preliminary: 'Preliminary: NASA replaces it in about 5 months'
+    },
+    estimate: {
+      fig: 'Fig. 2',
+      caption: 'Model estimate: burning cell-days per month, NOAA-20 equivalent. The band is the 95% interval: it only widens before April 2018, where there is no NOAA-20 and the value is an estimate; afterwards it is measured and the band closes onto the line.',
+      hover: 'Move the cursor over the chart to see each month.',
+      interval: 'interval',
+      measured: 'Measured (NOAA-20)',
+      estimated: 'Estimated',
+      band: '95% interval',
+      zone: 'Before NOAA-20: estimated',
+      preliminary: 'Preliminary',
+      summary: 'Monthly series from {from} to {to}, with its 95% interval. Month with the most fire: {peak}.'
+    },
+    download: {
+      title: 'Download CSV',
+      monthly: 'Monthly series of {zone}',
+      monthlyHint: 'One value per month with its interval, source and anomaly',
+      cells: 'Hexagons of {month}',
+      cellsAny: 'Hexagons of the chosen month',
+      cellsHint: 'The hexagons with fire you see on the map',
+      hotspots: 'Hotspots of {month}',
+      hotspotsAny: 'Hotspots of the chosen month',
+      hotspotsHint: 'Every individual FIRMS detection inside the zone',
+      pickMonth: 'Pick a month in the calendar',
+      unavailable: 'Not available on this server',
+      tooMany: 'There are too many hotspots for a single file (over 300,000). Draw a smaller area or pick another month.',
+      error: 'The file could not be downloaded. Try again.',
+      working: 'Preparing the file…',
+      done: 'File downloaded'
     },
     panel: {
       tabSummary: 'Summary',
