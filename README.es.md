@@ -8,6 +8,10 @@ Una aplicación web que muestra el **calendario de actividad de quema** de cualq
 con una sola serie comparable aunque los datos vengan de satélites distintos. El usuario elige un país o dibuja un área, ve qué meses y
 qué años tuvieron más fuego, compara el mes actual con lo normal de la zona y descarga los datos y las gráficas.
 
+> **Alcance de la demo: solo América** (de Alaska a Tierra del Fuego), que es la región cargada en la app.
+> Europa y África se procesaron **solo para validar el método** en otros regímenes de fuego (resultados en la sección 3) y **no** están en la app.
+> Asia y Oceanía no se procesaron. El pipeline corre por región: sumar un continente es volver a correrlo con `--region`.
+
 ---
 
 ## 1. El problema
