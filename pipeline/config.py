@@ -61,7 +61,8 @@ def layer(name: str, override: str | None = None) -> Path:
 # --------------------------------------------------------------------------- decisiones de método
 # Sensor de referencia: toda la serie se expresa en "equivalente NOAA-20".
 # Motivo (medido con datos de 2026): S-NPP dejó de operar el 2026-11-02 y en sus
-# últimos meses perdía sensibilidad; Terra detecta ~48% de Aqua. NOAA-20 está
+# últimos meses perdía sensibilidad; Terra/Aqua, estable en ~0.50 de 2003 a 2021, cae a
+# 0.43 en 2024 y 0.38 en 2025 (QA global). NOAA-20 está
 # activo, tiene 8 años de traslape con MODIS y NOAA-21 concuerda con él al ~1%.
 REFERENCE_SATELLITE = "NOAA-20"
 

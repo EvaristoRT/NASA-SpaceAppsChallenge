@@ -16,7 +16,7 @@ Cómo instalar y correr: [README.md](README.md). Las constantes de este plan viv
 
 | Tema | Decisión | Por qué |
 |---|---|---|
-| **Referencia** | Toda la serie se expresa en **equivalente NOAA-20** | S-NPP dejó de operar el 2026-11-02 (última fila en FIRMS) y ya venía perdiendo sensibilidad: NOAA-20 / S-NPP pasó de 0.98 en enero a 1.26 en julio de 2026. MODIS se está apagando y Terra detecta 48% de lo que detecta Aqua. NOAA-20 está activo, tiene 8 años de traslape con MODIS y NOAA-21 concuerda con él al 1%. Además así **el mes actual es dato medido** y lo estimado es el pasado |
+| **Referencia** | Toda la serie se expresa en **equivalente NOAA-20** | S-NPP dejó de operar el 2026-11-02 (última fila en FIRMS) y ya venía perdiendo sensibilidad: NOAA-20 / S-NPP pasó de 0.98 en enero a 1.26 en julio de 2026. MODIS se está apagando: Terra/Aqua, estable en ~0.50 de 2003 a 2021, cae a 0.43 en 2024 y 0.38 en 2025. NOAA-20 está activo, tiene 8 años de traslape con MODIS y NOAA-21 concuerda con él al 1%. Además así **el mes actual es dato medido** y lo estimado es el pasado |
 | **Unidad de conteo** | **Día-celda en quema**: celda H3 res 8 con ≥ 1 foco ese día | Quita la diferencia de huella (VIIRS 375 m vs MODIS 1 km). Medido: baja la brecha NOAA-20/MODIS de 3.98× (focos) a 2.84× (días-celda). Idea tomada de `backend/ignis/harmonize.py` |
 | **Segunda métrica** | **FRP** (potencia radiativa, MW) | Casi no depende del sensor: en ene–jul 2026 el FRP total de MODIS y NOAA-20 difiere 4% mientras los focos difieren 4×. Sirve como métrica y como control independiente de la armonización |
 | **Satélites** | Cada satélite en su columna; **nunca se suman** VIIRS entre sí ni se mezclan en una métrica | Sumarlos hace "subir" los conteos en 2018 y 2023 sin que haya más fuego |
@@ -112,7 +112,7 @@ Las columnas de bronze más `h3_r8, h3_r6, h3_r5, h3_r3` (UBIGINT).
 1. **`type` no existe en NRT** y los CSV de 7 días de FIRMS traen otra codificación (`T`/`A`, `nominal`). El paso 01 ya unifica todo.
 2. **`acq_time` viene sin ceros a la izquierda** (`55` = 00:55). El paso 01 lo rellena.
 3. **Aqua entra en 2002-07**: sin tratarlo, aparece un salto falso de ~100%.
-4. **Terra se degrada**: Terra/Aqua ≈ 0.48 en 2026. Revisar si `k_modis` cambia con los años.
+4. **Terra se degrada desde 2024**: Terra/Aqua es ~0.50 de 2003 a 2021 (normal: Terra pasa en la mañana) y cae a 0.43 en 2024 y 0.38 en 2025. Revisar si `k_modis` cambia en esos años.
 5. **S-NPP se degrada en 2026** y termina el 2026-11-02.
 6. **El FRP de NOAA-21 sale ~17% más alto que el de NOAA-20** con casi los mismos focos: no mezclar su FRP sin calibrar.
 7. **2026 es un año incompleto y regional** (Sudamérica): comparar siempre el mismo mes contra el mismo mes, nunca totales anuales.

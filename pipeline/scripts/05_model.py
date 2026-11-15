@@ -79,7 +79,7 @@ def fake_calibration(seed: int = 7, n_regions: int = 24, cells_per_region: int =
     """Tabla con la forma del contrato y factores verdaderos conocidos, para verificar el método.
 
     Imita lo que medimos: NOAA-20 ve ~2.84x los días-celda de MODIS (variando por región),
-    S-NPP ~ NOAA-20 pero se degrada desde 2026-04, Terra ve ~0.5 de MODIS y se degrada desde 2022,
+    S-NPP ~ NOAA-20 pero se degrada desde 2026-04, Terra ve ~0.5 de MODIS (normal) y se degrada al final del periodo,
     el FRP casi no depende del sensor.
     """
     rng = np.random.default_rng(seed)
