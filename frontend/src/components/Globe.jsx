@@ -1102,14 +1102,11 @@ const Globe = forwardRef(function Globe(
 
         const picked = pickZone(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
         if (picked) {
-          // Al seleccionar, el cuadro y el resalte de hover desaparecen (vuelven cuando el cursor se mueva): solo queda la selección
+          // Al seleccionar, el cuadro con el nombre desaparece (el nombre está en el panel) pero la zona se queda iluminada:
+          // el resalte de hover sigue hasta que el cursor pase a otra zona.
           clearTimeout(hoverTimerRef.current);
           hoverTimerRef.current = 0;
           if (hoverPopupRef.current) hoverPopupRef.current.remove();
-          if (hoveredZoneIdRef.current) {
-            hoveredZoneIdRef.current = '';
-            setHoverZone(map, null);
-          }
           onSelectZoneRef.current(picked);
         } else if (onGoUpRef.current) onGoUpRef.current(); // clic en el océano: subir un nivel
       });
