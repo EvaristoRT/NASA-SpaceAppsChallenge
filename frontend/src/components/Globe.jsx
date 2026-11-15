@@ -25,6 +25,11 @@ const FLAT_WORLD_COPIES = true;
 // Desde este zoom, el mapa elige siempre países; más lejos elige continentes (salvo dentro del continente ya elegido).
 const COUNTRY_ZOOM = 4;
 
+// Capa de actividad: la zona elegida se atenúa con un fondo oscuro único bajo los hexágonos, así se leen igual en las tres vistas
+const DIM_COLOR = '#151622';
+const DIM_OPACITY = 0.9;
+const HEX_OPACITY = 0.95;
+
 const Globe = forwardRef(function Globe(
   {
     token,
@@ -45,7 +50,8 @@ const Globe = forwardRef(function Globe(
     onMapError,
     onCameraSettled,
     onFlightChange,
-    activity
+    activity,
+    dataMode
   },
   ref
 ) {
@@ -85,6 +91,7 @@ const Globe = forwardRef(function Globe(
   const hoveredZoneIdRef = useRef('');
   // Última actividad mensual recibida: se vuelve a dibujar tras cada cambio de vista (setStyle borra las capas)
   const activityRef = useRef(activity);
+  const dataModeRef = useRef(Boolean(dataMode)); // modo datos: sin hover ni rellenos de selección
   // Hover fluido: códigos ISO con el estado de hover encendido, y temporizadores para procesarlo una vez por cuadro
   const hoverIsosRef = useRef([]);
   const selectedIsosRef = useRef([]); // zona elegida: conserva el efecto de hover hasta que se elija otra
@@ -566,10 +573,14 @@ const Globe = forwardRef(function Globe(
     map.setFilter(`zones-${kind}-line`, filter);
     const strong = kind === 'highlight' ? { width: 3, opacity: 1 } : { width: 2, opacity: 0.9 };
     const soft = kind === 'highlight' ? { width: 1.2, opacity: 0.6 } : { width: 1, opacity: 0.5 };
-    const paint = isContinent ? soft : strong;
+    // En modo datos la selección es solo un contorno amarillo fino (sin relleno) para no tapar los hexágonos
+    const paint = kind === 'highlight' && dataModeRef.current ? { width: 1.6, opacity: 1 } : isContinent ? soft : strong;
     map.setPaintProperty(`zones-${kind}-line`, 'line-width', paint.width);
     map.setPaintProperty(`zones-${kind}-line`, 'line-opacity', paint.opacity);
-    if (kind === 'highlight') setSelectedState(map, zone);
+    if (kind === 'highlight') {
+      setSelectedState(map, zone);
+      if (map.getLayer('fire-dim-zone')) map.setFilter('fire-dim-zone', filter); // la atenuación sigue a la zona elegida
+    }
   };
 
   // Hover con feature-state: encender o apagar el estado de los polígonos es barato y las capas de hover lo animan con una transición
@@ -590,7 +601,7 @@ const Globe = forwardRef(function Globe(
   // La zona elegida se queda iluminada como si tuviera hover (aunque el cursor se vaya) y el efecto pasa a la zona nueva al elegir otra
   const setSelectedState = (map, zone) => {
     if (!map || !map.getSource('country-boundaries')) return;
-    const level = zone ? (zone.category === 'Continente' ? 2 : 1) : 0;
+    const level = zone && !dataModeRef.current ? (zone.category === 'Continente' ? 2 : 1) : 0;
     const next = isoListOf(zone);
     const target = (id) => ({ source: 'country-boundaries', sourceLayer: 'country_boundaries', id });
     for (const iso of selectedIsosRef.current) {
@@ -774,42 +785,107 @@ const Globe = forwardRef(function Globe(
   const EMPTY_COLLECTION = { type: 'FeatureCollection', features: [] };
   const activityCollection = (act) => (act && act.data && act.data.features ? { type: 'FeatureCollection', features: act.data.features } : EMPTY_COLLECTION);
 
+  // Primera capa de texto del estilo: los hexágonos y su atenuación van justo debajo, para que los nombres de países, estados y ciudades
+  // se lean encima del dato y ningún relleno nuestro quede entre el dato y el ojo.
+  const firstSymbolId = (map) => {
+    const layer = map.getStyle().layers.find((l) => l.type === 'symbol');
+    return layer ? layer.id : undefined;
+  };
+
   const setupActivityLayers = (map) => {
     if (!map) return;
-    ['fire-activity-line', 'fire-activity-fill'].forEach((id) => {
+    ['fire-activity-edge', 'fire-activity-line', 'fire-activity-fill', 'fire-dim-zone'].forEach((id) => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
     if (map.getSource('fire-activity')) map.removeSource('fire-activity');
 
     map.addSource('fire-activity', { type: 'geojson', data: activityCollection(activityRef.current) });
-    const before = map.getLayer('zones-fill') ? 'zones-fill' : undefined;
+    const before = firstSymbolId(map);
+
+    // Atenuación de la zona elegida (país o continente): mismo fondo oscuro bajo los hexágonos en las tres vistas.
+    // Para un área dibujada la atenuación va en `fire-dim-area` (ver setupDrawLayers).
+    map.addLayer(
+      {
+        id: 'fire-dim-zone',
+        type: 'fill',
+        source: 'country-boundaries',
+        'source-layer': 'country_boundaries',
+        filter: zoneFilter(selectedZoneRef.current),
+        paint: { 'fill-color': DIM_COLOR, 'fill-opacity': 0, 'fill-opacity-transition': { duration: 400, delay: 0 } }
+      },
+      before
+    );
     map.addLayer(
       {
         id: 'fire-activity-fill',
         type: 'fill',
         source: 'fire-activity',
-        paint: { 'fill-color': fireColorExpression, 'fill-opacity': 0, 'fill-opacity-transition': { duration: 400, delay: 0 } }
+        paint: { 'fill-color': fireColorExpression, 'fill-opacity': HEX_OPACITY, 'fill-opacity-transition': { duration: 400, delay: 0 } }
       },
       before
     );
+    // Un hexágono de ~36 km² es menor que un píxel al alejar el mapa: el trazo, del mismo color, lo hace visible de lejos
+    // y se desvanece al acercar, donde el relleno ya se distingue.
     map.addLayer(
       {
         id: 'fire-activity-line',
         type: 'line',
         source: 'fire-activity',
-        // Un hexágono de ~36 km² es menor que un píxel al alejar el mapa: el trazo, del mismo color, lo hace visible de lejos
-        // y se desvanece al acercar, donde el relleno ya se distingue.
         paint: {
           'line-color': fireColorExpression,
           'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.8, 5, 1, 7, 0.5],
-          'line-opacity': 0,
-          'line-opacity-transition': { duration: 400, delay: 0 }
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.95, 7, 0.25]
         }
       },
       before
     );
-    map.setPaintProperty('fire-activity-fill', 'fill-opacity', 0.85);
-    map.setPaintProperty('fire-activity-line', 'line-opacity', ['interpolate', ['linear'], ['zoom'], 3, 0.95, 7, 0.25]);
+    // Contorno oscuro fino al acercar, para separar los hexágonos vecinos
+    map.addLayer(
+      {
+        id: 'fire-activity-edge',
+        type: 'line',
+        source: 'fire-activity',
+        paint: {
+          'line-color': 'rgba(21, 22, 34, 0.55)',
+          'line-width': 0.5,
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 5.5, 0, 7, 0.9]
+        }
+      },
+      before
+    );
+  };
+
+  // Enciende o apaga la atenuación según haya un mes elegido (sobre el polígono dibujado o sobre la zona elegida)
+  const applyActivityDim = (map) => {
+    if (!map) return;
+    const act = activityRef.current;
+    const on = Boolean(act && act.status && act.status !== 'idle');
+    const area = Boolean(drawnAreaRef.current && drawnAreaRef.current.coords);
+    if (map.getLayer('fire-dim-zone')) map.setPaintProperty('fire-dim-zone', 'fill-opacity', on && !area ? DIM_OPACITY : 0);
+    if (map.getLayer('fire-dim-area')) map.setPaintProperty('fire-dim-area', 'fill-opacity', on && area ? DIM_OPACITY : 0);
+  };
+
+  // Modo datos (pestaña Análisis abierta o mes elegido): sin hover ni nombre flotante, sin rellenos de selección y con la zona
+  // marcada solo por un contorno amarillo fino. Al salir del modo vuelve todo lo normal.
+  const applyDataMode = (map) => {
+    if (!map) return;
+    const on = dataModeRef.current;
+    if (on) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = 0;
+      if (hoverPopupRef.current) hoverPopupRef.current.remove();
+      if (hoveredZoneIdRef.current) {
+        hoveredZoneIdRef.current = '';
+        setHoverZone(map, null);
+      }
+    }
+    // zones-fill conserva una opacidad mínima: sirve para detectar la zona bajo el cursor al hacer clic
+    if (map.getLayer('zones-fill')) map.setPaintProperty('zones-fill', 'fill-opacity', on ? 0.01 : 0.08);
+    if (map.getLayer('zones-highlight-fill')) {
+      map.setPaintProperty('zones-highlight-fill', 'fill-opacity', on ? 0 : overlayForStyle().highlightFill);
+    }
+    if (map.getLayer('draw-fill')) map.setPaintProperty('draw-fill', 'fill-opacity', on ? 0 : 0.2);
+    applyZoneHighlight(map, 'highlight', selectedZoneRef.current);
   };
 
   // Capas para el trazado de dibujo manual (polígono, líneas guía y vértices)
@@ -818,6 +894,7 @@ const Globe = forwardRef(function Globe(
     if (map.getLayer('draw-points')) map.removeLayer('draw-points');
     if (map.getLayer('draw-line')) map.removeLayer('draw-line');
     if (map.getLayer('draw-fill')) map.removeLayer('draw-fill');
+    if (map.getLayer('fire-dim-area')) map.removeLayer('fire-dim-area');
     if (map.getSource('draw-source')) map.removeSource('draw-source');
 
     map.addSource('draw-source', {
@@ -827,6 +904,18 @@ const Globe = forwardRef(function Globe(
         features: []
       }
     });
+
+    // Atenuación del área dibujada cuando hay un mes elegido: debajo de los hexágonos, igual que la de un país
+    map.addLayer(
+      {
+        id: 'fire-dim-area',
+        type: 'fill',
+        source: 'draw-source',
+        filter: ['==', '$type', 'Polygon'],
+        paint: { 'fill-color': DIM_COLOR, 'fill-opacity': 0, 'fill-opacity-transition': { duration: 400, delay: 0 } }
+      },
+      map.getLayer('fire-activity-fill') ? 'fire-activity-fill' : undefined
+    );
 
     map.addLayer({
       id: 'draw-fill',
@@ -970,6 +1059,14 @@ const Globe = forwardRef(function Globe(
       } catch (err) {
         console.warn('Error rendering selected zone highlight:', err);
       }
+    }
+
+    // 6. Modo datos y atenuación según lo que esté activo (el estilo nuevo trae las capas en su estado inicial)
+    try {
+      applyDataMode(map);
+      applyActivityDim(map);
+    } catch (err) {
+      console.warn('Error applying data mode:', err);
     }
   };
 
@@ -1189,11 +1286,14 @@ const Globe = forwardRef(function Globe(
           const picked = pickZone(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
           const hoverId = picked ? picked.id : '';
           map.getCanvas().style.cursor = hoverId ? 'pointer' : '';
-          showHoverLabel(map, e.lngLat, hoverId);
+          // En modo datos no hay resalte ni nombre flotante: el clic sigue eligiendo zona
+          if (!dataModeRef.current) {
+            showHoverLabel(map, e.lngLat, hoverId);
 
-          if (hoverId !== hoveredZoneIdRef.current) {
-            hoveredZoneIdRef.current = hoverId;
-            setHoverZone(map, picked);
+            if (hoverId !== hoveredZoneIdRef.current) {
+              hoveredZoneIdRef.current = hoverId;
+              setHoverZone(map, picked);
+            }
           }
         }
 
@@ -1464,14 +1564,23 @@ const Globe = forwardRef(function Globe(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // Actividad del mes elegido: actualizar los hexágonos del mapa (vacío si no hay mes elegido o aún carga)
+  // Actividad del mes elegido: actualizar los hexágonos del mapa (vacío si no hay mes elegido o aún carga) y la atenuación de la zona
   useEffect(() => {
     activityRef.current = activity;
     const map = mapRef.current;
     const source = map && map.getSource ? map.getSource('fire-activity') : null;
     if (source) source.setData(activityCollection(activity));
+    applyActivityDim(map);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activity]);
+  }, [activity, drawnArea]);
+
+  // Modo datos: pestaña Análisis abierta o mes elegido
+  useEffect(() => {
+    dataModeRef.current = Boolean(dataMode);
+    const map = mapRef.current;
+    if (map && map.getLayer && map.getLayer('zones-fill')) applyDataMode(map);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataMode]);
 
   // Cambiar estilo de cartografía de manera reactiva (solo si cambia tras el montaje)
   useEffect(() => {

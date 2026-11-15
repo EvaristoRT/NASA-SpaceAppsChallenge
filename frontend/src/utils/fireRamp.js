@@ -1,7 +1,7 @@
 // Rampa térmica (Inferno) para los días con fuego, compartida por el calendario, la capa del mapa y la leyenda.
 // Cero = "sin fuego" (color propio, no el primer color de la rampa).
 export const INFERNO = ['#000004', '#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#f7d13d', '#fcffa4'];
-export const FLOOR = 0.2; // las rampas oscuras empiezan más arriba para no confundirse con el fondo azul oscuro
+export const FLOOR = 0.32; // las rampas oscuras empiezan más arriba: sobre el fondo oscuro de la zona los valores bajos no se hunden
 
 // Escala fija del mapa (días-celda por hexágono y mes): la misma para todos los meses, para poder compararlos.
 // 40 cubre el percentil 99 medido en Argentina y Chile (37.5); lo que pasa de ahí se pinta con el color máximo.
