@@ -169,7 +169,8 @@ def export_csv(req: SearchRequest, level: str = Query("monthly", pattern="^(mont
                     headers={"Content-Disposition": f'attachment; filename="{_csv_name(level, req)}"'})
 
 
-def _export_hotspots(req: SearchRequest):
+def _hotspot_query(req: SearchRequest):
+    """Validate a hotspots request (folder present, bounded range, valid polygon): (folder, rings, first day, last day)."""
     folder = hotspots.hotspots_dir(DATA_DIR)
     if folder is None:
         raise HTTPException(503, "Individual hotspots are not available on this server")
@@ -184,6 +185,33 @@ def _export_hotspots(req: SearchRequest):
         raise HTTPException(422, "start must be <= end")
     if (d1.year - d0.year) * 12 + d1.month - d0.month >= HOTSPOTS_MAX_MONTHS:
         raise HTTPException(422, f"Choose at most {HOTSPOTS_MAX_MONTHS} months of hotspots")
+    return folder, rings, d0, d1
+
+
+_count_cache: OrderedDict = OrderedDict()  # (area hash, start, end) -> count
+COUNT_CACHE_SIZE = 64
+
+
+@app.post("/api/hotspots/count")
+def hotspot_count(req: SearchRequest):
+    """Number of individual hotspots (FIRMS detections) inside the area for a month or a range of up to 12 months.
+
+    The calendar counts burning cell-days (the harmonized unit); this is the literal count of detections, the same rows the
+    hotspots CSV would contain, so a user can quote both.
+    """
+    folder, rings, d0, d1 = _hotspot_query(req)
+    key = (hashlib.sha1(json.dumps(req.geojson, sort_keys=True).encode()).hexdigest(), req.start, req.end)
+    if key not in _count_cache:
+        _count_cache[key] = hotspots.count_hotspots(folder, rings, d0, d1)
+        if len(_count_cache) > COUNT_CACHE_SIZE:
+            _count_cache.popitem(last=False)
+    else:
+        _count_cache.move_to_end(key)
+    return {"start": req.start, "end": req.end, "count": _count_cache[key]}
+
+
+def _export_hotspots(req: SearchRequest):
+    folder, rings, d0, d1 = _hotspot_query(req)
     try:
         df = hotspots.read_hotspots(folder, rings, d0, d1, HOTSPOTS_MAX_ROWS)
     except hotspots.TooManyHotspots as e:

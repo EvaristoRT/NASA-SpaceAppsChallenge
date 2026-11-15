@@ -61,3 +61,20 @@ def read_hotspots(folder: Path, rings, d0: dt.date, d1: dt.date, max_rows: int) 
         return pd.DataFrame(columns=COLUMNS)
     out = pd.concat(parts, ignore_index=True)
     return out.sort_values(["acq_date", "acq_time"], kind="stable").reset_index(drop=True)
+
+
+def count_hotspots(folder: Path, rings, d0: dt.date, d1: dt.date) -> int:
+    """How many hotspots fall inside the polygon between d0 and d1 (inclusive). Reads only the coordinates, never keeps rows."""
+    x0, y0, x1, y1 = geo.bbox(rings)
+    dataset = ds.dataset(folder, format="parquet", partitioning="hive")
+    flt = ((ds.field("year") >= d0.year) & (ds.field("year") <= d1.year)
+           & (ds.field("acq_date") >= d0) & (ds.field("acq_date") <= d1)
+           & (ds.field("latitude") >= y0) & (ds.field("latitude") <= y1)
+           & (ds.field("longitude") >= x0) & (ds.field("longitude") <= x1))
+    total = 0
+    for batch in dataset.scanner(columns=["latitude", "longitude"], filter=flt).to_batches():
+        if batch.num_rows == 0:
+            continue
+        df = batch.to_pandas()
+        total += int(geo.points_in_rings(df["longitude"].to_numpy(dtype="float64"), df["latitude"].to_numpy(dtype="float64"), rings).sum())
+    return total

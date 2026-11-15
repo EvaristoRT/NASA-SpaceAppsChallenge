@@ -130,3 +130,12 @@ def test_hotspots_not_available_on_a_server_without_them(tmp_path, monkeypatch):
 
 def test_meta_reports_hotspots_when_present(client):
     assert client.get("/api/meta").json()["hotspots_available"] is True
+
+
+def test_hotspot_count_matches_the_csv_rows(client):
+    r = client.post("/api/hotspots/count", json={"geojson": POLY, "start": "2019-03", "end": "2019-03"})
+    assert r.status_code == 200 and r.json() == {"start": "2019-03", "end": "2019-03", "count": 2}
+    wide = client.post("/api/hotspots/count", json={"geojson": POLY, "start": "2019-03", "end": "2020-01"})
+    assert wide.json()["count"] == 4  # across two year partitions, same as the CSV
+    assert client.post("/api/hotspots/count", json={"geojson": POLY, "start": "2010-01", "end": "2019-12"}).status_code == 422
+    assert client.post("/api/hotspots/count", json={"geojson": POLY}).status_code == 422
