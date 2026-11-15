@@ -47,7 +47,7 @@ Siempre desde la raíz del repo, con el entorno activado:
 | 02 | `02_qa.py` | revisión de calidad de bronze | ✅ funciona |
 | 03 | `03_silver.py` | limpieza + celdas H3 + región → **silver** | ⏳ Paco |
 | 04 | `04_calibration_set.py` | días-celda por hexágono × mes × satélite | ⏳ Evaristo |
-| 05 | `05_model.py` | factores hacia NOAA-20 + validación | ⏳ Carlos |
+| 05 | `05_model.py` | factores hacia NOAA-20 + validación | ✅ nivel 1 (probado con `--fake`; espera la tabla del 04) |
 | 06 | `06_apply_gold.py` | serie armonizada → **gold** | ⏳ Evaristo |
 | 07 | `07_export.py` | anomalías + focos para el CSV → entrega al equipo web | ⏳ Paco |
 
