@@ -1101,8 +1101,17 @@ const Globe = forwardRef(function Globe(
         if (!map.getLayer('zones-fill')) return;
 
         const picked = pickZone(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
-        if (picked) onSelectZoneRef.current(picked);
-        else if (onGoUpRef.current) onGoUpRef.current(); // clic en el océano: subir un nivel
+        if (picked) {
+          // Al seleccionar, el cuadro y el resalte de hover desaparecen (vuelven cuando el cursor se mueva): solo queda la selección
+          clearTimeout(hoverTimerRef.current);
+          hoverTimerRef.current = 0;
+          if (hoverPopupRef.current) hoverPopupRef.current.remove();
+          if (hoveredZoneIdRef.current) {
+            hoveredZoneIdRef.current = '';
+            setHoverZone(map, null);
+          }
+          onSelectZoneRef.current(picked);
+        } else if (onGoUpRef.current) onGoUpRef.current(); // clic en el océano: subir un nivel
       });
 
       // Doble clic para finalizar polígono por vértices
@@ -1544,7 +1553,7 @@ const Globe = forwardRef(function Globe(
   }, [selectedZone]);
 
   return (
-    <div className="globe-viewport">
+    <div className={`globe-viewport${selectedZone || drawnArea ? ' has-selection' : ''}`}>
       <div ref={mapContainerRef} className="mapbox-map-container" />
       {Boolean(token) && !isMapLoaded && (
         <div className="globe-loading-overlay">

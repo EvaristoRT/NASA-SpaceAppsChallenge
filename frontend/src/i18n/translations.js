@@ -101,7 +101,6 @@ export const translations = {
     },
     zoneDrawer: {
       close: 'Cerrar panel',
-      closeToContinent: 'Cerrar y volver a {continent}',
       path: 'Ruta',
       world: 'Mundo',
       copyCoords: 'Copiar latitud y longitud',
@@ -299,7 +298,6 @@ export const translations = {
     },
     zoneDrawer: {
       close: 'Close panel',
-      closeToContinent: 'Close and go back to {continent}',
       path: 'Path',
       world: 'World',
       copyCoords: 'Copy latitude and longitude',

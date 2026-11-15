@@ -84,9 +84,7 @@ export default function InfoPanel({
         <button
           className="btn-close"
           onClick={isArea ? onCloseArea : onCloseZone}
-          aria-label={
-            isArea ? t('drawnAreaDrawer.close') : parent ? t('zoneDrawer.closeToContinent', { continent: parentName }) : t('zoneDrawer.close')
-          }
+          aria-label={t(isArea ? 'drawnAreaDrawer.close' : 'zoneDrawer.close')}
         >
           <X size={18} />
         </button>

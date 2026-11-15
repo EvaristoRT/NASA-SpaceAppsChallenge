@@ -285,7 +285,10 @@ function MainApp() {
           key={drawnArea ? 'area' : selectedZone.id}
           zone={selectedZone}
           drawnArea={drawnArea}
-          onCloseZone={handleGoUp}
+          onCloseZone={() => {
+            setSelectedZone(null);
+            setOrbitMode(false);
+          }}
           onNavigate={handleSelectZone}
           onGoWorld={handleGoWorld}
           onCloseArea={() => setDrawnArea(null)}
