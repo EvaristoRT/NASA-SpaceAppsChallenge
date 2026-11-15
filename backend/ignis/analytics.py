@@ -76,6 +76,30 @@ def timeline(sel: pd.DataFrame, months: pd.DataFrame, m_lo: int, m_hi: int,
     return series, clim, dict(start_year=int(b_start), end_year=int(b_end), method="median / MAD over same calendar month")
 
 
+def month_info(months: pd.DataFrame, m: int) -> dict | None:
+    """Row of months.parquet for month index m (None if the month is not in the delivery)."""
+    r = months.loc[months["m"] == m]
+    if r.empty:
+        return None
+    r = r.iloc[0]
+    return dict(source=_src_label(months, m), is_partial=bool(r["is_partial"]) if "is_partial" in r.index else False)
+
+
+def hex_features(sel_month: pd.DataFrame, cells: pd.DataFrame) -> list[dict]:
+    """One H3 hexagon polygon per cell with fire in the month (lon/lat, 4 decimals, closed ring)."""
+    import h3
+
+    rows = sel_month[sel_month["value"] > 0]
+    h3_ids = cells["h3"].to_numpy()[rows["cell_id"].to_numpy()]  # cell_id == row position in cells.parquet
+    feats = []
+    for cell, v in zip(h3_ids, rows["value"].to_numpy()):
+        ring = [[round(lng, 4), round(lat, 4)] for lat, lng in h3.cell_to_boundary(cell)]
+        ring.append(ring[0])
+        feats.append({"type": "Feature", "properties": {"v": round(float(v), 1)},
+                      "geometry": {"type": "Polygon", "coordinates": [ring]}})
+    return feats
+
+
 def kpis(series: list[dict], clim: list[dict], n_cells: int) -> dict:
     total = float(sum(p["count"] for p in series))
     by_year: dict[int, float] = {}

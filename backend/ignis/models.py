@@ -18,6 +18,21 @@ class SearchRequest(BaseModel):
         None, description="Last year of baseline (default: the delivery's baseline end, 2020; else last complete year)")
 
 
+class ActivityRequest(BaseModel):
+    geojson: dict = Field(description="Polygon/MultiPolygon geometry, Feature or FeatureCollection (WGS84 lon/lat)")
+    month: str = Field(pattern=r"^\d{4}-\d{2}$", description="YYYY-MM; a harmonized, complete month")
+
+
+class ActivityResponse(BaseModel):
+    month: str
+    source: Optional[str] = Field(None, description="Satellite chain of the month, as in MonthPoint.source")
+    is_nrt: bool = Field(description="The month includes preliminary near-real-time data")
+    n_cells: int = Field(description="Hexagons with fire in the month inside the area")
+    total: float = Field(description="Sum of the hexagon values: equals the series count of that month for the same area")
+    type: Literal["FeatureCollection"] = "FeatureCollection"
+    features: list[dict] = Field(description="H3 hexagon polygons; properties.v = burning cell-days, NOAA-20 equivalent")
+
+
 class MonthPoint(BaseModel):
     month: str = Field(description="YYYY-MM")
     count: float = Field(description="Burning cell-days, NOAA-20 equivalent (not a number of fires or hotspots)")
