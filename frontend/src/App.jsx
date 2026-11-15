@@ -70,7 +70,7 @@ function MainApp() {
     if (zone?.id !== selectedZone?.id) {
       setPanelReady(false);
       if (panelTimerRef.current) clearTimeout(panelTimerRef.current);
-      panelTimerRef.current = setTimeout(() => setPanelReady(true), 2200); // respaldo si la cámara no avisa (el vuelo dura 1.4 s)
+      panelTimerRef.current = setTimeout(() => setPanelReady(true), 1500); // respaldo si la cámara no avisa (el vuelo dura 1 s)
     }
     setSelectedZone(zone);
     setOrbitMode(false);
@@ -107,7 +107,14 @@ function MainApp() {
 
   // Alternar proyección 3D / 2D
   const handleToggleProjection = () => {
-    setProjection((prev) => (prev === 'globe' ? 'mercator' : 'globe'));
+    const next = projection === 'globe' ? 'mercator' : 'globe';
+    // El mapa plano no se inclina, no rota y no tiene órbita: se apagan esos modos
+    if (next === 'mercator') {
+      setIsTilted(false);
+      setOrbitMode(false);
+      setAutoSpin(false);
+    }
+    setProjection(next);
   };
 
   // --- GESTORES DE DIBUJO ---
@@ -256,6 +263,7 @@ function MainApp() {
         onTogglePitch={() => setIsTilted((prev) => !prev)}
         isTilted={isTilted}
         selectedZone={selectedZone}
+        isFlat={projection === 'mercator'}
       />
 
       {/* HUD de coordenadas y métricas en tiempo real */}

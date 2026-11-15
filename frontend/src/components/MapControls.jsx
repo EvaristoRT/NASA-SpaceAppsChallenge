@@ -23,7 +23,8 @@ export default function MapControls({
   onToggleOrbit,
   onTogglePitch,
   isTilted,
-  selectedZone
+  selectedZone,
+  isFlat
 }) {
   const { t } = useLanguage();
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -75,24 +76,28 @@ export default function MapControls({
 
       {/* Navigation Controls */}
       <div className="control-group panel">
-        <button
-          className="control-btn"
-          onClick={onResetNorth}
-          title={t('mapControls.resetNorth')}
-          aria-label={t('mapControls.resetNorthAria')}
-        >
-          <Compass size={18} />
-        </button>
-        <div className="control-btn-divider" />
-        <button
-          className={`control-btn ${isTilted ? 'active' : ''}`}
-          onClick={onTogglePitch}
-          title={isTilted ? t('mapControls.zenithView') : t('mapControls.perspective3D')}
-          aria-label={t('mapControls.togglePitchAria')}
-        >
-          <Layers3 size={18} />
-        </button>
-        <div className="control-btn-divider" />
+        {!isFlat && (
+          <>
+            <button
+              className="control-btn"
+              onClick={onResetNorth}
+              title={t('mapControls.resetNorth')}
+              aria-label={t('mapControls.resetNorthAria')}
+            >
+              <Compass size={18} />
+            </button>
+            <div className="control-btn-divider" />
+            <button
+              className={`control-btn ${isTilted ? 'active' : ''}`}
+              onClick={onTogglePitch}
+              title={isTilted ? t('mapControls.zenithView') : t('mapControls.perspective3D')}
+              aria-label={t('mapControls.togglePitchAria')}
+            >
+              <Layers3 size={18} />
+            </button>
+            <div className="control-btn-divider" />
+          </>
+        )}
         <button
           className="control-btn"
           onClick={onResetView}
@@ -105,24 +110,28 @@ export default function MapControls({
 
       {/* Rotation & Orbit Controls */}
       <div className="control-group panel">
-        <button
-          className={`control-btn ${autoSpin ? 'active' : ''}`}
-          onClick={onToggleAutoSpin}
-          title={autoSpin ? t('mapControls.stopAutoSpin') : t('mapControls.startAutoSpin')}
-          aria-label={t('mapControls.autoSpinAria')}
-        >
-          <RotateCw size={18} className={autoSpin ? 'spinning' : ''} />
-        </button>
-        <div className="control-btn-divider" />
-        <button
-          className={`control-btn ${orbitMode ? 'active' : ''}`}
-          onClick={onToggleOrbit}
-          title={orbitTitle}
-          aria-label={t('mapControls.orbitAria')}
-        >
-          <Orbit size={18} className={orbitMode ? 'pulsing' : ''} />
-        </button>
-        <div className="control-btn-divider" />
+        {!isFlat && (
+          <>
+            <button
+              className={`control-btn ${autoSpin ? 'active' : ''}`}
+              onClick={onToggleAutoSpin}
+              title={autoSpin ? t('mapControls.stopAutoSpin') : t('mapControls.startAutoSpin')}
+              aria-label={t('mapControls.autoSpinAria')}
+            >
+              <RotateCw size={18} className={autoSpin ? 'spinning' : ''} />
+            </button>
+            <div className="control-btn-divider" />
+            <button
+              className={`control-btn ${orbitMode ? 'active' : ''}`}
+              onClick={onToggleOrbit}
+              title={orbitTitle}
+              aria-label={t('mapControls.orbitAria')}
+            >
+              <Orbit size={18} className={orbitMode ? 'pulsing' : ''} />
+            </button>
+            <div className="control-btn-divider" />
+          </>
+        )}
         <button
           className="control-btn"
           onClick={toggleFullscreen}

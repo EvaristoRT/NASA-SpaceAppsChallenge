@@ -13,8 +13,8 @@ import {
   findCoveredCountries
 } from '../utils/geoUtils';
 
-// Duración de los vuelos de cámara (ms). Antes eran de 2 a 2.5 s; se acortaron para que la navegación se sienta ágil.
-const FLY_MS = 1400;
+// Duración de los vuelos de cámara (ms). Antes eran de 2 a 2.5 s; se acortaron (1.4 s y luego 1 s) para que la navegación se sienta ágil.
+const FLY_MS = 1000;
 const FLY_CURVE = 1.2;
 
 const Globe = forwardRef(function Globe(
@@ -194,8 +194,8 @@ const Globe = forwardRef(function Globe(
         mapRef.current.flyTo({
           center: zone.coords,
           zoom: Math.min((zone.zoom || 4) + 3.5, 14),
-          pitch: 68,
-          bearing: (zone.bearing || 0) + 25,
+          pitch: projectionRef.current === 'mercator' ? 0 : 68,
+          bearing: projectionRef.current === 'mercator' ? 0 : (zone.bearing || 0) + 25,
           duration: FLY_MS,
           curve: FLY_CURVE
         });
@@ -451,6 +451,30 @@ const Globe = forwardRef(function Globe(
   const onFlightChangeRef = useRef(onFlightChange);
   onFlightChangeRef.current = onFlightChange;
   const flightIdRef = useRef(0);
+
+  // Mapa plano (Mercator 2D): sin rotación ni inclinación, y un solo mundo (sin copias repetidas al desplazarse).
+  // Con `renderWorldCopies` en falso Mapbox limita el desplazamiento a los bordes del mundo y sube solo el zoom mínimo para que
+  // el mapa llene la pantalla; las zonas que cruzan el antimeridiano (Rusia, Fiyi, Alaska) se ven en los dos bordes.
+  // En el globo todo vuelve a ser libre.
+  const applyFlatConstraints = (map, flat) => {
+    if (!map) return;
+    try {
+      if (flat) {
+        map.dragRotate.disable();
+        map.touchZoomRotate.disableRotation();
+        map.setMaxPitch(0);
+        map.setRenderWorldCopies(false);
+        if (map.getPitch() !== 0 || map.getBearing() !== 0) map.easeTo({ pitch: 0, bearing: 0, duration: 400 });
+      } else {
+        map.dragRotate.enable();
+        map.touchZoomRotate.enableRotation();
+        map.setMaxPitch(85);
+        map.setRenderWorldCopies(true);
+      }
+    } catch (e) {
+      console.warn('No se pudieron ajustar los límites del mapa plano:', e);
+    }
+  };
 
   // Avisa al padre mientras la cámara vuela (para ocultar controles y coordenadas). Si un vuelo interrumpe a otro, solo el
   // último avisa del final, para que los controles no reaparezcan a mitad del segundo vuelo.
@@ -738,6 +762,9 @@ const Globe = forwardRef(function Globe(
       }
     }
 
+    // 2b. Restricciones del mapa plano (sin rotación, un solo mundo) o libres en el globo
+    applyFlatConstraints(map, projectionRef.current === 'mercator');
+
     // 3. Configurar relieve 3D de terreno (montañas y valles)
     applyTerrain(map);
 
@@ -826,6 +853,11 @@ const Globe = forwardRef(function Globe(
         });
         resizeObserver.observe(mapContainerRef.current);
       }
+
+      // En el mapa plano el rumbo siempre es norte arriba
+      map.on('rotate', () => {
+        if (projectionRef.current === 'mercator' && map.getBearing() !== 0) map.setBearing(0);
+      });
 
       // Eventos de error de token o red
       map.on('error', (e) => {
@@ -1261,7 +1293,7 @@ const Globe = forwardRef(function Globe(
     if (mapRef.current) {
       mapRef.current.setStyle(styleUrl);
       const isTopography = currentStyleId === 'outdoors' || (styleUrl && styleUrl.includes('outdoors'));
-      if (isTopography && mapRef.current.getPitch() < 35) {
+      if (isTopography && projectionRef.current !== 'mercator' && mapRef.current.getPitch() < 35) {
         mapRef.current.easeTo({ pitch: 58, duration: 1200 });
       }
     }
@@ -1277,6 +1309,7 @@ const Globe = forwardRef(function Globe(
     const updateProjection = () => {
       try {
         mapRef.current.setProjection(projection);
+        applyFlatConstraints(mapRef.current, projection === 'mercator');
         if (projection === 'globe') {
           applyAtmosphereAndFog(mapRef.current);
           if (isTilted) {
@@ -1288,7 +1321,6 @@ const Globe = forwardRef(function Globe(
           } catch {
             // no-op
           }
-          mapRef.current.easeTo({ pitch: 0, duration: 600 });
         }
         mapRef.current.resize();
       } catch (err) {
@@ -1296,9 +1328,10 @@ const Globe = forwardRef(function Globe(
       }
     };
 
-    if (mapRef.current.isStyleLoaded()) {
-      updateProjection();
-    } else {
+    // Se aplica de inmediato: `isStyleLoaded()` es falso mientras se cargan teselas y entonces 'style.load' ya no volvía a llegar,
+    // así que el cambio a 2D no se hacía si se pulsaba justo al cargar. Si el estilo aún no está listo, se repite al cargarlo.
+    updateProjection();
+    if (!mapRef.current.isStyleLoaded()) {
       mapRef.current.once('style.load', updateProjection);
     }
   }, [projection, isTilted, applyAtmosphereAndFog]);
@@ -1331,8 +1364,8 @@ const Globe = forwardRef(function Globe(
       mapRef.current.flyTo({
         center: selectedZone.coords,
         zoom: selectedZone.zoom || 4,
-        pitch: selectedZone.pitch || 45,
-        bearing: selectedZone.bearing || 0,
+        pitch: projectionRef.current === 'mercator' ? 0 : selectedZone.pitch || 45,
+        bearing: projectionRef.current === 'mercator' ? 0 : selectedZone.bearing || 0,
         essential: true,
         duration: FLY_MS,
         curve: FLY_CURVE
