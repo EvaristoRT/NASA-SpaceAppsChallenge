@@ -128,7 +128,9 @@ def fake_calibration(seed: int = 7, n_regions: int = 24, cells_per_region: int =
 
 # --------------------------------------------------------------------------- ajuste
 def load(path: Path) -> pd.DataFrame:
-    df = pd.read_parquet(path)
+    # Se lee con DuckDB y no con pd.read_parquet: en algunas máquinas Windows bloquea la DLL de pyarrow.
+    import duckdb
+    df = duckdb.sql(f"SELECT * FROM read_parquet('{path.as_posix()}')").df()
     missing = [f"{p}_{s}" for p in METRICS for s in SATS if f"{p}_{s}" not in df] + \
               [c for c in ("h3_r5", "h3_r3", "year", "month") if c not in df]
     if missing:
@@ -216,6 +218,10 @@ def drift(df: pd.DataFrame) -> dict:
         num, den, ok = ORIGINS[origin]
         d = df[ok(df["m"])].groupby("year")[[f"cd_{num}", f"cd_{den}"]].sum()
         out[origin] = {int(y): round(float(r[f"cd_{num}"] / r[f"cd_{den}"]), 4) for y, r in d.iterrows() if r[f"cd_{den}"] > 0}
+    # Con Aqua sola: si n20/aqua es estable y n20/modis no, la deriva viene de Terra.
+    d = df[df["m"] >= N200].groupby("year")[["cd_n20", "cd_aqua", "cd_terra"]].sum()
+    out["aqua"] = {int(y): round(float(r["cd_n20"] / r["cd_aqua"]), 4) for y, r in d.iterrows() if r["cd_aqua"] > 0}
+    out["terra_sobre_aqua"] = {int(y): round(float(r["cd_terra"] / r["cd_aqua"]), 4) for y, r in d.iterrows() if r["cd_aqua"] > 0}
     return out
 
 
@@ -289,7 +295,8 @@ def main() -> int:
     models.mkdir(parents=True, exist_ok=True)
 
     fac = fit(df, config.TRAIN_YEARS, args.prior)
-    fac.to_parquet(models / "factores.parquet", index=False)
+    import duckdb  # sin pyarrow: DuckDB escribe el parquet directamente desde el DataFrame
+    duckdb.sql(f"COPY (SELECT * FROM fac) TO '{(models / 'factores.parquet').as_posix()}' (FORMAT parquet)")
     val, series = validate(df, fac)
     metrics = {
         "region": "fake" if args.fake else args.region,

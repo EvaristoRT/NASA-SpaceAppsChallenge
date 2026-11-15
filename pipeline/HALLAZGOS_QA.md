@@ -68,3 +68,30 @@ Para tener en cuenta:
    (f_terra 3.34 × k_modis 0.71) es menos confiable que la de días-celda. Carlos: revisar junto con el 0.71.
 3. `harmonized_ci_lower/upper` = `harmonized_count` hasta que exista el nivel 2.
 4. `region` no va dentro del archivo: DuckDB la agrega al leer por estar en la ruta (`region=...`).
+
+---
+
+## 2026-11-14 · Carlos · modelo nivel 1 con datos reales (`argentina_chile`, paso 05)
+
+Mismo silver y misma tabla que Evaristo (14,595,802 focos · 1,111,085 filas): los resultados coinciden.
+
+### Validación (ajuste 2018–2022, prueba 2023–2026, serie mensual total)
+| Conversión | Sin armonizar | Armonizado | r mensual | r región-mes |
+|---|---|---|---|---|
+| MODIS → NOAA-20, días-celda | sesgo −56.4% | **sesgo +1.9%**, error mediano 8.7% | 0.995 | 0.985 |
+| MODIS → NOAA-20, FRP | sesgo +39.5% | **sesgo +4.8%**, error mediano 11.1% | 0.990 | 0.958 |
+| S-NPP → NOAA-20, días-celda | sesgo −1.8% | **sesgo −0.8%**, error mediano 2.8% | 0.990 | 0.993 |
+| S-NPP → NOAA-20, FRP | sesgo +1.6% | sesgo +4.1%, error mediano 5.8% | 0.989 | 0.973 |
+
+Factores globales: `k_modis` = 2.32 (días-celda) y 0.71 (FRP) · `k_snpp` = 1.01 · `f_terra` = 2.77. Gráficas en `<FIRE_DATA_DIR>/models/figs/`.
+
+### ¿El factor de MODIS sirve para 2002–2011? (respuesta a la nota 1 de Evaristo)
+- Usando S-NPP como juez independiente: **S-NPP / MODIS es estable de 2012 a 2024** (2.10–2.39, sin tendencia, ruido ±6%).
+  Solo en 2025 Terra se cae (S-NPP / Terra pasa de ~5.5 a 7.2). Como desde 2018 la serie usa NOAA-20 directo, esa caída no entra al producto.
+- **Limitación que hay que declarar:** en esta región Terra/Aqua sube de 0.47 (2003) a ~0.62 (2011–2022). Antes de 2012 no hay VIIRS
+  para saber si es el fuego (p. ej. quemas más temprano en el día) o un sensor. `cd_modis` es la unión de ambos, así que le afecta poco,
+  pero es la parte menos verificable de la serie.
+- Ajustar con Aqua sola no ayuda: NOAA-20 / Aqua varía igual que NOAA-20 / MODIS (3.41–3.89). Se queda la unión.
+
+### El FRP no es neutro (respuesta a la nota 2)
+Confirmado: 0.71. Se armoniza con su propio factor (ya lo hace el modelo) y valida bien. Se corrigió la fila "Segunda métrica" del plan.
