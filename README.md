@@ -2,7 +2,7 @@
 
 **NASA Space Apps Challenge 2026 · Challenge: "Harmonization of MODIS and VIIRS Hot Spots"** (proposed by CONAE, Argentina) · **Team MEIREKI**
 
-> 🇪🇸 Versión en español: [README.es.md](README.es.md)
+> Versión en español: [README.es.md](README.es.md)
 
 A web application that shows the **burning activity calendar** of any area in the Americas from 2000 to November 2026, as **one
 comparable time series** even though the data come from different satellites. Users pick a country or draw an area, see which months and
@@ -32,24 +32,24 @@ directly**:
 | MODIS | Terra (from 2000-11), Aqua (from 2002-07) | 2000 → today, **at the end of its life** | ~1 km |
 | VIIRS | S-NPP (2012-01 → **ended 2026-11-02**), NOAA-20 (from 2018-04), NOAA-21 (from 2023-03) | 2012 → today | 375 m |
 
-For the same fire, VIIRS reports **about 4 times more hotspots** than MODIS (smaller pixel, higher sensitivity). Adding raw counts invents
-trends: the series "jumps" in 2002 (Aqua starts), 2012 (VIIRS starts) and 2018 (NOAA-20 starts) without any extra fire.
+For the same fire, VIIRS reports **about 4 times more hotspots** than MODIS (smaller pixel, higher sensitivity). Combining raw counts introduces
+artificial discontinuities: step increases in 2002 (Aqua), 2012 (VIIRS) and 2018 (NOAA-20) that do not reflect any change in fire activity.
 
-## 2. What we built
+## 2. Methodology
 
-### The idea in one sentence
+### Overview
 The whole series is expressed as **"NOAA-20 equivalent"**: from 2018 on it is what NOAA-20 measures, and earlier years are estimated by
-bringing each satellite to that scale with factors learned in the years when both were flying.
+bringing each satellite to that scale with factors estimated over the years in which both sensors were operating.
 
-### Method decisions (and why)
+### Methodological decisions
 
-| Decision | Why |
+| Decision | Rationale |
 |---|---|
-| **Reference: VIIRS NOAA-20**, not MODIS or S-NPP | S-NPP stopped on 2026-11-02 (and was losing sensitivity in its last months: NOAA-20 / S-NPP went from 0.98 to 1.26 between January and July 2026). MODIS is fading: the Terra/Aqua ratio, stable at ~0.50 in 2003–2021, falls to 0.43 in 2024 and 0.38 in 2025. NOAA-20 is active and NOAA-21 agrees with it within ~1%. This way **the present is measured data** and only the past is estimated |
+| **Reference: VIIRS NOAA-20**, not MODIS or S-NPP | S-NPP stopped on 2026-11-02 (and was losing sensitivity in its last months: NOAA-20 / S-NPP went from 0.98 to 1.26 between January and July 2026). MODIS is approaching the end of its mission: the Terra/Aqua ratio, stable at ~0.50 in 2003–2021, falls to 0.43 in 2024 and 0.38 in 2025. NOAA-20 is active and NOAA-21 agrees with it within ~1%. As a result, **the recent period consists of observations** and only the earlier period is estimated |
 | **Unit: "burning cell-day"** = one H3 hexagon at resolution 8 (~0.7 km², close to a MODIS pixel) with at least one hotspot that day | Removes most of the footprint difference: a fire front that VIIRS splits into 20 detections of 375 m counts as one cell-day. Measured: the NOAA-20 / MODIS gap drops from 3.98× (hotspots) to 2.84× (cell-days) |
-| **One factor per satellite; VIIRS satellites are never added together** | Adding them creates false jumps every time a satellite is launched |
-| **Separate "Terra only" period** (2000-11 → 2002-06) | Before Aqua, observation capacity was half |
-| **Second metric: FRP** (fire radiative power, MW), with its own factor | Measures how much burns, not only where. It depends less on the sensor than hotspot counts, but it is not neutral (NOAA-20 / MODIS ≈ 0.7–0.85) |
+| **One factor per satellite; VIIRS satellites are never added together** | Adding them introduces artificial discontinuities every time a satellite enters operation |
+| **Separate "Terra only" period** (2000-11 → 2002-06) | Before Aqua's launch, the daily observation frequency was half |
+| **Second metric: FRP** (fire radiative power, MW), with its own factor | Adds fire intensity to fire occurrence. It depends less on the sensor than hotspot counts, but it is not neutral (NOAA-20 / MODIS ≈ 0.7–0.85) |
 | **Cleaning** of volcanoes, offshore platforms, gas flares and industry | FIRMS flags many static sources (`type` 1–3). Recent near-real-time (NRT) data has no such flag, so it is filtered with a **static-cell mask** built from the archive |
 
 ### The model
@@ -66,12 +66,12 @@ uncertainty can be quantified and validated on years the model never saw.
 - **Uncertainty:** 95% band by **bootstrap** (200 replicates, resampling hexagons and years).
 
 ### The pipeline
-Seven steps in `pipeline/scripts/`, all with DuckDB and Parquet. Each script documents its inputs, outputs and rules at the top of the file.
+Eight steps (`00`–`07`) in `pipeline/scripts/`, all with DuckDB and Parquet. Each script documents its inputs, outputs and rules at the top of the file.
 
 | Step | What it does |
 |---|---|
 | `00` / `00b` | Downloads the FIRMS archive (public yearly zips) and the current year through the FIRMS API, splitting each block where standard-quality data ends |
-| `01` | **Bronze:** converts everything to Parquet with one schema — **553 million hotspots**, 2000–2026, worldwide |
+| `01` | **Bronze:** converts all records to Parquet with one schema — **553 million hotspots**, 2000–2026, worldwide |
 | `02` | Quality checks: coverage by satellite, nulls, duplicates, Terra/Aqua ratio |
 | `03` | **Silver:** cleaning, H3 cells (resolutions 8, 6, 5 and 3) and clipping by region |
 | `04` | Calibration table: cell-days, hotspots and FRP per hexagon × month, **one column per satellite** |
@@ -81,10 +81,10 @@ Seven steps in `pipeline/scripts/`, all with DuckDB and Parquet. Each script doc
 
 Decisions and column contracts: [`pipeline/PLAN_EQUIPO.md`](pipeline/PLAN_EQUIPO.md) · how to run it: [`pipeline/README.md`](pipeline/README.md).
 
-## 3. Results: does the harmonization work?
+## 3. Results and validation
 
 **Temporal validation:** factors are fitted on **2018–2022** and tested on **2023–2026**, years the model never saw, against what NOAA-20
-actually measured. We did it in five regions: three in the Americas (the app's region and two subsets of it) and, **only as an
+actually measured. The validation was carried out in five regions: three in the Americas (the app's region and two subsets of it) and, **only as an
 independent check of the method**, Europe and Africa.
 
 ![MODIS bias before and after harmonization, by region](docs/img/validacion_regiones.png)
@@ -93,7 +93,7 @@ independent check of the method**, Europe and Africa.
 |---|---|---|---|---|---|---|
 | Argentina + Chile | 14.6 M | 2.32 [2.24–2.42] | −56% → **+1.9%** | 8.7% | 0.995 | 95.7% |
 | South America | 69.7 M | 2.65 [2.60–2.69] | −61% → **+7.3%** | 5.9% | 0.996 | 95.7% |
-| **Americas (the one in the app)** | ~100 M | 2.64 [2.57–2.70] | −61% → **+5.4%** | 6.3% | 0.995 | 97.9% |
+| **Americas (application region)** | ~100 M | 2.64 [2.57–2.70] | −61% → **+5.4%** | 6.3% | 0.995 | 97.9% |
 | Europe *(validation only, not in the app)* | 10.5 M | 2.61 [2.54–2.83] | −63% → **−2.0%** | 11.5% | 0.993 | 89.4% |
 | Africa *(validation only, not in the app)* | 265.6 M | 3.03 [2.93–3.13] | −70% → **−8.0%** | 10.0% | 0.974 | 80.9% |
 
@@ -103,17 +103,17 @@ S-NPP → NOAA-20 (years 2012–2018): bias between −0.8% and −2.7% and medi
 
 ![Validation in the Americas, 2023–2026](docs/img/validacion_america_serie.png)
 
-### Other checks
-- **No false jumps when the satellite changes.** In 2013–2017, years without NOAA-20, the same year brought to NOAA-20 through two
+### Additional checks
+- **No artificial discontinuities at sensor transitions.** In 2013–2017, years without NOAA-20, the same year brought to NOAA-20 through two
   independent paths (from MODIS and from S-NPP) agrees within −3% to +4%.
-- **The factor changes with the type of fire, and the model captures it.** In the Americas, the boreal belt (Canada and Alaska) has a
+- **The factor varies with the fire regime, and the regional stratification captures it.** In the Americas, the boreal belt (Canada and Alaska) has a
   factor of 2.27 against 2.66 in the US, Mexico and South America; validated on its own, its bias is +6.9%.
-- **Industrial sources that slip through:** 0.4% of cell-days in the Americas, 1.7% in Europe (steel plants), 0.15% in Africa.
-- **MODIS is degrading, and it shows.** In Africa the test bias is +0.7% (2023) and −1.9% (2024), then −10.3% (2025) and −23.7% (2026),
+- **Residual industrial sources:** 0.4% of cell-days in the Americas, 1.7% in Europe (steel plants), 0.15% in Africa.
+- **Evidence of MODIS degradation.** In Africa the test bias is +0.7% (2023) and −1.9% (2024), then −10.3% (2025) and −23.7% (2026),
   while Terra/Aqua falls from 0.37 to 0.21. It does not affect the product (from 2018 the series is measured NOAA-20, and the factors are
-  applied to 2002–2011), but it is the clearest argument for using VIIRS as the reference.
-- **How to read the band:** the uncertainty of the factor itself is small (between ±2% and +8% depending on the region); what varies most
-  is the ratio between sensors from one year to the next. The band shown **contains the real value in 95.7–97.9% of the test months in the
+  applied to 2002–2011), but it supports the choice of VIIRS as the reference.
+- **Interpretation of the uncertainty band:** the uncertainty of the factor itself is small (between ±2% and +8% depending on the region); what varies most
+  is the ratio between sensors from one year to the next. The band shown **contains the observed value in 95.7–97.9% of the test months in the
   Americas and South America** (less in Europe and Africa). It is an empirically checked band, not a confidence interval of the total in
   the strict sense.
 
@@ -135,7 +135,7 @@ All the figures and how they were obtained (Spanish): [`pipeline/HALLAZGOS_QA.md
 
 Stack: **pipeline** Python + DuckDB + Parquet + H3 · **backend** FastAPI · **frontend** React + Vite + Mapbox GL, deployable on Vercel.
 
-## 5. Run it on your computer
+## 5. Running locally
 
 You need Python 3.12+, Node 20+, a **public** Mapbox token (starts with `pk.`) and the data delivery folder
 (`ignis-backend-america.zip` unzipped).
@@ -168,8 +168,8 @@ worldwide bronze layer took about 1.5 hours, and each region from minutes to abo
 
 ## 6. Limitations
 
-- **Before 2012 there is nothing to check MODIS against** (VIIRS did not exist). In Argentina + Chile the Terra/Aqua ratio rises from 0.47
-  (2003) to ~0.62 (2011), and we cannot tell whether that is the fire or the sensor. It is the least verifiable part of the series.
+- **MODIS cannot be independently validated before 2012** (VIIRS was not yet operating). In Argentina + Chile the Terra/Aqua ratio rises from 0.47
+  (2003) to ~0.62 (2011), and it is not possible to determine whether this reflects fire activity or sensor behavior. It is the least verifiable part of the series.
 - **The Terra-only period (2000-11 → 2002-06) carries the widest band**, because its factor is chained through MODIS.
 - **Recent months of 2026 are preliminary (NRT):** NASA replaces them with the standard version about 5 months later. The bias between
   both versions cannot be measured (they do not overlap). Data cut-off: **2026-11-15**.
@@ -178,8 +178,8 @@ worldwide bronze layer took about 1.5 hours, and each region from minutes to abo
   would need ~8 GB.
 - **Regions are rectangles**, not borders. In 2026, Galápagos and eastern Greenland have no data (almost no vegetation fires there).
 - **Some industrial sources** are not flagged by FIRMS: ~0.4% of cell-days in the Americas, 1.7% in Europe.
-- **In Africa the harmonization is less precise** (the band contains 81% of the months, bias −8%): MODIS degrades in 2025–2026 and it
-  weighs more there.
+- **In Africa the harmonization is less precise** (the band contains 81% of the months, bias −8%): MODIS degrades in 2025–2026 and the
+  effect is stronger in that region.
 - **The unit is "burning cell-days", not "hotspots".** It is what makes the sensors comparable; the raw hotspot count is shown separately
   and is in the CSV.
 

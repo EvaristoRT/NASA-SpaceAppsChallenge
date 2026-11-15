@@ -1,6 +1,6 @@
 # Armonización de focos de calor MODIS y VIIRS
 
-> 🇬🇧 English version: [README.md](README.md)
+> English version: [README.md](README.md)
 
 **NASA Space Apps Challenge 2026 · reto "Harmonization of MODIS and VIIRS Hot Spots"** (propuesto por CONAE, Argentina).
 
@@ -24,24 +24,24 @@ comparar directamente**:
 | MODIS | Terra (desde 2000-11), Aqua (desde 2002-07) | 2000 → hoy, **al final de su vida útil** | ~1 km |
 | VIIRS | S-NPP (2012-01 → **terminó el 2026-11-02**), NOAA-20 (desde 2018-04), NOAA-21 (desde 2023-03) | 2012 → hoy | 375 m |
 
-Para el mismo fuego, VIIRS cuenta **unas 4 veces más focos** que MODIS (píxel más chico, más sensible). Sumar los conteos crudos inventa
-tendencias: la serie "sube" en 2002 (entra Aqua), en 2012 (entra VIIRS) y en 2018 (entra NOAA-20) sin que haya más fuego.
+Para el mismo fuego, VIIRS cuenta **unas 4 veces más focos** que MODIS (píxel más pequeño y mayor sensibilidad). Combinar los conteos crudos introduce
+discontinuidades artificiales: aumentos en 2002 (Aqua), 2012 (VIIRS) y 2018 (NOAA-20) que no corresponden a un cambio en la actividad de fuego.
 
-## 2. Lo que hicimos
+## 2. Metodología
 
-### La idea en una frase
+### Enfoque general
 Toda la serie se expresa en **"equivalente NOAA-20"**: del 2018 en adelante es lo que mide NOAA-20, y los años anteriores se estiman
-llevando cada satélite a esa escala con factores aprendidos en los años en que ambos funcionaron a la vez.
+llevando cada satélite a esa escala con factores estimados en los años en que ambos sensores operaron de forma simultánea.
 
-### Decisiones de método (y por qué)
+### Decisiones metodológicas
 
-| Decisión | Por qué |
+| Decisión | Justificación |
 |---|---|
-| **Referencia: VIIRS NOAA-20**, no MODIS ni S-NPP | S-NPP dejó de operar el 2026-11-02 (y en sus últimos meses perdía sensibilidad: NOAA-20 / S-NPP pasó de 0.98 a 1.26 entre enero y julio de 2026). MODIS se está apagando: la razón Terra/Aqua, estable en ~0.50 entre 2003 y 2021, cae a 0.43 en 2024 y 0.38 en 2025. NOAA-20 sigue activo y NOAA-21 concuerda con él al ~1%. Así **el presente es dato medido** y lo estimado es el pasado |
+| **Referencia: VIIRS NOAA-20**, no MODIS ni S-NPP | S-NPP dejó de operar el 2026-11-02 (y en sus últimos meses perdía sensibilidad: NOAA-20 / S-NPP pasó de 0.98 a 1.26 entre enero y julio de 2026). MODIS está llegando al final de su misión: la razón Terra/Aqua, estable en ~0.50 entre 2003 y 2021, cae a 0.43 en 2024 y 0.38 en 2025. NOAA-20 sigue activo y NOAA-21 concuerda con él al ~1%. Así, **el periodo reciente corresponde a observaciones** y solo el periodo anterior es estimado |
 | **Unidad: "día-celda"** = un hexágono H3 de resolución 8 (~0.7 km², parecido a un píxel MODIS) con al menos un foco ese día | Quita buena parte de la diferencia de huella: un frente que VIIRS parte en 20 detecciones de 375 m cuenta como un solo día-celda. Medido: la brecha NOAA-20 / MODIS baja de 3.98× (focos) a 2.84× (días-celda) |
-| **Un factor por satélite y nunca sumar satélites VIIRS entre sí** | Sumarlos crea saltos falsos cada vez que entra un satélite |
-| **Tramo "solo Terra" aparte** (2000-11 → 2002-06) | Antes de Aqua la capacidad de observación era la mitad |
-| **Segunda métrica: FRP** (potencia radiativa del fuego, MW), con su propio factor | Mide cuánto arde, no solo dónde. Depende menos del sensor que los focos, pero no es neutra (NOAA-20 / MODIS ≈ 0.7–0.85) |
+| **Un factor por satélite y nunca sumar satélites VIIRS entre sí** | Sumarlos introduce discontinuidades artificiales cada vez que entra en operación un satélite |
+| **Tramo "solo Terra" aparte** (2000-11 → 2002-06) | Antes del lanzamiento de Aqua, la frecuencia de observación diaria era la mitad |
+| **Segunda métrica: FRP** (potencia radiativa del fuego, MW), con su propio factor | Aporta la intensidad del fuego además de su ocurrencia. Depende menos del sensor que los focos, pero no es neutra (NOAA-20 / MODIS ≈ 0.7–0.85) |
 | **Limpieza** de volcanes, plataformas marinas, mecheros de gas e industria | FIRMS marca muchas fuentes estáticas (`type` 1–3). Los datos recientes (NRT) no traen esa marca: se filtran con una **máscara de celdas estáticas** armada con el histórico |
 
 ### El modelo
@@ -58,7 +58,7 @@ región y mes, y su incertidumbre se puede cuantificar y validar en años que el
 - **Incertidumbre:** banda del 95% por **bootstrap** (200 réplicas, remuestreando hexágonos y años).
 
 ### El pipeline
-Siete pasos en `pipeline/scripts/`, todos con DuckDB y Parquet. Cada uno documenta sus entradas, salidas y reglas al inicio del archivo.
+Ocho pasos (`00`–`07`) en `pipeline/scripts/`, todos con DuckDB y Parquet. Cada uno documenta sus entradas, salidas y reglas al inicio del archivo.
 
 | Paso | Qué hace |
 |---|---|
@@ -73,7 +73,7 @@ Siete pasos en `pipeline/scripts/`, todos con DuckDB y Parquet. Cada uno documen
 
 Detalle de decisiones y contratos de columnas: [`pipeline/PLAN_EQUIPO.md`](pipeline/PLAN_EQUIPO.md) · cómo correrlo: [`pipeline/README.md`](pipeline/README.md).
 
-## 3. Resultados: ¿funciona la armonización?
+## 3. Resultados y validación
 
 **Validación temporal:** los factores se ajustan con **2018–2022** y se prueban en **2023–2026**, años que el modelo nunca vio,
 contra lo que NOAA-20 midió de verdad. Se hizo en cinco regiones.
@@ -84,7 +84,7 @@ contra lo que NOAA-20 midió de verdad. Se hizo en cinco regiones.
 |---|---|---|---|---|---|---|
 | Argentina + Chile | 14.6 M | 2.32 [2.24–2.42] | −56% → **+1.9%** | 8.7% | 0.995 | 95.7% |
 | Sudamérica | 69.7 M | 2.65 [2.60–2.69] | −61% → **+7.3%** | 5.9% | 0.996 | 95.7% |
-| **América (la de la app)** | ~100 M | 2.64 [2.57–2.70] | −61% → **+5.4%** | 6.3% | 0.995 | 97.9% |
+| **América (región de la aplicación)** | ~100 M | 2.64 [2.57–2.70] | −61% → **+5.4%** | 6.3% | 0.995 | 97.9% |
 | Europa | 10.5 M | 2.61 [2.54–2.83] | −63% → **−2.0%** | 11.5% | 0.993 | 89.4% |
 | África | 265.6 M | 3.03 [2.93–3.13] | −70% → **−8.0%** | 10.0% | 0.974 | 80.9% |
 
@@ -94,14 +94,14 @@ S-NPP → NOAA-20 (los años 2012–2018): sesgo de −0.8% a −2.7% y error me
 
 ![Validación en América, 2023–2026](docs/img/validacion_america_serie.png)
 
-### Otras comprobaciones
-- **Sin saltos falsos al cambiar de satélite.** En 2013–2017, años sin NOAA-20, el mismo año llevado a NOAA-20 por dos caminos
+### Verificaciones adicionales
+- **Sin discontinuidades artificiales en los cambios de sensor.** En 2013–2017, años sin NOAA-20, el mismo año llevado a NOAA-20 por dos caminos
   independientes (desde MODIS y desde S-NPP) coincide entre −3% y +4%.
-- **El factor cambia con el tipo de fuego, y el modelo lo capta.** En América, la franja boreal (Canadá y Alaska) tiene factor 2.27
+- **El factor varía con el régimen de fuego, y la estratificación regional lo recoge.** En América, la franja boreal (Canadá y Alaska) tiene factor 2.27
   frente a 2.66 en EE. UU., México y Sudamérica; validada por separado da sesgo +6.9%.
-- **Fuentes industriales que se cuelan:** 0.4% de los días-celda en América, 1.7% en Europa (acerías).
-- **Cómo leer la banda:** la incertidumbre del factor es chica (entre ±2% y +8% según la región); lo que más varía es la relación entre sensores de un año a otro.
-  La banda que se muestra **contiene el valor real en el 95.7–97.9% de los meses de prueba en América y Sudamérica** (menos en Europa y
+- **Fuentes industriales residuales:** 0.4% de los días-celda en América, 1.7% en Europa (acerías).
+- **Interpretación de la banda de incertidumbre:** la incertidumbre del factor es pequeña (entre ±2% y +8% según la región); lo que más varía es la relación entre sensores de un año a otro.
+  La banda que se muestra **contiene el valor observado en el 95.7–97.9% de los meses de prueba en América y Sudamérica** (menos en Europa y
   África). Es una banda empírica comprobada, no un intervalo de confianza del total en sentido estricto.
 
 Todas las cifras, con su método: [`pipeline/HALLAZGOS_QA.md`](pipeline/HALLAZGOS_QA.md), [`pipeline/REGIONES.md`](pipeline/REGIONES.md),
@@ -109,7 +109,8 @@ Todas las cifras, con su método: [`pipeline/HALLAZGOS_QA.md`](pipeline/HALLAZGO
 
 ## 4. La aplicación
 
-- **Elegir la zona:** continentes y países en el mapa, **polígono dibujado** o **coordenadas escritas**.
+- **Elegir la zona:** países de América en el mapa, **polígono dibujado** o **coordenadas escritas**. El mapa permite recorrer
+  todos los continentes, pero solo América tiene datos: fuera de ella el panel indica "sin datos para esta zona".
 - **Calendario de quema** años × meses, con rampas de color perceptualmente uniformes y aptas para daltonismo, navegable con teclado.
 - **Mes actual contra lo normal** de la zona (mediana 2003–2020), con anomalía y percentil. El mes en curso se marca como parcial y los
   meses recientes como preliminares (NRT).
@@ -121,7 +122,7 @@ Todas las cifras, con su método: [`pipeline/HALLAZGOS_QA.md`](pipeline/HALLAZGO
 
 Stack: **pipeline** Python + DuckDB + Parquet + H3 · **backend** FastAPI · **frontend** React + Vite + Mapbox GL, desplegable en Vercel.
 
-## 5. Correrlo en tu computadora
+## 5. Ejecución local
 
 Necesitas Python 3.12+, Node 20+, un token **público** de Mapbox (empieza con `pk.`) y la carpeta de la entrega de datos
 (`ignis-backend-america.zip` descomprimido).
@@ -151,15 +152,16 @@ Más detalle en [`backend/README.md`](backend/README.md) y [`frontend/README.md`
 
 ## 6. Limitaciones
 
-- **Antes de 2012 no hay con qué comprobar MODIS** (no existía VIIRS). En Argentina + Chile la razón Terra/Aqua sube de 0.47 (2003) a
-  ~0.62 (2011) y no se puede saber si es el fuego o el sensor. Es el tramo menos verificable.
+- **MODIS no puede validarse de forma independiente antes de 2012** (VIIRS aún no operaba). En Argentina + Chile la razón Terra/Aqua sube de 0.47 (2003) a
+  ~0.62 (2011), y no es posible determinar si refleja la actividad de fuego o el comportamiento del sensor. Es el tramo menos verificable.
 - **Los meses recientes de 2026 son preliminares (NRT):** NASA los reemplaza por la versión definitiva unos 5 meses después. El sesgo
   entre ambas versiones no se puede medir (no se solapan). Corte de los datos: **2026-11-15**.
-- **La app muestra América.** Europa y África están procesadas y validadas (cifras arriba) pero no cargadas en la app.
+- **La aplicación cubre solo América.** Europa y África están procesadas y validadas (cifras arriba) pero no cargadas en la aplicación,
+  y Asia y Oceanía no se procesaron.
 - **Las regiones son rectángulos**, no fronteras. En 2026 faltan Galápagos y el este de Groenlandia (casi sin fuegos de vegetación).
 - **Quedan fuentes industriales** que FIRMS no marca: ~0.4% de los días-celda en América, 1.7% en Europa.
-- **En África la armonización es menos precisa** (banda que contiene el 81% de los meses, sesgo −8%): MODIS se degrada en 2025–2026 y allí
-  pesa más.
+- **En África la armonización es menos precisa** (banda que contiene el 81% de los meses, sesgo −8%): MODIS se degrada en 2025–2026 y el
+  efecto es mayor en esa región.
 - **La unidad es "día-celda", no "focos".** Es lo que hace comparables los sensores; el número de focos crudos se muestra aparte y está en el CSV.
 
 ## 7. Datos y créditos
