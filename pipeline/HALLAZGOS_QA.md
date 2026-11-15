@@ -124,3 +124,19 @@ Ejemplo por año: 2005 = 368 k [291 k – 493 k] · 2011 = 309 k [246 k – 412 
 
 **Cómo leerlo:** es la incertidumbre del factor, no del conteo. Sumar `ci_lower` y `ci_upper` de varias celdas da una banda algo conservadora,
 pero así se midió la cobertura de arriba, así que para totales de región es la banda correcta. El tramo Terra solo (2000-11 a 2002-06) es el más ancho (±60%).
+
+---
+
+## 2026-11-15 · Evaristo · revisión y ajustes del paso 07
+
+El 07 de Paco cuadra con el gold y el backend lo lee sin cambios: totales idénticos (8,419,915 días-celda, IC incluido),
+14.6 M focos en `hotspots/`, celdas 0..N-1 ordenadas. Ajustes hechos (acordados en el equipo):
+
+1. **Mediana del mismo mes con ceros.** Antes solo contaba los años base con fuego, y en el 96.6% de los casos hexágono-mes la mediana
+   real es 0, pero salía ~2. Ahora los años base sin fuego entran como 0. Comprobado contra un cálculo independiente: 0 diferencias en 654,892 casos.
+   Consecuencia: `anomaly_pct` queda vacía en ~78% de las filas (mediana 0, no se divide entre 0). Es correcto, no es un error.
+2. **Columna `region` de más** en `harmonized.parquet` de la entrega: DuckDB la sacaba del nombre de la carpeta. Se lee con `hive_partitioning = false`.
+3. **Mes incompleto:** `months.parquet` gana `days_in_month`, `days_observed` e `is_partial`; `info.json` gana `last_complete_month` y `partial_month`.
+   Hoy: 2026-11 tiene 14 de 30 días. El backend lo mostraba como anomalía "baja" (0.39); Manuel tiene la tarea 5b en `PLAN_INTEGRACION_WEB.md`.
+
+Prueba `pipeline/tests/test_07_export.py` actualizada (mediana con ceros, sin `region`, mes parcial): pasa.

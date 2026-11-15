@@ -57,16 +57,24 @@ Ordenado por prioridad. Los tiempos son estimados.
 | 3 | **Etiquetas de fuente:** `MonthPoint.source` pasa a `"Terra (escalado)"`, `"MODIS (escalado)"`, `"S-NPP (escalado)"`, `"NOAA-20"`. `_src_label` lee la columna `source` de `months.parquet` en vez de deducirla de `viirs_sats` | `models.py`, `analytics.py` | 30 min |
 | 4 | **Textos del contrato:** `count` = "días-celda en quema, **equivalente NOAA-20**" (hoy dice "MODIS-equivalent") | `models.py` | 5 min |
 | 5 | **Línea base fija 2003–2020** (`config.BASELINE_YEARS` del pipeline): `baseline_end` por defecto = 2020, no "último año completo". Así el mapa, el calendario y el CSV usan la misma mediana | `models.py`, `analytics.py` | 15 min |
+| 5b | **Mes en curso incompleto:** `months.parquet` trae `is_partial`, `days_observed` y `days_in_month`, e `info.json` trae `last_complete_month`. El mes parcial no debe salir como "último mes" en los KPI ni compararse entero contra la mediana (hoy 2026-11, con 14 de 30 días, sale como anomalía 0.39 = "bajo", y es falso). Opciones: usar `last_complete_month` para `latest_*`, o comparar `count × days_in_month / days_observed` y marcarlo como estimado | `analytics.py` | 30 min |
 | 6 | **Incertidumbre e indicadores nuevos** en `MonthPoint`, opcionales: `count_ci_lower`, `count_ci_upper`, `frp_mw`, `is_nrt` (sumando las columnas nuevas de `monthly`) | `models.py`, `analytics.py` | 45 min |
 | 7 | **CSV de focos individuales:** `POST /api/export.csv?level=hotspots` que filtra `hotspots.parquet` por bbox, polígono y fechas, con tope de filas como el actual `MAX_CELL_ROWS` | `main.py` | 1 h |
 | 8 | **Tests:** que `test_api.py` corra con una muestra chica del formato nuevo (se la pasamos) | `tests/` | 30 min |
 
-**Total: ~3.5–4 h.** Lo mínimo para la demo son las tareas 1–5 (~1.5 h).
+**Total: ~4–4.5 h.** Lo mínimo para la demo son las tareas 1–5b (~2 h).
 
 ### Importante sobre la anomalía
 El backend **debe seguir calculando la mediana y la anomalía por área**, como hoy en `analytics.timeline`.
 La mediana de una suma no es la suma de las medianas, así que no sirve sumar anomalías por celda.
 La `anomaly_pct` por hexágono que trae `harmonized.parquet` solo sirve para colorear cada hexágono en el mapa.
+Viene vacía en ~78% de las filas: en la mayoría de los hexágonos la mediana de ese mes es 0, porque en la mayoría de los
+años no hubo fuego ahí, y no se puede dividir entre 0. Para el mapa conviene colorear por `harmonized_count` o agrupar a una
+resolución más gruesa.
+
+**Estado (2026-11-15):** el paso 07 ya genera la opción B. Se probó cargando la entrega con `DataStore` y `analytics.timeline`
+del backend sin cambiarlos: con un polígono de toda la región, 2019 = 307,448 días-celda (nuestro total: 307,757; la diferencia
+son los hexágonos del borde cuyo centro cae fuera del polígono).
 
 ---
 
