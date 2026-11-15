@@ -170,3 +170,27 @@ los meses**: es el ancho que hace falta.
 - Con solo 5 años de ajuste el remuestreo por año es grueso: ~1 de cada 200 réplicas sale vacía y se descarta.
 
 Mejora posible después de la entrega (cambia el 05 y el 06): un intervalo de predicción por tamaño de área, validado también en polígonos chicos.
+
+---
+
+## 2026-11-15 · Carlos · hueco de 2026 arreglado (tareas C2 y C3 de `CONTEXTO_CARLOS.md`)
+
+**Causa:** bug en `00b_descargar_2026.sh`. Pedía cada bloque de 5 días entero en calidad estándar (SP) y, si traía filas, no pedía
+nada más. Los bloques que cruzan el fin del SP solo traían los días anteriores al corte. Faltaban **VIIRS (los tres satélites)
+2026-08-01..03** y **MODIS 2026-09-01..02** (este último no se había detectado: MODIS solo aporta crudos desde 2018).
+
+**Arreglo:** el script pregunta a FIRMS dónde termina el SP de cada sensor (`/api/data_availability`) y parte el bloque en esa fecha:
+la parte vieja en SP y la nueva en NRT. Además vuelve a bajar siempre los bloques NRT de los últimos 7 días (`REFRESH_DAYS`),
+porque FIRMS sigue agregando focos a esos días.
+
+**Resultado** (corrida 01 `--years 2026` → 03 `--years 2026` → 04 → 05 → 06 → 07 en la máquina de Carlos, datos hasta 2026-11-15):
+- Agosto de 2026 tiene 31 días con NOAA-20 y sube **+7.3%** (15,263 días-celda armonizados; antes 14,231).
+- 2026 completo: 134,262 días-celda (antes 133,230). Los años anteriores no cambian (2019 = 307,757).
+- Validación del modelo sin cambios relevantes: MODIS → NOAA-20 sesgo +1.9%, r 0.995.
+- Corte nuevo: `cutoff_date` 2026-11-15, último mes completo 2026-10, mes parcial 2026-11.
+
+**Para Evaristo (dueño del 07):** `months.parquet::days_observed` cuenta un día si **cualquier** satélite tiene focos. Por eso el hueco
+no se notaba: MODIS sí tenía el 1–3 de agosto. Sugerencia: contar los días del satélite que da el valor en esa fecha (NOAA-20 desde 2018).
+
+**Entrega:** la nueva está en la máquina de Carlos (`gold/entrega`). **No se le pasó a Manuel**: se cambia después de la demo,
+para no recargar justo antes de presentar.

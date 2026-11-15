@@ -59,58 +59,75 @@ echo "destino   : $OUT/"
 echo
 
 # ---------------------------------------------------------------- descarga
-# Estrategia: para cada bloque de 5 días se intenta primero SP (Standard
-# Processing, calidad científica) y solo si viene vacío se cae a NRT. Así los
-# meses antiguos de 2026 salen en calidad estándar y la cola reciente en NRT.
+# Estrategia: calidad estándar (SP) donde FIRMS la tiene y NRT después.
+# La fecha donde termina el SP de cada sensor se pide a /api/data_availability y
+# cada bloque de 5 días se PARTE en esa fecha: la parte vieja se pide en SP y la
+# nueva en NRT. (Antes se pedía el bloque entero en SP y, si traía filas, no se
+# pedía nada más: así se perdieron VIIRS 2026-08-01..03 y MODIS 2026-09-01..02.)
+#
+# Los bloques NRT que tocan los últimos REFRESH_DAYS días se vuelven a bajar
+# siempre: FIRMS sigue agregando focos a esos días.
 
-total_ok=0; total_vacio=0; total_fallo=0; total_salt=0
+REFRESH_DAYS="${REFRESH_DAYS:-7}"
+AVAIL="$(curl -sS "https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv/$KEY/all" 2>/dev/null)"
+sp_max() { printf '%s\n' "$AVAIL" | awk -F, -v id="$1_SP" '$1==id {print $3}' | tr -d '\r'; }
+ts() { date -d "$1" +%s; }
+REFRESH_FROM="$(date -d "$HASTA -$REFRESH_DAYS days" +%F)"
+
+total_ok=0; total_vacio=0; total_salt=0
+
+# fetch SENSOR MODO INICIO DIAS FIN  -> baja una parte, salvo que ya exista (o haya que refrescarla)
+fetch() {
+  local src="$1" modo="$2" ini="$3" dias="$4" fin="$5"
+  local f="$OUT/$src/${src}_${modo}_${ini}.csv"
+  local refrescar=""
+  [ "$modo" = "NRT" ] && [ "$(ts "$fin")" -ge "$(ts "$REFRESH_FROM")" ] && refrescar="si"
+  if [ -s "$f" ] && [ "$(wc -l < "$f")" -gt 1 ] && [ -z "$refrescar" ]; then
+    total_salt=$((total_salt+1)); return
+  fi
+  local tmp; tmp="$(mktemp)"
+  local code; code="$(curl -sS -o "$tmp" -w '%{http_code}' "$API/$KEY/${src}_${modo}/$BBOX/$dias/$ini" 2>/dev/null)"
+  local filas=$(( $(wc -l < "$tmp") - 1 ))
+  if [ "$code" = "200" ] && [ "$filas" -gt 0 ]; then
+    mv "$tmp" "$f"
+    printf "  %-14s %s  %-3s %d día(s)  %6d filas%s\n" "$src" "$ini" "$modo" "$dias" "$filas" "${refrescar:+  (refresco)}"
+    total_ok=$((total_ok+1))
+  else
+    [ "$code" != "200" ] && { head -c 200 "$tmp" | tr -d '\n'; echo "   <- HTTP $code  $src $ini $modo"; }
+    printf "  %-14s %s  %-3s %d día(s)  sin datos\n" "$src" "$ini" "$modo" "$dias"
+    rm -f "$tmp"; total_vacio=$((total_vacio+1))
+  fi
+}
 
 for src in $SOURCES; do
   mkdir -p "$OUT/$src"
+  spmax="$(sp_max "$src")"
+  if [ -z "$spmax" ]; then
+    echo "ERROR: FIRMS no informó hasta dónde llega ${src}_SP (¿clave inválida o sin red?)."; exit 1
+  fi
+  echo "$src: SP hasta $spmax, NRT después"
   d="$DESDE"
-  while [ "$(date -d "$d" +%s)" -le "$(date -d "$HASTA" +%s)" ]; do
-    # ya descargado en cualquiera de los dos modos?
-    ya=""
-    for m in SP NRT; do
-      f="$OUT/$src/${src}_${m}_${d}.csv"
-      [ -s "$f" ] && [ "$(wc -l < "$f")" -gt 1 ] && ya="$m"
-    done
-    if [ -n "$ya" ]; then
-      total_salt=$((total_salt+1))
-      d="$(date -d "$d +$DAY_RANGE days" +%F)"
-      continue
+  while [ "$(ts "$d")" -le "$(ts "$HASTA")" ]; do
+    fin="$(date -d "$d +$((DAY_RANGE-1)) days" +%F)"
+    [ "$(ts "$fin")" -gt "$(ts "$HASTA")" ] && fin="$HASTA"
+    dias=$(( ($(ts "$fin") - $(ts "$d") + 43200) / 86400 + 1 ))
+    if [ "$(ts "$fin")" -le "$(ts "$spmax")" ]; then
+      fetch "$src" SP "$d" "$dias" "$fin"
+    elif [ "$(ts "$d")" -gt "$(ts "$spmax")" ]; then
+      fetch "$src" NRT "$d" "$dias" "$fin"
+    else  # el bloque cruza el fin del SP: se parte en dos
+      d_sp=$(( ($(ts "$spmax") - $(ts "$d") + 43200) / 86400 + 1 ))
+      ini_nrt="$(date -d "$spmax +1 day" +%F)"
+      fetch "$src" SP "$d" "$d_sp" "$spmax"
+      fetch "$src" NRT "$ini_nrt" "$((dias - d_sp))" "$fin"
     fi
-
-    got=""
-    for modo in SP NRT; do
-      tmp="$(mktemp)"
-      code="$(curl -sS -o "$tmp" -w '%{http_code}' \
-                "$API/$KEY/${src}_${modo}/$BBOX/$DAY_RANGE/$d" 2>/dev/null)"
-      filas=$(( $(wc -l < "$tmp") - 1 ))
-      if [ "$code" = "200" ] && [ "$filas" -gt 0 ]; then
-        mv "$tmp" "$OUT/$src/${src}_${modo}_${d}.csv"
-        printf "  %-14s %s  %-4s %6d filas\n" "$src" "$d" "$modo" "$filas"
-        got="$modo"; total_ok=$((total_ok+1))
-        break
-      fi
-      if [ "$code" != "200" ]; then
-        head -c 200 "$tmp" | tr -d '\n'; echo "   <- HTTP $code  $src $d $modo"
-      fi
-      rm -f "$tmp"
-    done
-
-    if [ -z "$got" ]; then
-      printf "  %-14s %s  ---  sin datos\n" "$src" "$d"
-      total_vacio=$((total_vacio+1))
-    fi
-
     d="$(date -d "$d +$DAY_RANGE days" +%F)"
   done
 done
 
 echo
 echo "bloques descargados : $total_ok"
-echo "bloques vacios      : $total_vacio"
+echo "partes sin datos    : $total_vacio"
 echo "bloques ya existian : $total_salt"
 echo
 echo "Para unir todo por sensor (requiere que las cabeceras coincidan):"
