@@ -4,9 +4,10 @@
 
 > Versión en español: [README.es.md](README.es.md)
 
-A web application that shows the **burning activity calendar** of any area in the Americas from 2000 to November 2026, as **one
-comparable time series** even though the data come from different satellites. Users pick a country or draw an area, see which months and
-years had the most fire, compare the current month with what is normal for that area, and download the data and the charts.
+IgnisSync harmonizes the **global NASA FIRMS record** (**553 million hotspots**, 2000–2026, from MODIS and VIIRS) into **one comparable
+time series**, validated on **three continents**, and serves it through a web application covering the Americas. Users pick a country,
+draw an area or type coordinates, see which months and years had the most fire, compare the latest month with what is normal for that
+area, see the expected range for the coming months, and download the data and the charts.
 
 | | |
 |---|---|
@@ -14,8 +15,9 @@ years had the most fire, compare the current month with what is normal for that 
 | **Harmonized data (release)** | https://github.com/EvaristoRT/NASA-SpaceAppsChallenge/releases |
 | **Method, validation and team decisions** | [`pipeline/`](pipeline/) (Spanish) |
 
-> **Coverage:** the application covers the Americas, from Alaska to Tierra del Fuego. The method was also validated in Europe and
-> Africa, in other fire regimes (section 3), and the pipeline runs per region with `--region`.
+> **Coverage:** the pipeline processes the worldwide FIRMS archive and the harmonization was validated in the Americas, Europe and
+> Africa, across savanna, boreal, temperate and agricultural fire regimes (section 3). The web application serves the Americas, from
+> Alaska to Tierra del Fuego; the pipeline runs per region with `--region`.
 
 *This project is not endorsed by NASA, CONAE or any space agency. It uses public NASA FIRMS data.*
 
