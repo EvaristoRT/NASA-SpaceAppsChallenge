@@ -116,7 +116,7 @@ def activity(req: ActivityRequest):
     result = ActivityResponse(
         month=req.month, source=info["source"],
         is_nrt=bool(sel["is_nrt"].any()) if "is_nrt" in sel.columns and len(sel) else False,
-        n_cells=len(feats), total=round(float(sum(f["properties"]["v"] for f in feats)), 1), features=feats)
+        n_cells=len(feats), total=round(float(sel.loc[sel["value"] > 0, "value"].sum()), 1), features=feats)  # exact sum, not of the rounded hexagons
     _activity_cache[key] = result
     if len(_activity_cache) > ACTIVITY_CACHE_SIZE:
         _activity_cache.popitem(last=False)
