@@ -178,8 +178,58 @@ Cuando agregues la línea (en esta rama o en `main`), Evaristo corre `03 → 07 
 
 ## 6. Resultados de África (Evaristo)
 
-_En curso en la máquina de Evaristo (rama local `datos/africa`): 2026 descargado completo; silver de ~19–20 M focos limpios por año.
-Resultados aquí cuando termine 03 → 07._
+**Fecha:** 2026-11-15 · máquina de Evaristo · región `africa` (−26, −36, 63, 37.6) · solo evidencia de validación (§8): nada publicado.
+Sin paso 07: África no va a la app, y armar `hotspots/` (~265 M focos) habría tomado horas sin uso.
+
+### Corrida (con el pico de RAM de cada paso, medido)
+| Paso | Resultado | Tiempo | Pico de RAM |
+|---|---|---|---|
+| 00b 2026, `zona_africa` (−26, −36, 63, 34) | 4 satélites completos (S-NPP hasta 2-nov). Hubo que reintentar por el límite de la clave | ~1 h con esperas | — |
+| 01 `--years 2026` | bronze 2026 con Sudamérica + Europa + África | 43 s | 5.7 GB |
+| 03 `--region africa` | **243.6 M** focos limpios 2000–2025 (~19–20 M por año) + **22.0 M** en 2026 · 5.9 GB en disco | 1 h 54 min + 49 s | **11.0 GB** (un solo año) |
+| 04 | 7,746,200 filas · 94,132 hexágonos r5 | 11 min | 9.7 GB |
+| 05 | factores e IC en `models/region=africa/` | 1 min | 3.0 GB |
+| 06 | 88.8 M filas · 524,066 hexágonos r6 · 2000-11-01 → 2026-11-15 | 18 min | 9.7 GB |
+
+Una entrega de África para el backend tendría **~26.8 M filas** en `monthly.parquet` (AR+CL 2.2 M, América ~7 M):
+estimado ~1.3 GB en reposo y 3–4 GB de pico. **Para Cloud Run, `--memory 8Gi`.**
+Para una corrida `global`, los pasos 03, 04 y 06 ya rozan los 10–11 GB con África sola: en una máquina de 16 GB habría que partirla.
+
+### Validación (ajuste 2018–2022, prueba 2023–2026)
+| | África | América | Europa | AR+CL |
+|---|---|---|---|---|
+| MODIS → NOAA-20, días-celda: sesgo sin → con armonizar | −69.6% → **−8.0%** | → +5.4% | → −2.0% | → +1.9% |
+| Error mediano mensual | **10.0%** | 6.3% | 11.5% | 8.7% |
+| r (total mensual / región-mes) | **0.974 / 0.971** | 0.995 | 0.993 | 0.995 |
+| Cobertura de la banda | **80.9%** | 97.9% | 89.4% | 95.7% |
+| S-NPP → NOAA-20: sesgo / error / r | −1.2% / 2.8% / 0.953 | −1.1% / 2.1% / 0.990 | −2.7% / 3.9% / 0.978 | — |
+| FRP MODIS → NOAA-20: sesgo / cobertura | −15.4% / 68% | — | +0.6% / 83% | +4.8% |
+
+Factores globales: `k_modis` = **3.03** [2.93–3.13] (el más alto de todas las regiones) · `k_snpp` = 1.01 · `f_terra` = **3.55** · Terra/Aqua 0.37.
+
+**Por qué África valida peor: es la degradación de MODIS en 2025–2026, no el modelo.** El sesgo de la prueba, año por año:
+
+| 2023 | 2024 | 2025 | 2026 |
+|---|---|---|---|
+| +0.7% | −1.9% | **−10.3%** | **−23.7%** |
+
+- La razón NOAA-20 / MODIS es estable de 2018 a 2024 (2.86–3.14) y luego salta a **3.38 en 2025 y 3.97 en 2026**.
+- Terra / Aqua cae de 0.37 (2018) a **0.21 (2026)**: Terra se está apagando.
+- NOAA-20 / Aqua también sube en 2026 (4.76, contra ~4.0 en 2018–2025). La hipótesis más probable: la **deriva de la hora de paso de Aqua**,
+  que ya no mantiene su órbita. En África pesa más porque el fuego de sabana tiene un pico muy marcado a media tarde.
+- **No afecta al producto.** Desde 2018-04 la serie usa NOAA-20 medido, y el factor se aplica a 2002–2011, cuando MODIS estaba sano.
+  Lo que empeora es solo la cifra de la prueba, porque 2025–2026 entran en ella. Con 2023–2024 solamente, el sesgo es de ±2%.
+- **Para la lámina de los jueces:** conviene mostrar la prueba por año. Es un hallazgo, no un fallo: muestra por qué NOAA-20 es la referencia.
+
+**Sin saltos en el empalme.** MODIS y S-NPP llevados a NOAA-20 en los años en que coinciden: 2013 6.82 M vs 6.65 M · 2015 6.95 vs 6.74 ·
+2017 6.50 vs 6.39 (−2% a −3%). Serie anual armonizada (millones de días-celda, banda 95%): 2003 7.06 [5.94–8.83] · 2007 7.36 ·
+2011 7.10 · 2013 6.64 · 2017 6.39 · 2019 6.14 · 2020 6.53 · 2024 7.03 · 2025 6.25 · 2026 5.35 (hasta 15-nov).
+**Ojo con 2000-11 → 2002-06 (Terra solo):** 2001 = 8.10 M [5.62–12.94]. Sale alto y con la banda más ancha de todo: con Terra/Aqua = 0.37,
+el factor `f_terra` de 3.55 multiplica mucho. Es la parte menos confiable de África. Conviene mencionarlo entre las limitaciones (§8, tarea 6).
+
+**Industrias y mecheros:** 1,368 celdas r8 con fuego en ≥ 60 meses y ≥ 10 años = **0.15%** de los días-celda (América 0.37%, Europa 1.68%).
+Los primeros: Isfahán (Irán, acerías), los mecheros de gas de Argelia, Libia, Arabia Saudita, Irak y Nigeria, y zonas industriales de
+Sudáfrica (Rustenburg, Saldanha). Con tanto fuego de sabana pesan muy poco: **no hace falta reforzar la máscara**.
 
 **Para Carlos, sobre `00b_descargar_2026.sh`:** con África la MAP_KEY llegó a su límite (5000 transacciones cada 10 min; una petición de
 una zona con mucho fuego cuenta como decenas). Dos fallos del script:
