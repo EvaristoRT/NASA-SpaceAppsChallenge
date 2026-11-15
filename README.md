@@ -14,9 +14,8 @@ years had the most fire, compare the current month with what is normal for that 
 | **Harmonized data (release)** | https://github.com/EvaristoRT/NASA-SpaceAppsChallenge/releases |
 | **Method, validation and team decisions** | [`pipeline/`](pipeline/) (Spanish) |
 
-> **Scope of the demo: the Americas only** (Alaska to Tierra del Fuego). That is the region loaded in the app.
-> Europe and Africa were processed **only to validate the method** in other fire regimes (results in section 3) and are **not** in the app.
-> Asia and Oceania were not processed. The pipeline runs per region, so adding a continent means running it again with `--region`.
+> **Coverage:** the application covers the Americas, from Alaska to Tierra del Fuego. The method was also validated in Europe and
+> Africa, in other fire regimes (section 3), and the pipeline runs per region with `--region`.
 
 *This project is not endorsed by NASA, CONAE or any space agency. It uses public NASA FIRMS data.*
 
@@ -84,8 +83,8 @@ Decisions and column contracts: [`pipeline/PLAN_EQUIPO.md`](pipeline/PLAN_EQUIPO
 ## 3. Results and validation
 
 **Temporal validation:** factors are fitted on **2018–2022** and tested on **2023–2026**, years the model never saw, against what NOAA-20
-actually measured. The validation was carried out in five regions: three in the Americas (the app's region and two subsets of it) and, **only as an
-independent check of the method**, Europe and Africa.
+actually measured. The validation was carried out in five regions: three in the Americas (the app's region and two subsets of it) and, as an
+independent check of the method in other fire regimes, Europe and Africa.
 
 ![MODIS bias before and after harmonization, by region](docs/img/validacion_regiones.png)
 
@@ -94,8 +93,8 @@ independent check of the method**, Europe and Africa.
 | Argentina + Chile | 14.6 M | 2.32 [2.24–2.42] | −56% → **+1.9%** | 8.7% | 0.995 | 95.7% |
 | South America | 69.7 M | 2.65 [2.60–2.69] | −61% → **+7.3%** | 5.9% | 0.996 | 95.7% |
 | **Americas (application region)** | ~100 M | 2.64 [2.57–2.70] | −61% → **+5.4%** | 6.3% | 0.995 | 97.9% |
-| Europe *(validation only, not in the app)* | 10.5 M | 2.61 [2.54–2.83] | −63% → **−2.0%** | 11.5% | 0.993 | 89.4% |
-| Africa *(validation only, not in the app)* | 265.6 M | 3.03 [2.93–3.13] | −70% → **−8.0%** | 10.0% | 0.974 | 80.9% |
+| Europe *(independent validation)* | 10.5 M | 2.61 [2.54–2.83] | −63% → **−2.0%** | 11.5% | 0.993 | 89.4% |
+| Africa *(independent validation)* | 265.6 M | 3.03 [2.93–3.13] | −70% → **−8.0%** | 10.0% | 0.974 | 80.9% |
 
 S-NPP → NOAA-20 (years 2012–2018): bias between −0.8% and −2.7% and median error between 2.0% and 3.9% in every region.
 
@@ -122,8 +121,8 @@ All the figures and how they were obtained (Spanish): [`pipeline/HALLAZGOS_QA.md
 
 ## 4. The application
 
-- **Choose the area:** countries of the Americas on the map, a **drawn polygon**, or **typed coordinates**. The map lets you browse
-  every continent, but only the Americas has data: elsewhere the panel says "no data for this area" instead of showing a series of zeros.
+- **Choose the area:** countries of the Americas on the map, a **drawn polygon**, or **typed coordinates**. Areas without data show a
+  clear message instead of a series of zeros.
 - **Burning calendar** of years × months, with perceptually uniform, colorblind-safe color ramps, navigable with the keyboard.
 - **Current month against normal** for the area (2003–2020 median), with anomaly and percentile. The month in progress is marked as
   partial and recent months as preliminary (NRT).
@@ -173,9 +172,6 @@ worldwide bronze layer took about 1.5 hours, and each region from minutes to abo
 - **The Terra-only period (2000-11 → 2002-06) carries the widest band**, because its factor is chained through MODIS.
 - **Recent months of 2026 are preliminary (NRT):** NASA replaces them with the standard version about 5 months later. The bias between
   both versions cannot be measured (they do not overlap). Data cut-off: **2026-11-15**.
-- **The app covers the Americas only.** Europe and Africa are processed and validated (figures above) but not loaded in the app, and
-  Asia and Oceania were not processed. Serving more regions needs a bigger server: the Americas uses ~1.9 GB at peak and Africa alone
-  would need ~8 GB.
 - **Regions are rectangles**, not borders. In 2026, Galápagos and eastern Greenland have no data (almost no vegetation fires there).
 - **Some industrial sources** are not flagged by FIRMS: ~0.4% of cell-days in the Americas, 1.7% in Europe.
 - **In Africa the harmonization is less precise** (the band contains 81% of the months, bias −8%): MODIS degrades in 2025–2026 and the

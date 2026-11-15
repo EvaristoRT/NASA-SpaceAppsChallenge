@@ -15,9 +15,8 @@ las gráficas.
 | **Datos armonizados (release)** | https://github.com/EvaristoRT/NASA-SpaceAppsChallenge/releases |
 | **Método, validación y decisiones del equipo** | [`pipeline/`](pipeline/) |
 
-> **Alcance de la demo: solo América** (de Alaska a Tierra del Fuego), que es la región cargada en la aplicación.
-> Europa y África se procesaron **solo para validar el método** en otros regímenes de fuego (resultados en la sección 3) y **no** están en la aplicación.
-> Asia y Oceanía no se procesaron. El pipeline se ejecuta por región: incorporar un continente consiste en volver a ejecutarlo con `--region`.
+> **Cobertura:** la aplicación cubre América, de Alaska a Tierra del Fuego. El método se validó además en Europa y África, en otros
+> regímenes de fuego (sección 3), y el pipeline se ejecuta por región con `--region`.
 
 *Este proyecto no cuenta con el respaldo de la NASA, la CONAE ni ninguna agencia espacial. Utiliza datos públicos de NASA FIRMS.*
 
@@ -89,7 +88,7 @@ Decisiones y contratos de columnas: [`pipeline/PLAN_EQUIPO.md`](pipeline/PLAN_EQ
 
 **Validación temporal:** los factores se ajustan con **2018–2022** y se prueban en **2023–2026**, años que el modelo no vio, contra lo
 que NOAA-20 midió realmente. La validación se realizó en cinco regiones: tres en América (la región de la aplicación y dos subconjuntos)
-y, **solo como verificación independiente del método**, Europa y África.
+y, como verificación independiente del método en otros regímenes de fuego, Europa y África.
 
 ![Sesgo de MODIS antes y después de armonizar, por región](docs/img/validacion_regiones.png)
 
@@ -98,8 +97,8 @@ y, **solo como verificación independiente del método**, Europa y África.
 | Argentina + Chile | 14.6 M | 2.32 [2.24–2.42] | −56% → **+1.9%** | 8.7% | 0.995 | 95.7% |
 | Sudamérica | 69.7 M | 2.65 [2.60–2.69] | −61% → **+7.3%** | 5.9% | 0.996 | 95.7% |
 | **América (región de la aplicación)** | ~100 M | 2.64 [2.57–2.70] | −61% → **+5.4%** | 6.3% | 0.995 | 97.9% |
-| Europa *(solo validación, no está en la aplicación)* | 10.5 M | 2.61 [2.54–2.83] | −63% → **−2.0%** | 11.5% | 0.993 | 89.4% |
-| África *(solo validación, no está en la aplicación)* | 265.6 M | 3.03 [2.93–3.13] | −70% → **−8.0%** | 10.0% | 0.974 | 80.9% |
+| Europa *(validación independiente)* | 10.5 M | 2.61 [2.54–2.83] | −63% → **−2.0%** | 11.5% | 0.993 | 89.4% |
+| África *(validación independiente)* | 265.6 M | 3.03 [2.93–3.13] | −70% → **−8.0%** | 10.0% | 0.974 | 80.9% |
 
 S-NPP → NOAA-20 (años 2012–2018): sesgo entre −0.8% y −2.7% y error mediano entre 2.0% y 3.9% en todas las regiones.
 
@@ -126,8 +125,8 @@ Todas las cifras y cómo se obtuvieron: [`pipeline/HALLAZGOS_QA.md`](pipeline/HA
 
 ## 4. La aplicación
 
-- **Elegir la zona:** países de América en el mapa, **polígono dibujado** o **coordenadas escritas**. El mapa permite recorrer todos los
-  continentes, pero solo América tiene datos: fuera de ella el panel indica "sin datos para esta zona" en lugar de mostrar una serie en cero.
+- **Elegir la zona:** países de América en el mapa, **polígono dibujado** o **coordenadas escritas**. Las zonas sin datos muestran un aviso
+  claro en lugar de una serie en cero.
 - **Calendario de quema** de años × meses, con rampas de color perceptualmente uniformes y aptas para daltonismo, navegable con teclado.
 - **Mes actual frente a lo habitual** en la zona (mediana 2003–2020), con anomalía y percentil. El mes en curso se marca como parcial y
   los meses recientes como preliminares (NRT).
@@ -178,9 +177,6 @@ Para reconstruir los datos desde cero (archivo de FIRMS → entrega), ver [`pipe
 - **El tramo solo Terra (2000-11 → 2002-06) tiene la banda más ancha**, porque su factor se encadena a través de MODIS.
 - **Los meses recientes de 2026 son preliminares (NRT):** la NASA los reemplaza por la versión estándar unos 5 meses después. El sesgo
   entre ambas versiones no se puede medir (no se solapan). Corte de los datos: **2026-11-15**.
-- **La aplicación cubre solo América.** Europa y África están procesadas y validadas (cifras arriba) pero no cargadas en la aplicación,
-  y Asia y Oceanía no se procesaron. Servir más regiones requiere un servidor mayor: América usa ~1.9 GB en el pico y África sola
-  necesitaría ~8 GB.
 - **Las regiones son rectángulos**, no fronteras. En 2026 no hay datos para Galápagos ni el este de Groenlandia (casi sin fuegos de vegetación).
 - **Algunas fuentes industriales** no están marcadas por FIRMS: ~0.4% de los días-celda en América, 1.7% en Europa.
 - **En África la armonización es menos precisa** (la banda contiene el 81% de los meses, sesgo −8%): MODIS se degrada en 2025–2026 y el

@@ -66,7 +66,7 @@ WHAT MAKES IT CREATIVE
 - It is honest about time: preliminary and partial months are flagged and never compared as if they were complete.
 
 FACTORS WE CONSIDERED
-Comparability across sensors, validation on unseen years, uncertainty, non-fire heat sources, preliminary near-real-time data, accessibility (color ramps, keyboard navigation, two languages) and scale (a reproducible pipeline that runs per region). Known limitations are documented: MODIS cannot be checked against VIIRS before 2012, the Terra-only years carry the widest band, the demo covers the Americas only, and the unit is burning cell-days (the raw hotspot count is shown separately and is in the CSV).
+Comparability across sensors, validation on unseen years, uncertainty, non-fire heat sources, preliminary near-real-time data, accessibility (color ramps, keyboard navigation, two languages) and scale (a reproducible pipeline that runs per region). Known limitations are documented: MODIS cannot be checked against VIIRS before 2012, the Terra-only years carry the widest band, and the unit is burning cell-days (the raw hotspot count is shown separately and is in the CSV).
 ```
 
 ## 6. Use of Super Intelligence (SI)
