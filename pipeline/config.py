@@ -101,6 +101,9 @@ REGIONS = {
     "america": (-170.0, -57.0, -30.0, 72.0),
     # Europa (Evaristo): Islandia y Portugal hasta 45° E. Ajustable; no se solapa con las zonas de América.
     "europa": (-25.0, 34.0, 45.0, 72.0),
+    # África (Evaristo): Cabo Verde y Senegal hasta Seychelles y Mauricio; de Ciudad del Cabo a Bizerta (Túnez).
+    # 2026 se bajó como zona_africa (-26, -36, 63, 34) + la franja 34-37.6 N que ya trae zona_europa.
+    "africa": (-26.0, -36.0, 63.0, 37.6),
     "global": (-180.0, -90.0, 180.0, 90.0),
 }
 DEFAULT_REGION = "argentina_chile"
