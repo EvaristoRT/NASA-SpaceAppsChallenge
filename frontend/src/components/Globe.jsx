@@ -346,9 +346,9 @@ const Globe = forwardRef(function Globe(
             maxzoom: 14
           });
         }
-        // Exageración de 1.95 en modo topografía para que las cordilleras, valles y picos montañosos resalten claramente en 3D
-        // En satélite, un relieve natural de 1.35
-        const exaggeration = isTopography ? 1.95 : 1.35;
+        // Exageración de 2.6 en modo topografía para que las cordilleras, valles y picos montañosos resalten claramente en 3D
+        // (era 1.95: a escala de país casi no se notaba). En satélite, un relieve algo más marcado que el natural (1.6)
+        const exaggeration = isTopography ? 2.6 : 1.6;
         map.setTerrain({ source: 'mapbox-dem', exaggeration });
       } else {
         if (map.getTerrain()) {
@@ -1186,8 +1186,8 @@ const Globe = forwardRef(function Globe(
     if (mapRef.current) {
       mapRef.current.setStyle(styleUrl);
       const isTopography = currentStyleId === 'outdoors' || (styleUrl && styleUrl.includes('outdoors'));
-      if (isTopography && mapRef.current.getPitch() < 35) {
-        mapRef.current.easeTo({ pitch: 58, duration: 1200 });
+      if (isTopography && mapRef.current.getPitch() < 50) {
+        mapRef.current.easeTo({ pitch: 66, duration: 1200 });
       }
     }
   }, [styleUrl, currentStyleId]);
@@ -1256,7 +1256,8 @@ const Globe = forwardRef(function Globe(
       mapRef.current.flyTo({
         center: selectedZone.coords,
         zoom: selectedZone.zoom || 4,
-        pitch: selectedZone.pitch || 45,
+        // En Topografía y Relieve la cámara se inclina más para que las montañas se vean en perspectiva
+        pitch: currentStyleIdRef.current === 'outdoors' ? Math.max(selectedZone.pitch || 45, 62) : selectedZone.pitch || 45,
         bearing: selectedZone.bearing || 0,
         essential: true,
         duration: 2500,

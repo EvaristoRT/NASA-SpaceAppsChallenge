@@ -24,7 +24,7 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
   (solo las que cambian), descripción y puntos destacados por plantilla, y los 7 continentes con texto propio. El buscador acepta el nombre en ambos idiomas.
   Los datos originales siguen en español (el GeoJSON exportado conserva `paises_detectados` en español para la API).
   Al cambiar el texto del explorador, editar las dos lenguas en `translations.js` (`sidebarZones`).
-- **Relieve:** `applyTerrain` en `Globe.jsx` activa Mapbox Terrain-DEM en los estilos Satélite (exageración 1.35) y Relieve (1.95).
+- **Relieve:** `applyTerrain` en `Globe.jsx` activa Mapbox Terrain-DEM en los estilos Satélite (exageración 1.6) y Relieve (2.6; la cámara se inclina a 66° al cambiar a ese estilo y a 62° mínimo al elegir una zona).
 
 ## Colores del mapa (en `Globe.jsx` y en `App.css`; si cambian en uno, cambiar el otro)
 - **Amarillo neón** = lo activo: zona seleccionada, área que se dibuja, herramienta activa, fila seleccionada, controles encendidos.
