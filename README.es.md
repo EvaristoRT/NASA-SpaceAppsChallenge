@@ -196,11 +196,16 @@ De acuerdo con las reglas de NASA Space Apps, declaramos dónde se utilizaron he
   Claude) para escribir, revisar y depurar los scripts del pipeline (`pipeline/`), el backend (`backend/`), el frontend (`frontend/`) y
   los archivos de despliegue (`deploy/`). Los asistentes trabajaron según las instrucciones escritas del equipo (`AGENTS.md`, `CLAUDE.md`).
 - **Análisis y documentación:** los asistentes de IA ayudaron a ejecutar y resumir los controles de calidad y las validaciones, y a
-  redactar la documentación de `pipeline/*.md` y de este README.
+  redactar y traducir la documentación de `pipeline/*.md`, `docs/` y de este README (versiones en español e inglés).
+- **Ideas e investigación:** se usaron asistentes de IA para proponer y comparar alternativas (alcance regional, cómo presentar el
+  rango esperado de los próximos meses, opciones de despliegue) y para reunir información, como las condiciones de los servicios de
+  alojamiento y los límites de la API de FIRMS.
+- **Diseño de la interfaz:** se usó asistencia de IA en el diseño visual de la aplicación web (distribución de los paneles, estilos e
+  interacción), implementado y revisado por el equipo.
 - **Lo que el equipo decidió y verificó:** las decisiones de método (referencia NOAA-20, unidad día-celda, validación temporal) las tomó
   el equipo, y cada cifra reportada proviene de ejecutar el código sobre datos de NASA FIRMS. Los resultados clave se contrastaron con
   cálculos independientes (por ejemplo, totales por polígono y conteos de focos frente a consultas directas sobre los datos).
-- **Imágenes:** las gráficas de `docs/img/` las genera nuestro propio código a partir de los datos. Los patrones de diseño y el símbolo de
+- **Imágenes:** ninguna imagen del proyecto fue generada con IA. Las gráficas de `docs/img/` las genera nuestro propio código a partir de los datos. Los patrones de diseño y el símbolo de
   `design/brand/` y `frontend/public/brand/` son recursos oficiales de la marca NASA Space Apps, no generados con IA.
 
 ## 8. Datos, software y créditos

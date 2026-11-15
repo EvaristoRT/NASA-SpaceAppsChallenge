@@ -190,12 +190,16 @@ In line with the NASA Space Apps rules, we declare where AI tools were used:
 - **Code and data processing:** team members used AI coding assistants (large language models, e.g. Claude) to help write, review and
   debug the pipeline scripts (`pipeline/`), the backend (`backend/`), the frontend (`frontend/`) and the deployment files (`deploy/`).
   The assistants worked under the team's written instructions (`AGENTS.md`, `CLAUDE.md`).
-- **Analysis and documentation:** AI assistants helped run and summarize quality checks and validations, and helped draft the
-  documentation in `pipeline/*.md` and this README.
+- **Analysis and documentation:** AI assistants helped run and summarize quality checks and validations, and helped draft and
+  translate the documentation in `pipeline/*.md`, `docs/` and this README (English and Spanish versions).
+- **Ideation and research:** AI assistants were used to brainstorm and compare alternatives (regional scope, how to present the
+  expected range for coming months, deployment options) and to gather information such as hosting conditions and FIRMS API limits.
+- **Interface design:** AI assistance was used in the visual design of the web application (layout of the panels, styling and
+  interaction), implemented and reviewed by the team.
 - **What the team did and checked:** the method choices (NOAA-20 reference, cell-day unit, temporal validation) were decided by the team,
   and every reported figure comes from running the code on NASA FIRMS data. Key results were cross-checked with independent calculations
   (for example, polygon totals and hotspot counts against direct queries on the data).
-- **Images:** the charts in `docs/img/` are produced by our own code from the data. The design patterns and symbol in `design/brand/` and
+- **Images:** no image in the project is AI-generated. The charts in `docs/img/` are produced by our own code from the data. The design patterns and symbol in `design/brand/` and
   `frontend/public/brand/` are official NASA Space Apps brand assets, not AI-generated.
 
 ## 8. Data, software and credits
