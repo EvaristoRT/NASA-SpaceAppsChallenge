@@ -1,4 +1,5 @@
-# Despliegue del backend en Render (Blueprint). Pasos en pipeline/DESPLIEGUE.md.
+# Alternativa para regiones chicas: el backend en Render gratis (512 MB). El despliegue principal es un Hugging Face Space
+# (deploy/huggingface/). Pasos en pipeline/DESPLIEGUE.md.
 # El front sigue en Vercel; aquí solo va la API. Los datos no están en git: fetch_data.py los baja del
 # GitHub Release al arrancar.
 services:
