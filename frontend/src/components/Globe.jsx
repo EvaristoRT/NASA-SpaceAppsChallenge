@@ -5,7 +5,7 @@ import { ZONES, MAP_STYLES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
 import { continentIdOf } from '../utils/continents';
-import { zoneByIso, zoneFilter, WORLDVIEW_FILTER } from '../utils/countryIso';
+import { zoneByIso, zoneFilter, isoListOf, WORLDVIEW_FILTER } from '../utils/countryIso';
 import {
   calculatePolygonArea,
   calculatePolygonPerimeter,
@@ -81,6 +81,13 @@ const Globe = forwardRef(function Globe(
   const projectionRef = useRef(projection);
   const orbitBearingRef = useRef(0);
   const hoveredZoneIdRef = useRef('');
+  // Hover fluido: códigos ISO con el estado de hover encendido, y temporizadores para procesarlo una vez por cuadro
+  const hoverIsosRef = useRef([]);
+  const hoverEventRef = useRef(null);
+  const hoverTimerRef = useRef(0);
+  const hoverTsRef = useRef(0);
+  const hudTimerRef = useRef(0);
+  const hudTsRef = useRef(0);
   const hoverPopupRef = useRef(null);
 
   // Referencias para el modo dibujo
@@ -565,6 +572,21 @@ const Globe = forwardRef(function Globe(
     }
   };
 
+  // Hover con feature-state: encender o apagar el estado de los polígonos es barato y las capas de hover lo animan con una transición
+  // corta. Con setFilter el mapa debía recalcular las capas y el cambio de color llegaba tarde y de golpe.
+  // Nivel 1 = país (trazo fuerte), 2 = continente (trazo suave), 0 = apagado.
+  const setHoverZone = (map, zone) => {
+    if (!map || !map.getSource('country-boundaries')) return;
+    const level = zone ? (zone.category === 'Continente' ? 2 : 1) : 0;
+    const next = isoListOf(zone);
+    const target = (id) => ({ source: 'country-boundaries', sourceLayer: 'country_boundaries', id });
+    for (const iso of hoverIsosRef.current) {
+      if (!next.includes(iso)) map.setFeatureState(target(iso), { hover: 0 });
+    }
+    for (const iso of next) map.setFeatureState(target(iso), { hover: level });
+    hoverIsosRef.current = next;
+  };
+
   // Etiqueta con el nombre de la zona bajo el cursor (en el idioma activo). Sigue al cursor.
   const showHoverLabel = (map, lngLat, zoneId) => {
     const zone = zoneId ? ZONES.find((z) => z.id === zoneId) : null;
@@ -637,7 +659,14 @@ const Globe = forwardRef(function Globe(
       if (map.getSource(id)) map.removeSource(id);
     });
 
-    map.addSource('country-boundaries', { type: 'vector', url: 'mapbox://mapbox.country-boundaries-v1' });
+    // promoteId: el código ISO sirve de id para el estado de hover (feature-state)
+    map.addSource('country-boundaries', {
+      type: 'vector',
+      url: 'mapbox://mapbox.country-boundaries-v1',
+      promoteId: { country_boundaries: 'iso_3166_1' }
+    });
+    hoverIsosRef.current = [];
+    hoveredZoneIdRef.current = '';
     const base = { source: 'country-boundaries', 'source-layer': 'country_boundaries' };
 
     // Relleno casi transparente: sirve para detectar el país bajo el cursor
@@ -675,20 +704,30 @@ const Globe = forwardRef(function Globe(
     setTimeout(revealLines, 1500);
 
     // Hover: el país (o el continente) bajo el cursor
+    const hoverLevel = ['to-number', ['feature-state', 'hover'], 0];
     map.addLayer({
       ...base,
       id: 'zones-hover-fill',
       type: 'fill',
-      filter: zoneFilter(null),
-      paint: { 'fill-color': ov.hover, 'fill-opacity': ov.hoverFill }
+      filter: WORLDVIEW_FILTER,
+      paint: {
+        'fill-color': ov.hover,
+        'fill-opacity': ['case', ['>', hoverLevel, 0], ov.hoverFill, 0],
+        'fill-opacity-transition': { duration: 140, delay: 0 }
+      }
     });
     map.addLayer({
       ...base,
       id: 'zones-hover-line',
       type: 'line',
-      filter: zoneFilter(null),
+      filter: WORLDVIEW_FILTER,
       layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': ov.hoverLine, 'line-width': 2.0, 'line-opacity': 0.9 }
+      paint: {
+        'line-color': ov.hoverLine,
+        'line-width': ['match', hoverLevel, 2, 1, 2.0],
+        'line-opacity': ['match', hoverLevel, 1, 0.9, 2, 0.5, 0],
+        'line-opacity-transition': { duration: 140, delay: 0 }
+      }
     });
 
     // Selección = amarillo neón de la marca
@@ -1073,6 +1112,49 @@ const Globe = forwardRef(function Globe(
       map.on('wheel', handleInteractionStart);
       map.on('boxzoomstart', handleInteractionStart);
 
+      // El ratón manda muchos más eventos que cuadros: el hover (etiqueta, resalte) se procesa como máximo una vez por cuadro
+      // y las coordenadas del panel como máximo cada 80 ms (cada actualización vuelve a pintar toda la app).
+      const HOVER_MS = 16;
+      const HUD_MS = 80;
+      const runHover = (e) => {
+        hoverTsRef.current = performance.now();
+        if (!drawModeRef.current && map.getLayer('zones-fill')) {
+          const picked = pickZone(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
+          const hoverId = picked ? picked.id : '';
+          map.getCanvas().style.cursor = hoverId ? 'pointer' : '';
+          showHoverLabel(map, e.lngLat, hoverId);
+
+          if (hoverId !== hoveredZoneIdRef.current) {
+            hoveredZoneIdRef.current = hoverId;
+            setHoverZone(map, picked);
+          }
+        }
+
+        if (onUpdateHUD) {
+          const push = () => {
+            hudTsRef.current = performance.now();
+            onUpdateHUD({
+              cursorCoords: { lat: e.lngLat.lat, lng: e.lngLat.lng },
+              zoom: map.getZoom(),
+              pitch: map.getPitch(),
+              bearing: map.getBearing()
+            });
+          };
+          clearTimeout(hudTimerRef.current);
+          if (performance.now() - hudTsRef.current >= HUD_MS) push();
+          else hudTimerRef.current = setTimeout(push, HUD_MS);
+        }
+      };
+      const scheduleHover = (e) => {
+        hoverEventRef.current = e;
+        if (hoverTimerRef.current) return;
+        const wait = Math.max(0, HOVER_MS - (performance.now() - hoverTsRef.current));
+        hoverTimerRef.current = setTimeout(() => {
+          hoverTimerRef.current = 0;
+          runHover(hoverEventRef.current);
+        }, wait);
+      };
+
       map.on('mousemove', (e) => {
         // Previsualización elástica dinámica para modo polígono por vértices
         if (drawModeRef.current === 'polygon') {
@@ -1125,35 +1207,17 @@ const Globe = forwardRef(function Globe(
           }
         }
 
-        // Puntero y realce interactivo al posar el cursor sobre cualquier país
-        if (!drawModeRef.current && map.getLayer('zones-fill')) {
-          const picked = pickZone(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
-          const hoverId = picked ? picked.id : '';
-          map.getCanvas().style.cursor = hoverId ? 'pointer' : '';
-          showHoverLabel(map, e.lngLat, hoverId);
-
-          if (hoverId !== hoveredZoneIdRef.current) {
-            hoveredZoneIdRef.current = hoverId;
-            applyZoneHighlight(map, 'hover', picked);
-          }
-        }
-
-        // Actualizar HUD
-        if (onUpdateHUD) {
-          onUpdateHUD({
-            cursorCoords: { lat: e.lngLat.lat, lng: e.lngLat.lng },
-            zoom: map.getZoom(),
-            pitch: map.getPitch(),
-            bearing: map.getBearing()
-          });
-        }
+        // Puntero, etiqueta, resalte y coordenadas al posar el cursor (una vez por cuadro)
+        scheduleHover(e);
       });
 
       map.on('mouseleave', () => {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = 0;
         if (hoverPopupRef.current) hoverPopupRef.current.remove();
         if (hoveredZoneIdRef.current) {
           hoveredZoneIdRef.current = '';
-          applyZoneHighlight(map, 'hover', null);
+          setHoverZone(map, null);
         }
       });
 
@@ -1311,6 +1375,8 @@ const Globe = forwardRef(function Globe(
 
       return () => {
         if (resizeObserver) resizeObserver.disconnect();
+        clearTimeout(hoverTimerRef.current);
+        clearTimeout(hudTimerRef.current);
         cancelAnimationFrame(rAF);
         clearTimeout(t1);
         clearTimeout(t2);
