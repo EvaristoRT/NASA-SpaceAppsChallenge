@@ -4,7 +4,6 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { ZONES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
-import { getWebglInfo } from '../utils/webglInfo';
 import {
   generateZonesGeoJSON,
   generateZonesOutlineGeoJSON,
@@ -330,39 +329,6 @@ const Globe = forwardRef(function Globe(
     }
   }, [drawnArea]);
 
-  // Sombreado del terreno (hillshade): sin él las montañas se ven como una mancha lisa aunque el relieve 3D esté activo.
-  // Va debajo de carreteras, límites y etiquetas del estilo; las capas de zonas y de dibujo se añaden después y quedan encima.
-  const addReliefShading = (map, strong) => {
-    if (map.getLayer('relief-hillshade')) return;
-    const layers = map.getStyle().layers;
-    const anchor = layers.find((l) => l.type === 'symbol' || /^(road|bridge|tunnel|aeroway|admin|ferry|turning|waterway-label|natural-)/.test(l.id));
-    map.addLayer(
-      {
-        id: 'relief-hillshade',
-        type: 'hillshade',
-        source: 'mapbox-dem',
-        paint: strong
-          ? {
-              'hillshade-exaggeration': 0.75,
-              'hillshade-shadow-color': '#2a4a30',
-              'hillshade-accent-color': '#4f7d52',
-              'hillshade-highlight-color': '#fffbe8',
-              'hillshade-illumination-direction': 315,
-              'hillshade-illumination-anchor': 'map'
-            }
-          : {
-              'hillshade-exaggeration': 0.35,
-              'hillshade-shadow-color': '#0b1220',
-              'hillshade-accent-color': '#1b2b85',
-              'hillshade-highlight-color': '#ffffff',
-              'hillshade-illumination-direction': 315,
-              'hillshade-illumination-anchor': 'map'
-            }
-      },
-      anchor ? anchor.id : undefined
-    );
-  };
-
   // Relieve 3D para modo Topografía y Satélite (usando Mapbox Terrain-DEM)
   const applyTerrain = (map) => {
     if (!map) return;
@@ -380,13 +346,10 @@ const Globe = forwardRef(function Globe(
             maxzoom: 14
           });
         }
-        // Exageración del relieve según el zoom: fuerte de lejos (a escala de país un valor bajo se ve plano) y más
-        // moderada al acercarse, para que los picos no queden desmesurados. Probado en vivo sobre Veracruz/Puebla.
-        const exaggeration = isTopography
-          ? ['interpolate', ['linear'], ['zoom'], 4, 6, 8, 4.5, 11, 3, 14, 2]
-          : ['interpolate', ['linear'], ['zoom'], 4, 3.5, 8, 2.6, 11, 1.8, 14, 1.3];
+        // Exageración de 1.95 en modo topografía para que las cordilleras, valles y picos montañosos resalten claramente en 3D
+        // En satélite, un relieve natural de 1.35
+        const exaggeration = isTopography ? 1.95 : 1.35;
         map.setTerrain({ source: 'mapbox-dem', exaggeration });
-        addReliefShading(map, isTopography);
       } else {
         if (map.getTerrain()) {
           map.setTerrain(null);
@@ -846,39 +809,20 @@ const Globe = forwardRef(function Globe(
         }, 1200);
       });
 
-      // El relieve no debe depender de la suerte: si tras cargar el estilo falta el terreno o el sombreado (el orden de los
-      // eventos cambia con el navegador, la red o la GPU), se vuelve a aplicar al entrar en reposo, con un tope de intentos.
-      let reliefRetries = 0;
+      // Si tras cargar el estilo falta el terreno 3D (el orden de los eventos cambia con el navegador y la red), se vuelve a
+      // aplicar al entrar en reposo, con un tope de intentos. Silencioso: no muestra nada.
+      let terrainRetries = 0;
       map.on('idle', () => {
         const id = currentStyleIdRef.current;
         if (id !== 'outdoors' && id !== 'satellite') {
-          reliefRetries = 0;
+          terrainRetries = 0;
           return;
         }
-        if (map.isStyleLoaded() && (!map.getTerrain() || !map.getLayer('relief-hillshade')) && reliefRetries < 5) {
-          reliefRetries += 1;
+        if (map.isStyleLoaded() && !map.getTerrain() && terrainRetries < 5) {
+          terrainRetries += 1;
           applyTerrain(map);
         }
       });
-
-      // Diagnóstico para cuando el relieve se ve plano en algún navegador: ejecutar  __ignisDiag()  en la consola
-      const webgl = getWebglInfo();
-      window.__ignisDiag = () => ({
-        ...webgl,
-        userAgent: navigator.userAgent,
-        devicePixelRatio: window.devicePixelRatio,
-        style: currentStyleIdRef.current,
-        zoom: map.getZoom(),
-        pitch: map.getPitch(),
-        terrain: map.getTerrain() ? JSON.stringify(map.getTerrain()) : null,
-        hillshade: !!map.getLayer('relief-hillshade'),
-        demLoaded: map.getSource('mapbox-dem') ? map.isSourceLoaded('mapbox-dem') : null,
-        reliefRetries
-      });
-      // Solo queda en la consola: no se le avisa al usuario
-      if (!webgl.webgl || webgl.software) {
-        console.warn('Gráficos sin aceleración por hardware:', webgl);
-      }
 
       // Asegurar redimensionamiento al entrar en reposo
       map.once('idle', () => {
@@ -1257,8 +1201,8 @@ const Globe = forwardRef(function Globe(
     if (mapRef.current) {
       mapRef.current.setStyle(styleUrl);
       const isTopography = currentStyleId === 'outdoors' || (styleUrl && styleUrl.includes('outdoors'));
-      if (isTopography && mapRef.current.getPitch() < 50) {
-        mapRef.current.easeTo({ pitch: 66, duration: 1200 });
+      if (isTopography && mapRef.current.getPitch() < 35) {
+        mapRef.current.easeTo({ pitch: 58, duration: 1200 });
       }
     }
   }, [styleUrl, currentStyleId]);
@@ -1327,8 +1271,7 @@ const Globe = forwardRef(function Globe(
       mapRef.current.flyTo({
         center: selectedZone.coords,
         zoom: selectedZone.zoom || 4,
-        // En Topografía y Relieve la cámara se inclina más para que las montañas se vean en perspectiva
-        pitch: currentStyleIdRef.current === 'outdoors' ? Math.max(selectedZone.pitch || 45, 62) : selectedZone.pitch || 45,
+        pitch: selectedZone.pitch || 45,
         bearing: selectedZone.bearing || 0,
         essential: true,
         duration: 2500,

@@ -24,15 +24,10 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
   (solo las que cambian), descripción y puntos destacados por plantilla, y los 7 continentes con texto propio. El buscador acepta el nombre en ambos idiomas.
   Los datos originales siguen en español (el GeoJSON exportado conserva `paises_detectados` en español para la API).
   Al cambiar el texto del explorador, editar las dos lenguas en `translations.js` (`sidebarZones`).
-- **Relieve:** `applyTerrain` en `Globe.jsx` activa Mapbox Terrain-DEM en Satélite y Topografía y Relieve, con la **exageración según el zoom** (Relieve: 6× en zoom 4,
-  4.5× en 8, 3× en 11, 2× en 14; Satélite: 3.5×, 2.6×, 1.8×, 1.3×). Con un valor fijo bajo (1.95, 2.6) las montañas se veían planas a escala de país. `addReliefShading` añade
-  una capa de sombreado (`relief-hillshade`) porque el estilo Relieve no trae ninguna y sin sombra el terreno no se lee. La cámara se inclina a 66° al cambiar a Relieve y a 62°
-  mínimo al elegir una zona. Valores probados en vivo sobre Veracruz y Puebla; ajustar ahí si hace falta.
-  **Que se vea igual en todos los navegadores:** el relieve necesita WebGL con aceleración por hardware. Si el terreno o el sombreado faltan al entrar en reposo (el orden de los
-  eventos cambia con el navegador, la red o la GPU), `Globe.jsx` los vuelve a aplicar (hasta 5 intentos). Si el navegador dibuja por software (`utils/webglInfo.js`), solo se deja un
-  aviso en la consola (no se le muestra nada al usuario). Si en algún navegador sigue plano, pedir que ejecuten `__ignisDiag()` en la consola y pasar el resultado (muestra WebGL, GPU,
-  si hay terreno, sombreado y datos de altura cargados). Causas comunes: aceleración por hardware desactivada, GPU en la lista negra del navegador, extensiones o modo de
-  privacidad estricto (por ejemplo, la protección contra huellas de Brave o `resistFingerprinting` de Firefox).
+- **Relieve:** `applyTerrain` en `Globe.jsx` es el de la rama `view_tests` (Mapbox Terrain-DEM; exageración 1.95 en Relieve y 1.35 en Satélite; cámara a 58° al cambiar a
+  Relieve y 45° al elegir una zona). Se probaron un sombreado propio, una exageración según el zoom y mensajes de diagnóstico, y se quitaron para dejarlo igual que en `view_tests`.
+  Lo único añadido: si tras cargar el estilo falta el terreno, se vuelve a aplicar al entrar en reposo (hasta 5 intentos, en silencio). Si el relieve se ve plano en algún
+  navegador web, lo más probable es la aceleración por hardware desactivada, una GPU en la lista negra del navegador o la protección de privacidad estricta (Brave, Firefox).
 
 ## Colores del mapa (en `Globe.jsx` y en `App.css`; si cambian en uno, cambiar el otro)
 - **Amarillo neón** = lo activo: zona seleccionada, área que se dibuja, herramienta activa, fila seleccionada, controles encendidos.
