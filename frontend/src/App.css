@@ -1455,3 +1455,16 @@
   color: var(--text);
   border-bottom-color: var(--accent);
 }
+
+/* Mientras vuela la cámara se ocultan los controles y las coordenadas (el padre añade `is-flying`), para que el movimiento se aprecie */
+.map-controls-container,
+.coordinates-hud {
+  transition: opacity 0.2s var(--ease), visibility 0.2s var(--ease);
+}
+
+.app-container.is-flying .map-controls-container,
+.app-container.is-flying .coordinates-hud {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}

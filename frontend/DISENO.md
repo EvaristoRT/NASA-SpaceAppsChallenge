@@ -38,8 +38,9 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
   continente (en el mapa, en el buscador o en la lista) abre el explorador en sus países, y elegir un país abre su continente. No tiene buscador propio: **hay un solo buscador, el de la barra superior**
   ("Buscar lugar..."), que ignora acentos y mayúsculas (`normalizeSearch`), agrupa los resultados en Continentes y Países y busca los países solo por nombre y capital (así un continente no arrastra
   todos sus países). América del Sur y América del Norte se separan en `utils/continents.js` (los datos solo dicen "América"). El explorador ya no tapa el cuadro de coordenadas (`bottom: 76px`).
-- **Cómo se despliega la información** (definido el 14-nov para que se aprecie el movimiento de la cámara): al elegir una zona **solo vuela la cámara**; no hay recuadros encima. Cuando la cámara
-  se detiene (`moveend`, con respaldo de 3.5 s) aparece **un único panel a la derecha** (`InfoPanel.jsx`) con pestañas: *Resumen | Análisis* para un país o continente (`ZoneSummary.jsx`) y *Área | Análisis*
+- **Cómo se despliega la información** (definido el 14-nov para que se aprecie el movimiento de la cámara): al elegir una zona **solo vuela la cámara**; no hay recuadros encima y además se **ocultan los controles y las
+  coordenadas** mientras vuela (`is-flying` en `App.jsx`, avisado por `trackFlight` en `Globe.jsx`). Los vuelos duran 1.4 s (`FLY_MS` en `Globe.jsx`; antes 2 a 2.5 s). Cuando la cámara
+  se detiene (`moveend`, con respaldo de 2.2 s) aparece **un único panel a la derecha** (`InfoPanel.jsx`) con pestañas: *Resumen | Análisis* para un país o continente (`ZoneSummary.jsx`) y *Área | Análisis*
   para un área trazada (`AreaSummary.jsx`, que aparece de inmediato porque no hay vuelo). **Elegir un continente deja el explorador abierto** (para escoger uno de sus países); **elegir un país lo cierra**.
   La pestaña *Análisis* (`AnalysisView.jsx`) lleva la frase que los datos respaldan, el calendario años × meses (rampa Inferno, mes en curso con recuadro amarillo, pie "Fig. 1"), la lista de
   hechos y el aviso de demostración; el panel se ensancha a 440 px en esa pestaña. **Los datos son de demostración** (`utils/demoAnalysis.js`, deterministas por zona); cuando el backend responda

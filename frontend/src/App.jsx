@@ -50,6 +50,8 @@ function MainApp() {
 
   // El panel de información de una zona aparece cuando la cámara termina de volar
   const [panelReady, setPanelReady] = useState(true);
+  // true mientras vuela la cámara: se ocultan los controles y las coordenadas para que el movimiento se aprecie
+  const [isFlying, setIsFlying] = useState(false);
   const panelTimerRef = useRef(null);
 
   const activeStyle = MAP_STYLES.find((s) => s.id === currentStyleId) || MAP_STYLES[0];
@@ -68,7 +70,7 @@ function MainApp() {
     if (zone?.id !== selectedZone?.id) {
       setPanelReady(false);
       if (panelTimerRef.current) clearTimeout(panelTimerRef.current);
-      panelTimerRef.current = setTimeout(() => setPanelReady(true), 3500); // respaldo si la cámara no avisa
+      panelTimerRef.current = setTimeout(() => setPanelReady(true), 2200); // respaldo si la cámara no avisa (el vuelo dura 1.4 s)
     }
     setSelectedZone(zone);
     setOrbitMode(false);
@@ -159,7 +161,7 @@ function MainApp() {
   const handleDeepZoom = (zone) => globeRef.current?.deepZoom(zone);
 
   return (
-    <div className="app-container">
+    <div className={`app-container${isFlying ? ' is-flying' : ''}`}>
       {/* Barra de navegación superior */}
       <Navbar
         currentStyleId={currentStyleId}
@@ -192,6 +194,7 @@ function MainApp() {
         onUpdateHUD={(data) => setHudData((prev) => ({ ...prev, ...data }))}
         onMapError={(err) => setMapError(err)}
         onCameraSettled={() => setPanelReady(true)}
+        onFlightChange={setIsFlying}
       />
 
       {/* Barra de herramientas flotante de dibujo (tipo Paint) */}

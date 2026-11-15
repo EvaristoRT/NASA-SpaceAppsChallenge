@@ -13,6 +13,10 @@ import {
   findCoveredCountries
 } from '../utils/geoUtils';
 
+// Duración de los vuelos de cámara (ms). Antes eran de 2 a 2.5 s; se acortaron para que la navegación se sienta ágil.
+const FLY_MS = 1400;
+const FLY_CURVE = 1.2;
+
 const Globe = forwardRef(function Globe(
   {
     token,
@@ -30,7 +34,8 @@ const Globe = forwardRef(function Globe(
     onDrawPointsChange,
     onUpdateHUD,
     onMapError,
-    onCameraSettled
+    onCameraSettled,
+    onFlightChange
   },
   ref
 ) {
@@ -179,8 +184,9 @@ const Globe = forwardRef(function Globe(
           zoom: 1.6,
           pitch: 0,
           bearing: 0,
-          duration: 2000
+          duration: FLY_MS
         });
+        trackFlight(mapRef.current);
       }
     },
     deepZoom: (zone) => {
@@ -190,10 +196,10 @@ const Globe = forwardRef(function Globe(
           zoom: Math.min((zone.zoom || 4) + 3.5, 14),
           pitch: 68,
           bearing: (zone.bearing || 0) + 25,
-          duration: 2500,
-          curve: 1.4,
-          speed: 1.1
+          duration: FLY_MS,
+          curve: FLY_CURVE
         });
+        trackFlight(mapRef.current);
       }
     },
     focusArea: (bounds) => {
@@ -203,8 +209,9 @@ const Globe = forwardRef(function Globe(
             [bounds.minLng, bounds.minLat],
             [bounds.maxLng, bounds.maxLat]
           ],
-          { padding: 100, duration: 2200, maxZoom: 8 }
+          { padding: 100, duration: FLY_MS, maxZoom: 8 }
         );
+        trackFlight(mapRef.current);
       }
     },
     finishPolygon: () => {
@@ -441,6 +448,19 @@ const Globe = forwardRef(function Globe(
   const labelOriginalsRef = useRef(new Map());
   const onCameraSettledRef = useRef(onCameraSettled);
   onCameraSettledRef.current = onCameraSettled;
+  const onFlightChangeRef = useRef(onFlightChange);
+  onFlightChangeRef.current = onFlightChange;
+  const flightIdRef = useRef(0);
+
+  // Avisa al padre mientras la cámara vuela (para ocultar controles y coordenadas). Si un vuelo interrumpe a otro, solo el
+  // último avisa del final, para que los controles no reaparezcan a mitad del segundo vuelo.
+  const trackFlight = (map) => {
+    const id = ++flightIdRef.current;
+    if (onFlightChangeRef.current) onFlightChangeRef.current(true);
+    map.once('moveend', () => {
+      if (id === flightIdRef.current && onFlightChangeRef.current) onFlightChangeRef.current(false);
+    });
+  };
 
   // Marcadores de referencia para los continentes
   const renderZoneMarkers = (map) => {
@@ -1314,10 +1334,10 @@ const Globe = forwardRef(function Globe(
         pitch: selectedZone.pitch || 45,
         bearing: selectedZone.bearing || 0,
         essential: true,
-        duration: 2500,
-        curve: 1.4,
-        speed: 1.1
+        duration: FLY_MS,
+        curve: FLY_CURVE
       });
+      trackFlight(mapRef.current);
       // Avisar cuando la cámara se detiene (o la interrumpe el usuario): ahí aparece el panel de información
       mapRef.current.once('moveend', () => {
         if (onCameraSettledRef.current) onCameraSettledRef.current();
