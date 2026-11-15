@@ -60,12 +60,39 @@ El despliegue en Cloud Run queda para después (`DESPLIEGUE.md`). Argentina + Ch
 
 Las tareas de Manuel van con detalle en `PLAN_INTEGRACION_WEB.md` (en `main`); aquí, solo lo que falta para el MVP:
 
-- [ ] **CSV de focos individuales** (lo pide el reto): `POST /api/export.csv?level=hotspots`, que lea `hotspots/` (particionado por año) filtrando
-  por polígono y fechas, con tope de filas, más un **botón de descarga** en el panel. Hoy solo se exportan totales mensuales.
-- [ ] **Meses futuros en el calendario:** hoy salen vacíos. La API ya trae `climatology` (mediana, p25, p75, p90 por mes de la zona):
-  mostrar en los meses que faltan del año el **rango esperado**, con un estilo distinto y la etiqueta "esperado, no medido".
-- [ ] **Bloque "próximos meses"** (p. ej. "dic: bajo · ene: medio · feb–mar: temporada alta") a partir de la misma `climatology`.
-- [ ] **Banda de incertidumbre** y meses NRT dibujados (el adaptador ya los trae: `count_ci_lower/upper`, `is_nrt`).
+- [x] **CSV de focos individuales** (`0f065d9`, `abfc052`). Probado por Evaristo: recorte exacto al polígono (forma en L: 4,307 focos = conteo independiente, 0 fuera).
+- [x] **Banda de incertidumbre** y meses NRT dibujados (`abfc052`, gráfica Fig. 2).
+
+### 3.1 Lo que falta para cumplir el reto (2026-11-15)
+
+Sale de la prueba general contra el texto del reto: [PRUEBA_RETO.md](PRUEBA_RETO.md). La API ya da todo lo necesario salvo donde se indica.
+En orden de importancia:
+
+- [ ] **1. Selector de rango de fechas (desde–hasta).** El objetivo lo pide textualmente: *"a user could select a region and a specific
+  date range, then download analytics and visualizations"*. Hoy el panel muestra toda la historia y solo deja elegir un mes.
+  - La API ya acepta `start` / `end` (`YYYY-MM`) en `/api/search` y `/api/export.csv`. Probado: con 2019-01 → 2020-12 devuelve 24 meses
+    y la mediana de base no cambia (se calcula con toda la historia).
+  - Que el rango filtre el calendario, la gráfica, los KPI del periodo y las descargas.
+  - El CSV de focos admite hasta 12 meses (`HOTSPOTS_MAX_MONTHS`): si el rango es mayor, avisar o descargar por partes.
+- [ ] **2. Meses futuros con el rango esperado** (la parte de "anticipar periodos críticos" y alerta temprana). Hoy salen vacíos.
+  `/api/search` ya trae `climatology`: mediana, p25, p75 y p90 por mes calendario de la zona (base 2003–2020).
+  Pintar los meses que faltan del año con un estilo distinto (rayado o translúcido), con el rango p25–p75 y la etiqueta "esperado, no medido".
+- [ ] **3. Bloque "próximos meses"**, p. ej. "dic: bajo · ene: medio · feb–mar: **temporada alta**", con la misma `climatology`.
+  Regla sugerida: alto si la mediana del mes está en el tercio superior de las 12 medianas de la zona, bajo si está en el inferior.
+- [ ] **4. Descargar las visualizaciones como imagen** (PNG o SVG): el calendario y la gráfica de la serie. El reto dice
+  *"download analytics **and visualizations**"*. Hoy solo hay CSV.
+- [ ] **5. Número de focos visible.** El reto habla de *"the number of hotspots detected"* y *"number of fires detected"*. El calendario muestra
+  **días-celda con fuego** (es el método, y está bien), pero ningún número de focos aparece en el panel.
+  - Un KPI "focos detectados en la zona y el periodo", contados en el backend desde `hotspots/` con el mismo recorte por polígono que el CSV
+    (`ignis/hotspots.py`). Si hace falta, solo para el rango elegido (≤ 12 meses).
+  - Una línea que explique la unidad del calendario: "un día-celda = un hexágono de ~0.7 km² con al menos un foco ese día; así se pueden
+    comparar MODIS (1 km) y VIIRS (375 m)".
+- [ ] **6. Escribir latitud y longitud** (sugerido por el reto: *"an option to enter latitude and longitude"*). Por ejemplo, un centro
+  + radio en km, o las cuatro esquinas de un rectángulo, que genere el mismo polígono que el dibujo. Hoy `CoordinatesHUD` solo las muestra.
+- [ ] **7. Revisión rápida de accesibilidad del calendario nuevo**: que las celdas de meses futuros (punto 2) también se lean con teclado y lector de
+  pantalla, igual que las de ahora (`role`, `aria-label`).
+
+Cuando estén, avisar aquí para que Evaristo repita la prueba general (`PRUEBA_RETO.md`) con la entrega de América.
 
 ## 4. Evaristo — integración, prueba y predicción
 
