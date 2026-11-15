@@ -78,8 +78,11 @@ def test_exports_delivery_and_backend_format(tmp_path, monkeypatch):
     delivery = data / "gold" / "entrega"
     harmonized = pd.read_parquet(delivery / "harmonized.parquet")
     row_2026 = harmonized[harmonized["year"] == 2026].iloc[0]
-    assert row_2026["median_same_month"] == 5.0
-    assert row_2026["anomaly_pct"] == 100.0
+    # Solo 2003 y 2004 tuvieron fuego en enero: los otros 16 años base cuentan como 0,
+    # la mediana es 0 y la anomalía queda vacía (no se divide entre 0).
+    assert row_2026["median_same_month"] == 0.0
+    assert pd.isna(row_2026["anomaly_pct"])
+    assert "region" not in harmonized.columns
     assert (delivery / "LEEME_ENTREGA.md").exists()
 
     cells = pd.read_parquet(delivery / "cells.parquet")
@@ -90,6 +93,11 @@ def test_exports_delivery_and_backend_format(tmp_path, monkeypatch):
     assert set(monthly.columns) >= {"cell_id", "m", "value", "modis_ta", "modis_t", "viirs", "src"}
     assert months.loc[months["m"] == 312, "source"].iloc[0] == "NOAA-20"
     assert info["synthetic"] is False and info["cutoff_date"] == "2026-01-02"
+    # El corte es el 2 de enero: enero de 2026 es un mes parcial con 2 días observados.
+    last = months[months["m"] == 312].iloc[0]
+    assert bool(last["is_partial"]) and last["days_observed"] == 2 and last["days_in_month"] == 31
+    assert not months.loc[months["m"] < 312, "is_partial"].any()
+    assert info["partial_month"] == "2026-01" and info["last_complete_month"] == "2025-12"
     assert len(list((delivery / "hotspots").glob("year=*/*.parquet"))) == 3
 
     backend = Path(__file__).resolve().parents[2] / "backend"

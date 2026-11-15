@@ -83,17 +83,23 @@ def create_harmonized_export(con: duckdb.DuckDBPyConnection, source: Path, desti
     """Añade a cada día la anomalía mensual de su celda H3 r6."""
     src = sql_path(source)
     y0, y1 = config.BASELINE_YEARS
+    # gold solo tiene filas en días con fuego. Un año base sin fuego en ese mes vale 0 y tiene que
+    # entrar a la mediana; si no, la mediana solo ve los años con fuego y sale inflada.
+    # Si la mediana es 0 (el mes casi nunca tiene fuego), anomaly_pct queda NULL.
     query = f"""
         WITH monthly AS (
             SELECT h3_index, year, month, sum(harmonized_count) AS month_value
-            FROM read_parquet('{src}')
+            FROM read_parquet('{src}', hive_partitioning = false)
             GROUP BY h3_index, year, month
         ),
+        base_years AS (SELECT range::INTEGER AS year FROM range({y0}, {y1} + 1)),
+        keys AS (SELECT DISTINCT h3_index, month FROM monthly),
         baseline AS (
-            SELECT h3_index, month, median(month_value) AS median_same_month
-            FROM monthly
-            WHERE year BETWEEN {y0} AND {y1}
-            GROUP BY h3_index, month
+            SELECT k.h3_index, k.month, median(coalesce(m.month_value, 0)) AS median_same_month
+            FROM keys k
+            CROSS JOIN base_years y
+            LEFT JOIN monthly m ON m.h3_index = k.h3_index AND m.month = k.month AND m.year = y.year
+            GROUP BY k.h3_index, k.month
         ),
         anomalies AS (
             SELECT m.h3_index, m.year, m.month, b.median_same_month,
@@ -104,7 +110,7 @@ def create_harmonized_export(con: duckdb.DuckDBPyConnection, source: Path, desti
             LEFT JOIN baseline b USING (h3_index, month)
         )
         SELECT h.*, a.median_same_month, a.anomaly_pct
-        FROM read_parquet('{src}') h
+        FROM read_parquet('{src}', hive_partitioning = false) h
         LEFT JOIN anomalies a USING (h3_index, year, month)
         ORDER BY h.h3_index, h.date
     """
@@ -122,7 +128,7 @@ def create_cell_map(con: duckdb.DuckDBPyConnection, source: Path, silver_glob: s
             WHERE h3_r6 IS NOT NULL
             GROUP BY h3_r6
         ),
-        active AS (SELECT DISTINCT h3_index AS h3 FROM read_parquet('{src}'))
+        active AS (SELECT DISTINCT h3_index AS h3 FROM read_parquet('{src}', hive_partitioning = false))
         SELECT row_number() OVER (ORDER BY active.h3)::INTEGER - 1 AS cell_id,
                active.h3, regions.region
         FROM active
@@ -180,7 +186,7 @@ def create_backend_files(
                    END AS viirs,
                    g.harmonized_ci_lower, g.harmonized_ci_upper,
                    g.harmonized_frp_mw, g.is_nrt
-            FROM read_parquet('{src}') g
+            FROM read_parquet('{src}', hive_partitioning = false) g
             LEFT JOIN raw_daily r USING (h3_index, date)
         )
         SELECT c.cell_id,
@@ -201,12 +207,14 @@ def create_backend_files(
     """
     copy_query(con, monthly_query, delivery / "monthly.parquet")
 
-    cutoff = con.execute(f"SELECT max(date)::DATE FROM read_parquet('{src}')").fetchone()[0]
+    cutoff = con.execute(f"SELECT max(date)::DATE FROM read_parquet('{src}', hive_partitioning = false)").fetchone()[0]
     if cutoff is None:
         raise SystemExit("La serie gold está vacía.")
     cutoff_text = str(cutoff)
-    y, m, _ = cutoff_text.split("-")
+    y, m, d = cutoff_text.split("-")
     cutoff_m = (int(y) - 2000) * 12 + int(m) - 1
+    # El mes del corte casi siempre está incompleto: el backend no debe compararlo entero contra la mediana.
+    cutoff_day = int(d)
     months_query = f"""
         WITH months AS (SELECT range::INTEGER AS m FROM range(10, {cutoff_m + 1})),
         dated AS (
@@ -221,17 +229,26 @@ def create_backend_files(
                CASE WHEN year > 2018 OR (year = 2018 AND month >= 4) THEN 'NOAA-20'
                     WHEN year > 2012 OR (year = 2012 AND month >= 1) THEN 'S-NPP'
                     WHEN year > 2002 OR (year = 2002 AND month >= 7) THEN 'MODIS'
-                    ELSE 'Terra' END AS source
+                    ELSE 'Terra' END AS source,
+               day(last_day(make_date(year, month, 1)))::INTEGER AS days_in_month,
+               CASE WHEN m = {cutoff_m} THEN {cutoff_day}
+                    ELSE day(last_day(make_date(year, month, 1))) END::INTEGER AS days_observed,
+               (m = {cutoff_m} AND {cutoff_day} < day(last_day(make_date(year, month, 1)))) AS is_partial
         FROM dated
         ORDER BY m
     """
     copy_query(con, months_query, delivery / "months.parquet")
+    last_complete = con.execute(
+        f"SELECT max(m) FROM read_parquet('{sql_path(delivery / 'months.parquet')}') WHERE NOT is_partial"
+    ).fetchone()[0]
 
     info = {
         "synthetic": False,
         "reference_satellite": config.REFERENCE_SATELLITE,
         "harmonization": metrics,
         "cutoff_date": cutoff_text,
+        "last_complete_month": f"{2000 + last_complete // 12}-{last_complete % 12 + 1:02d}",
+        "partial_month": None if last_complete == cutoff_m else f"{y}-{m}",
         "region": region,
         "model_version": metrics.get("model_version", DELIVERY_MODEL_VERSION),
         "baseline_years": list(config.BASELINE_YEARS),
@@ -268,13 +285,16 @@ def write_readme(con: duckdb.DuckDBPyConnection, harmonized: Path, delivery: Pat
     """Documenta la entrega con los valores concretos que se acaban de exportar."""
     hpath = sql_path(harmonized)
     rows, cells, start, cutoff = con.execute(
-        f"SELECT count(*), count(DISTINCT h3_index), min(date), max(date) FROM read_parquet('{hpath}')"
+        f"SELECT count(*), count(DISTINCT h3_index), min(date), max(date) FROM read_parquet('{hpath}', hive_partitioning = false)"
     ).fetchone()
     nrt = con.execute(f"""
         SELECT string_agg(DISTINCT strftime(date, '%Y-%m'), ', ' ORDER BY strftime(date, '%Y-%m'))
-        FROM read_parquet('{hpath}') WHERE is_nrt
+        FROM read_parquet('{hpath}', hive_partitioning = false) WHERE is_nrt
     """).fetchone()[0] or "ninguno"
     model_version = metrics.get("model_version", DELIVERY_MODEL_VERSION)
+    info = json.loads((delivery / "info.json").read_text(encoding="utf-8"))
+    partial_note = (f"{info['partial_month']}, datos hasta {cutoff}" if info.get("partial_month")
+                    else "no: el corte cae en el último día del mes")
     text = f"""# Entrega de datos — armonización MODIS / VIIRS
 
 Fecha de corte: **{cutoff}**
@@ -297,8 +317,13 @@ en {cells:,} hexágonos H3 resolución 6. La unidad de `harmonized_count` es
 | `cells.parquet`, `monthly.parquet`, `months.parquet`, `info.json` | Formato de compatibilidad para `backend/ignis/store.py`; apunta `DATA_DIR` del backend a esta carpeta. |
 
 `median_same_month` y `anomaly_pct` se calculan por hexágono y mes calendario.
+Los años base sin fuego en ese mes cuentan como 0; si la mediana es 0 (mes que casi nunca
+tiene fuego en ese hexágono), `anomaly_pct` queda vacío.
 No deben sumarse para obtener la anomalía de un polígono: el backend recalcula su
 mediana sobre la serie agregada del área.
+
+**El mes del corte está incompleto** ({partial_note}). `months.parquet` lo marca con
+`is_partial = true` y `days_observed`; no debe compararse entero contra la mediana del mes.
 
 Meses que incluyen datos NRT: {nrt}. NASA reemplaza esos datos preliminares por
 archive aproximadamente cinco meses después.
