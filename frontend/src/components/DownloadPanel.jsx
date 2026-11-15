@@ -119,15 +119,16 @@ export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth
     });
 
   return (
-    <>
-      <section className="analysis-downloads" aria-label={t('download.title')}>
-        <h3 className="analysis-section-title">{t('download.title')}</h3>
+    <details className="analysis-fold">
+      <summary>{t('download.title')}</summary>
+      <section className="analysis-downloads" aria-label={t('download.csvTitle')}>
+        <h3 className="analysis-section-title">{t('download.csvTitle')}</h3>
         <ul>{renderRows(csvRows)}</ul>
       </section>
       <section className="analysis-downloads" aria-label={t('download.imagesTitle')}>
         <h3 className="analysis-section-title">{t('download.imagesTitle')}</h3>
         <ul>{renderRows(imageRows)}</ul>
       </section>
-    </>
+    </details>
   );
 }

@@ -7,9 +7,10 @@ import { continentIdOf } from '../utils/continents';
 import ZoneSummary from './ZoneSummary';
 import AreaSummary from './AreaSummary';
 import AnalysisView from './AnalysisView';
+import PredictionView from './PredictionView';
 
 // Panel único de información (a la derecha): cabecera con el nombre, pestañas y el contenido de la pestaña activa.
-// Para una zona del catálogo: Resumen | Análisis. Para un área trazada: Área | Análisis.
+// Para una zona del catálogo: Resumen | Análisis | Predicción. Para un área trazada: Área | Análisis | Predicción.
 // El padre lo monta con `key` distinta por zona, así que al cambiar de zona vuelve a la primera pestaña.
 export default function InfoPanel({
   zone,
@@ -47,7 +48,8 @@ export default function InfoPanel({
 
   const tabs = [
     { id: 'main', label: t(isArea ? 'panel.tabArea' : 'panel.tabSummary') },
-    { id: 'analysis', label: t('panel.tabAnalysis') }
+    { id: 'analysis', label: t('panel.tabAnalysis') },
+    { id: 'prediction', label: t('panel.tabPrediction') }
   ];
 
   return (
@@ -107,6 +109,8 @@ export default function InfoPanel({
 
       {tab === 'analysis' ? (
         <AnalysisView zone={zone} drawnArea={drawnArea} selectedMonth={selectedMonth} onSelectMonth={onSelectMonth} />
+      ) : tab === 'prediction' ? (
+        <PredictionView zone={zone} drawnArea={drawnArea} />
       ) : isArea ? (
         <AreaSummary drawnData={drawnArea} onFocusArea={onFocusArea} onClear={onClearArea} />
       ) : (

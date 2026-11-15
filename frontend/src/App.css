@@ -1308,7 +1308,8 @@
 
 /* --- ANÁLISIS (calendario de quemas y hechos clave), pestaña del panel de información ---
    Estilo "informe": una frase que los datos respaldan, lista de hechos con líneas finas, calendario con pie "Fig. N". */
-.info-panel.tab-analysis {
+.info-panel.tab-analysis,
+.info-panel.tab-prediction {
   width: 440px;
 }
 
@@ -1524,6 +1525,128 @@ button.cal-cell:focus-visible {
   margin: 0 0 8px;
   color: var(--danger);
   font-size: 12px;
+}
+
+/* Detalles plegables del panel (descargas y "qué es un día-celda") */
+.analysis-fold,
+.analysis-explain {
+  margin: 8px 0;
+}
+
+.analysis-fold {
+  padding-top: 8px;
+  border-top: 1px solid var(--rule);
+}
+
+.analysis-fold summary,
+.analysis-explain summary {
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.analysis-explain p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.analysis-facts small {
+  margin-left: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Pestaña Predicción: gráfica del porqué de lo esperado */
+.basis-box {
+  fill: rgb(255 255 255 / 0.1);
+}
+
+.basis-dot {
+  fill: var(--border-strong);
+}
+
+.basis-dot.recent {
+  fill: var(--link);
+  stroke: var(--bg);
+  stroke-width: 1;
+}
+
+.basis-median {
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.basis-hover {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.basis-month {
+  fill: var(--text-2);
+}
+
+.basis-level-high {
+  fill: var(--heat);
+  font-weight: 700;
+}
+
+.basis-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.basis-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.basis-key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}
+
+.basis-key.base {
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.basis-key.recent {
+  border-radius: 50%;
+  background: var(--link);
+}
+
+.basis-key.box {
+  background: rgb(255 255 255 / 0.18);
+}
+
+.basis-key.median {
+  height: 2px;
+  background: #ffffff;
+}
+
+.pred-how ol {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.pred-how li {
+  margin-bottom: 4px;
 }
 
 /* Calendario de un año: 12 recuadros, uno por mes */

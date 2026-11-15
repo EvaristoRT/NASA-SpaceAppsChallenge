@@ -103,6 +103,9 @@ export function adaptSearchResponse(response) {
     riskMonth,
     ratio,
     status: statusOf(ratio),
+    // Años de la línea base (para explicar de dónde sale lo esperado) y climatología por mes calendario
+    baseline: response.baseline ?? null,
+    climatology: response.climatology ?? [],
     // Meses futuros con el rango esperado y los próximos meses (de la climatología)
     expected: outlook.expected,
     nextMonths: outlook.nextMonths,

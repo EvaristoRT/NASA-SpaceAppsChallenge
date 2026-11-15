@@ -22,15 +22,33 @@ export function geometryFor(zone, drawnArea) {
   return null;
 }
 
+// Respuestas ya pedidas, por geometría: las pestañas Análisis y Predicción usan la misma llamada y volver a una zona es inmediato.
+const CACHE_SIZE = 8;
+const cache = new Map();
+const cacheGet = (key) => {
+  const hit = cache.get(key);
+  if (hit) {
+    cache.delete(key); // se vuelve a insertar al final: los más recientes se quedan
+    cache.set(key, hit);
+  }
+  return hit;
+};
+const cachePut = (key, value) => {
+  cache.set(key, value);
+  if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value);
+};
+
 // Estado del análisis: 'demo' | 'loading' | 'ready' | 'nodata' | 'error' y los datos con la forma que usa AnalysisView.
 export function useAnalysis(zone, drawnArea, seed) {
   const demo = useMemo(() => (API_URL ? null : buildDemoAnalysis(seed)), [seed]);
   const geometry = useMemo(() => (API_URL ? geometryFor(zone, drawnArea) : null), [zone, drawnArea]);
+  const cacheKey = useMemo(() => (geometry ? JSON.stringify(geometry) : null), [geometry]);
   // El resultado se guarda junto con la geometría que lo originó: si ya no coincide, sigue "cargando"
   const [result, setResult] = useState({ geometry: null, status: 'loading', data: null });
 
   useEffect(() => {
     if (!API_URL || !geometry) return undefined;
+    if (cacheGet(cacheKey)) return undefined; // ya se pidió: se lee al renderizar
     const controller = new AbortController();
     fetch(`${API_URL}/api/search`, {
       method: 'POST',
@@ -45,19 +63,19 @@ export function useAnalysis(zone, drawnArea, seed) {
       .then((json) => {
         const data = adaptSearchResponse(json);
         // Fuera de la cobertura (hoy Argentina y Chile) no hay celdas con datos: se avisa, no se muestra una serie en cero
-        setResult(
-          data && json.kpis?.n_cells_with_fire > 0
-            ? { geometry, status: 'ready', data }
-            : { geometry, status: 'nodata', data: null }
-        );
+        const next = data && json.kpis?.n_cells_with_fire > 0 ? { status: 'ready', data } : { status: 'nodata', data: null };
+        cachePut(cacheKey, next);
+        setResult({ geometry, ...next });
       })
       .catch((error) => {
         if (error.name !== 'AbortError') setResult({ geometry, status: 'error', data: null });
       });
     return () => controller.abort();
-  }, [geometry]);
+  }, [geometry, cacheKey]);
 
   if (!API_URL) return { status: 'demo', data: demo };
   if (!geometry) return { status: 'nodata', data: null };
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
   return result.geometry === geometry ? result : { status: 'loading', data: null };
 }

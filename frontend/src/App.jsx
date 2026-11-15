@@ -70,7 +70,7 @@ function MainApp() {
   const activity = useActivity(selectedZone, drawnArea, selectedMonth);
   // Modo "datos": con una zona elegida y la pestaña Análisis abierta (o un mes encendido) el mapa deja de resaltar al pasar el cursor
   // y quita los rellenos de selección, para que los hexágonos se lean limpios. Al salir vuelve el comportamiento normal.
-  const dataMode = Boolean(selectedZone || drawnArea) && (panelTab === 'analysis' || Boolean(selectedMonth));
+  const dataMode = Boolean(selectedZone || drawnArea) && (panelTab === 'analysis' || panelTab === 'prediction' || Boolean(selectedMonth));
   const handleSelectMonth = (year, month) =>
     setActiveMonth((prev) => (prev && prev.year === year && prev.month === month && prev.key === monthScope ? null : { key: monthScope, year, month }));
 

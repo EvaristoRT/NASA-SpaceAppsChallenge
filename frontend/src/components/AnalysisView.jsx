@@ -151,29 +151,28 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
       <dl className="analysis-facts">
         <div>
           <dt>{t('analysis.factTotal', { from: data.firstYear, to: data.lastYear })}</dt>
-          <dd>{fmt(data.total)}</dd>
+          <dd>
+            {fmt(data.total)} <small>{t('analysis.unitCellDays')}</small>
+          </dd>
         </div>
-        {hotspotsOn && hotspotCount.status !== 'off' && (
-          <div>
-            <dt>{t('analysis.factHotspots', { period: hotspotPeriod })}</dt>
-            <dd aria-live="polite">{hotspotCount.status === 'ready' ? fmt(hotspotCount.count) : '…'}</dd>
-          </div>
-        )}
         <div>
           <dt>{t('analysis.factPeakYear')}</dt>
           <dd>{data.peakYear}</dd>
         </div>
         <div>
-          <dt>{t('analysis.factRiskMonth')}</dt>
-          <dd>{monthsLong[data.riskMonth]}</dd>
-        </div>
-        <div>
           <dt>{t('analysis.factStatus')}</dt>
           <dd>
             <span className={`analysis-status analysis-status-${data.status}`}>{t(`analysis.status.${data.status}`)}</span>
+            {data.ratio !== null && <small> {ratioText}×</small>}
           </dd>
         </div>
       </dl>
+
+      {hotspotsOn && hotspotCount.status !== 'off' && (
+        <p className="analysis-note" aria-live="polite">
+          {t('analysis.hotspotsLine', { period: hotspotPeriod, n: hotspotCount.status === 'ready' ? fmt(hotspotCount.count) : '…' })}
+        </p>
+      )}
 
       <p className="analysis-note">
         {data.synthetic ? (
@@ -181,24 +180,14 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
             <b>{t('analysis.demoTitle')}</b> {t('analysis.demoText')}
           </>
         ) : (
-          t('analysis.realText')
+          t('analysis.unitLine')
         )}
       </p>
-
-      {data.nextMonths?.length > 0 && (
-        <section className="analysis-next" aria-label={t('analysis.nextTitle')}>
-          <h3 className="analysis-section-title">{t('analysis.nextTitle')}</h3>
-          <ul>
-            {data.nextMonths.map((n) => (
-              <li key={`${n.year}-${n.month}`}>
-                <span>{monthsLong[n.month]}{n.month === 0 ? ` ${n.year}` : ''}</span>
-                <b className={`analysis-level analysis-level-${n.level}`}>{t(`analysis.level.${n.level}`)}</b>
-                <small>{t('analysis.cellExpected', { median: fmt(Math.round(n.median)), low: fmt(Math.round(n.p25)), high: fmt(Math.round(n.p75)) })}</small>
-              </li>
-            ))}
-          </ul>
-          <p className="analysis-pick">{t('analysis.nextNote')}</p>
-        </section>
+      {!data.synthetic && (
+        <details className="analysis-explain">
+          <summary>{t('analysis.explainTitle')}</summary>
+          <p>{t('analysis.explainText')}</p>
+        </details>
       )}
 
       <figure className="analysis-figure">
@@ -287,7 +276,6 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
           <span className="cal-axis">{fmt(data.max)}</span>
         </div>
 
-        {data.nextMonths?.length > 0 && <p className="analysis-pick">{t('analysis.expectedNote')}</p>}
         {interactive && !selectedMonth && <p className="analysis-pick">{t('analysis.pickHint')}</p>}
         {!interactive && data.synthetic && <p className="analysis-pick">{t('analysis.pickNeedsApi')}</p>}
 
