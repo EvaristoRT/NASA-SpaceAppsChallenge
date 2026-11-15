@@ -24,16 +24,16 @@ export const translations = {
     },
     styles: {
       satellite: {
-        name: 'Satélite Fotorrealista',
-        desc: 'Fotografía satelital de alta resolución con capas de carreteras y relieve.'
+        name: 'Satélite',
+        desc: '¿Qué cubre el suelo? Imagen satelital real: bosque, cultivo y suelo desnudo.'
       },
       political: {
-        name: 'Político',
-        desc: 'Fronteras de países y estados sobre fondo oscuro, sin carreteras.'
+        name: 'Datos',
+        desc: '¿Dónde y cuánto? Fondo limpio, sin carreteras, con países y estados: la vista para leer el dato.'
       },
       outdoors: {
-        name: 'Topografía y Relieve',
-        desc: 'Muestra curvas de nivel, elevaciones montañosas y senderos naturales.'
+        name: 'Terreno',
+        desc: '¿En qué terreno? Montañas, valles y ríos para relacionar el fuego con la topografía.'
       }
     },
     drawToolbar: {
@@ -221,16 +221,16 @@ export const translations = {
     },
     styles: {
       satellite: {
-        name: 'Photorealistic Satellite',
-        desc: 'High-resolution satellite photography with roads and terrain relief.'
+        name: 'Satellite',
+        desc: 'What covers the ground? Real satellite imagery: forest, cropland and bare soil.'
       },
       political: {
-        name: 'Political',
-        desc: 'Country and state borders on a dark background, no roads.'
+        name: 'Data',
+        desc: 'Where and how much? A clean map with no roads, with countries and states: the view for reading the data.'
       },
       outdoors: {
-        name: 'Topography & Relief',
-        desc: 'Shows contour lines, mountain elevations, and hiking trails.'
+        name: 'Terrain',
+        desc: 'On what terrain? Mountains, valleys and rivers, to relate fire to topography.'
       }
     },
     drawToolbar: {

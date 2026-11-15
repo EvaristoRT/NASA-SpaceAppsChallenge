@@ -25,9 +25,7 @@ const FLAT_WORLD_COPIES = true;
 // Desde este zoom, el mapa elige siempre países; más lejos elige continentes (salvo dentro del continente ya elegido).
 const COUNTRY_ZOOM = 4;
 
-// Capa de actividad: la zona elegida se atenúa con un fondo oscuro único bajo los hexágonos, así se leen igual en las tres vistas
-const DIM_COLOR = '#151622';
-const DIM_OPACITY = 0.9;
+// Capa de actividad: la zona elegida se atenúa bajo los hexágonos con el tono de cada vista (MAP_STYLES[].dim)
 const HEX_OPACITY = 0.95;
 
 const Globe = forwardRef(function Globe(
@@ -571,13 +569,19 @@ const Globe = forwardRef(function Globe(
     const isContinent = Boolean(zone) && zone.category === 'Continente';
     map.setFilter(`zones-${kind}-fill`, filter);
     map.setFilter(`zones-${kind}-line`, filter);
-    const strong = kind === 'highlight' ? { width: 3, opacity: 1 } : { width: 2, opacity: 0.9 };
+    const strong = kind === 'highlight' ? { width: overlayForStyle().highlightWidth || 3, opacity: 1 } : { width: 2, opacity: 0.9 };
     const soft = kind === 'highlight' ? { width: 1.2, opacity: 0.6 } : { width: 1, opacity: 0.5 };
     // En modo datos la selección es solo un contorno amarillo fino (sin relleno) para no tapar los hexágonos
     const paint = kind === 'highlight' && dataModeRef.current ? { width: 1.6, opacity: 1 } : isContinent ? soft : strong;
     map.setPaintProperty(`zones-${kind}-line`, 'line-width', paint.width);
     map.setPaintProperty(`zones-${kind}-line`, 'line-opacity', paint.opacity);
     if (kind === 'highlight') {
+      const casing = overlayForStyle().casing;
+      if (map.getLayer('zones-highlight-casing')) {
+        map.setFilter('zones-highlight-casing', filter);
+        map.setPaintProperty('zones-highlight-casing', 'line-width', paint.width + (casing ? casing.extra : 0));
+        map.setPaintProperty('zones-highlight-casing', 'line-opacity', casing ? casing.opacity * paint.opacity : 0);
+      }
       setSelectedState(map, zone);
       if (map.getLayer('fire-dim-zone')) map.setFilter('fire-dim-zone', filter); // la atenuación sigue a la zona elegida
     }
@@ -676,7 +680,7 @@ const Globe = forwardRef(function Globe(
     if (!map) return;
     const ov = overlayForStyle();
 
-    ['zones-highlight-line', 'zones-highlight-fill', 'zones-hover-line', 'zones-hover-fill', 'zones-line', 'zones-fill'].forEach((id) => {
+    ['zones-highlight-line', 'zones-highlight-casing', 'zones-highlight-fill', 'zones-hover-line', 'zones-hover-fill', 'zones-line', 'zones-fill'].forEach((id) => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
     ['country-boundaries', 'zones-geojson', 'zones-outline'].forEach((id) => {
@@ -740,7 +744,7 @@ const Globe = forwardRef(function Globe(
       filter: WORLDVIEW_FILTER,
       paint: {
         'fill-color': ov.hover,
-        'fill-opacity': ['case', ['==', hov, 1], 0.38, ['==', hov, 2], 0.2, ['>', sel, 0], ov.hoverFill, 0],
+        'fill-opacity': ['case', ['==', hov, 1], ov.hoverFillStrong, ['==', hov, 2], 0.2, ['>', sel, 0], ov.hoverFill, 0],
         'fill-opacity-transition': { duration: 140, delay: 0 }
       }
     });
@@ -752,7 +756,7 @@ const Globe = forwardRef(function Globe(
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: {
         'line-color': ov.hoverLine,
-        'line-width': ['case', ['==', hov, 1], 3.2, ['==', hov, 2], 1.2, ['==', sel, 1], 2.0, 1.0],
+        'line-width': ['case', ['==', hov, 1], 3.2, ['==', hov, 2], 1.2, ['==', sel, 1], ov.selLineWidth || 2.0, 1.0],
         'line-opacity': ['case', ['==', hov, 1], 1, ['==', hov, 2], 0.55, ['==', sel, 1], 0.9, ['==', sel, 2], 0.5, 0],
         'line-opacity-transition': { duration: 140, delay: 0 }
       }
@@ -765,6 +769,15 @@ const Globe = forwardRef(function Globe(
       type: 'fill',
       filter: zoneFilter(selectedZoneRef.current),
       paint: { 'fill-color': '#e7f434', 'fill-opacity': ov.highlightFill }
+    });
+    // Contorno oscuro bajo la línea amarilla en las vistas donde el amarillo se pierde (p. ej. el relieve claro)
+    map.addLayer({
+      ...base,
+      id: 'zones-highlight-casing',
+      type: 'line',
+      filter: zoneFilter(selectedZoneRef.current),
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': ov.casing ? ov.casing.color : '#000000', 'line-width': 5, 'line-opacity': 0 }
     });
     map.addLayer({
       ...base,
@@ -787,6 +800,10 @@ const Globe = forwardRef(function Globe(
 
   // Primera capa de texto del estilo: los hexágonos y su atenuación van justo debajo, para que los nombres de países, estados y ciudades
   // se lean encima del dato y ningún relleno nuestro quede entre el dato y el ojo.
+  // Atenuación de la vista activa: color y opacidad propios para que tomen el tono de cada mapa
+  const dimForStyle = () => (MAP_STYLES.find((s) => s.id === currentStyleIdRef.current) || MAP_STYLES[0]).dim;
+  const hexEdgeForStyle = () => (MAP_STYLES.find((s) => s.id === currentStyleIdRef.current) || MAP_STYLES[0]).hexEdge;
+
   const firstSymbolId = (map) => {
     const layer = map.getStyle().layers.find((l) => l.type === 'symbol');
     return layer ? layer.id : undefined;
@@ -801,6 +818,8 @@ const Globe = forwardRef(function Globe(
 
     map.addSource('fire-activity', { type: 'geojson', data: activityCollection(activityRef.current) });
     const before = firstSymbolId(map);
+    const dim = dimForStyle();
+    const hexEdge = hexEdgeForStyle();
 
     // Atenuación de la zona elegida (país o continente): mismo fondo oscuro bajo los hexágonos en las tres vistas.
     // Para un área dibujada la atenuación va en `fire-dim-area` (ver setupDrawLayers).
@@ -811,7 +830,7 @@ const Globe = forwardRef(function Globe(
         source: 'country-boundaries',
         'source-layer': 'country_boundaries',
         filter: zoneFilter(selectedZoneRef.current),
-        paint: { 'fill-color': DIM_COLOR, 'fill-opacity': 0, 'fill-opacity-transition': { duration: 400, delay: 0 } }
+        paint: { 'fill-color': dim.color, 'fill-opacity': 0, 'fill-opacity-transition': { duration: 400, delay: 0 } }
       },
       before
     );
@@ -839,16 +858,16 @@ const Globe = forwardRef(function Globe(
       },
       before
     );
-    // Contorno oscuro fino al acercar, para separar los hexágonos vecinos
+    // Contorno claro fino al acercar: separa los hexágonos vecinos sobre cualquier fondo atenuado
     map.addLayer(
       {
         id: 'fire-activity-edge',
         type: 'line',
         source: 'fire-activity',
         paint: {
-          'line-color': 'rgba(21, 22, 34, 0.55)',
-          'line-width': 0.5,
-          'line-opacity': ['interpolate', ['linear'], ['zoom'], 5.5, 0, 7, 0.9]
+          'line-color': hexEdge.color,
+          'line-width': hexEdge.width,
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 5.5, 0, 7, 1]
         }
       },
       before
@@ -861,8 +880,9 @@ const Globe = forwardRef(function Globe(
     const act = activityRef.current;
     const on = Boolean(act && act.status && act.status !== 'idle');
     const area = Boolean(drawnAreaRef.current && drawnAreaRef.current.coords);
-    if (map.getLayer('fire-dim-zone')) map.setPaintProperty('fire-dim-zone', 'fill-opacity', on && !area ? DIM_OPACITY : 0);
-    if (map.getLayer('fire-dim-area')) map.setPaintProperty('fire-dim-area', 'fill-opacity', on && area ? DIM_OPACITY : 0);
+    const dim = dimForStyle();
+    if (map.getLayer('fire-dim-zone')) map.setPaintProperty('fire-dim-zone', 'fill-opacity', on && !area ? dim.opacity : 0);
+    if (map.getLayer('fire-dim-area')) map.setPaintProperty('fire-dim-area', 'fill-opacity', on && area ? dim.opacity : 0);
   };
 
   // Modo datos (pestaña Análisis abierta o mes elegido): sin hover ni nombre flotante, sin rellenos de selección y con la zona
@@ -912,7 +932,7 @@ const Globe = forwardRef(function Globe(
         type: 'fill',
         source: 'draw-source',
         filter: ['==', '$type', 'Polygon'],
-        paint: { 'fill-color': DIM_COLOR, 'fill-opacity': 0, 'fill-opacity-transition': { duration: 400, delay: 0 } }
+        paint: { 'fill-color': dimForStyle().color, 'fill-opacity': 0, 'fill-opacity-transition': { duration: 400, delay: 0 } }
       },
       map.getLayer('fire-activity-fill') ? 'fire-activity-fill' : undefined
     );

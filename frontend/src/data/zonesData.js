@@ -205,39 +205,54 @@ export const ZONES = [
 export const MAP_STYLES = [
   {
     id: 'satellite',
-    name: 'Satélite Fotorrealista',
+    name: 'Satélite',
     styleUrl: 'mapbox://styles/mapbox/satellite-streets-v12',
     icon: '🛰️',
-    description: 'Fotografía satelital de alta resolución con capas de carreteras y relieve.',
-    // Colores de nuestras capas de países (fronteras, hover y selección): los originales, iguales en todas las vistas.
+    description: '¿Qué cubre el suelo? Imagen satelital real: bosque, cultivo y suelo desnudo.',
+    // Atenuación de la zona cuando hay un mes elegido: ligera, para que la imagen real siga viéndose y la vista no se confunda con Datos
+    dim: { color: '#05080a', opacity: 0.38 },
+    // Borde de los hexágonos: más marcado, porque con poca atenuación el contraste del relleno no alcanza para los valores bajos
+    hexEdge: { color: 'rgba(255, 255, 255, 0.85)', width: 1.1 },
+    // Colores de nuestras capas de países (fronteras, hover y selección), ajustados a cada fondo.
     overlay: {
-      line: 'rgba(223, 225, 226, 0.45)', lineOpacity: 0.8, fill: '#dfe1e2',
-      hover: '#ffffff', hoverFill: 0.14, hoverLine: '#ffffff',
-      highlightFill: 0.2
+      line: 'rgba(255, 255, 255, 0.55)', lineOpacity: 0.85, fill: '#dfe1e2',
+      // sobre la imagen: hover blanco y selección amarilla (como en Datos), con el hover algo más suave para no lavar la imagen
+      hover: '#ffffff', hoverFill: 0.12, hoverFillStrong: 0.28, hoverLine: '#ffffff',
+      highlightFill: 0.16, casing: { color: '#05080a', opacity: 0.55, extra: 2 }
     }
   },
   {
     id: 'political',
-    name: 'Político',
+    name: 'Datos',
     styleUrl: 'mapbox://styles/mapbox/dark-v11',
     icon: '🧭',
-    description: 'Fronteras de países y estados sobre fondo oscuro, sin carreteras.',
+    description: '¿Dónde y cuánto? Fondo limpio, sin carreteras, con países y estados: la vista para leer el dato.',
+    // El fondo ya es oscuro: atenuación ligera para que los límites de los estados sigan visibles
+    dim: { color: '#151622', opacity: 0.35 },
+    hexEdge: { color: 'rgba(255, 255, 255, 0.45)', width: 0.8 },
     overlay: {
       line: 'rgba(223, 225, 226, 0.45)', lineOpacity: 0.8, fill: '#dfe1e2',
-      hover: '#ffffff', hoverFill: 0.14, hoverLine: '#ffffff',
-      highlightFill: 0.2
+      hover: '#ffffff', hoverFill: 0.14, hoverFillStrong: 0.38, hoverLine: '#ffffff',
+      highlightFill: 0.2, casing: null
     }
   },
   {
     id: 'outdoors',
-    name: 'Relieve & Topografía',
+    name: 'Terreno',
     styleUrl: 'mapbox://styles/mapbox/outdoors-v12',
     icon: '🏔️',
-    description: 'Énfasis en curvas de nivel, cadenas montañosas y accidentes geográficos.',
+    description: '¿En qué terreno? Montañas, valles y ríos para relacionar el fuego con la topografía.',
+    // Pizarra oscura sobre el relieve claro: hace falta más opacidad para que los valores bajos no se pierdan
+    dim: { color: '#10161a', opacity: 0.75 },
+    hexEdge: { color: 'rgba(255, 255, 255, 0.55)', width: 0.9 },
     overlay: {
-      line: 'rgba(223, 225, 226, 0.45)', lineOpacity: 0.8, fill: '#dfe1e2',
-      hover: '#ffffff', hoverFill: 0.14, hoverLine: '#ffffff',
-      highlightFill: 0.2
+      line: 'rgba(21, 22, 34, 0.6)', lineOpacity: 0.85, fill: '#151622',
+      // sobre el relieve claro el blanco no se ve: el hover pasa al azul eléctrico de la marca y la selección amarilla lleva un
+      // contorno oscuro debajo para separarse del terreno
+      hover: '#1b2b85', hoverFill: 0.14, hoverFillStrong: 0.3, hoverLine: '#1b2b85',
+      highlightFill: 0.26, casing: { color: '#151622', opacity: 0.75, extra: 2.4 },
+      // la línea amarilla de la selección es más ancha y el azul interior más fino, para que el amarillo no quede tapado
+      highlightWidth: 4.2, selLineWidth: 1.2
     }
   }
 ];
