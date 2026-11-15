@@ -96,6 +96,14 @@ BASELINE_YEARS = (2003, 2020)
 REGIONS = {
     "argentina_chile": (-76.0, -56.0, -53.0, -17.0),
     "sudamerica": (-85.0, -57.0, -32.0, 14.0),   # cobertura de los datos de 2026 bajados por API
+    # Todo el continente: Alaska a Tierra del Fuego. 2026 se bajó en tres zonas sin solaparse:
+    # sudamerica + zona_norte (-170, 14, -50, 72) + zona_centro (-95, 5, -85, 14)  -> datos_2026/api/
+    "america": (-170.0, -57.0, -30.0, 72.0),
+    # Europa (Evaristo): Islandia y Portugal hasta 45° E. Ajustable; no se solapa con las zonas de América.
+    "europa": (-25.0, 34.0, 45.0, 72.0),
+    # África (Evaristo): Cabo Verde y Senegal hasta Seychelles y Mauricio; de Ciudad del Cabo a Bizerta (Túnez).
+    # 2026 se bajó como zona_africa (-26, -36, 63, 34) + la franja 34-37.6 N que ya trae zona_europa.
+    "africa": (-26.0, -36.0, 63.0, 37.6),
     "global": (-180.0, -90.0, 180.0, 90.0),
 }
 DEFAULT_REGION = "argentina_chile"

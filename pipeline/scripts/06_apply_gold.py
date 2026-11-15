@@ -172,7 +172,12 @@ def main() -> int:
     args = ap.parse_args()
 
     silver_dir = config.layer("silver", args.data_dir) / f"region={args.region}"
-    factors = config.layer("models", args.data_dir) / "factores.parquet"
+    # Factores de esta región (models/region=<r>/, paso 05). La región por defecto puede usar todavía la copia en
+    # models/ de versiones anteriores del 05; las demás no, para no aplicar factores de otra región sin darse cuenta.
+    models = config.layer("models", args.data_dir)
+    factors = models / f"region={args.region}" / "factores.parquet"
+    if not factors.exists() and args.region == config.DEFAULT_REGION:
+        factors = models / "factores.parquet"
     if not silver_dir.is_dir() or not any(silver_dir.rglob("*.parquet")):
         print(f"No hay silver en {silver_dir}. Corre antes el paso 03 con --region {args.region}")
         return 1

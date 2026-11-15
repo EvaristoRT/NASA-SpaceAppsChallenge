@@ -343,13 +343,17 @@ def main() -> int:
     gold = config.layer("gold", args.data_dir)
     source = gold / f"region={args.region}" / "harmonized.parquet"
     silver = config.layer("silver", args.data_dir) / f"region={args.region}"
-    metrics_path = config.layer("models", args.data_dir) / "metrics.json"
+    models = config.layer("models", args.data_dir)
+    metrics_path = models / f"region={args.region}" / "metrics.json"
+    if not metrics_path.exists() and args.region == config.DEFAULT_REGION:
+        metrics_path = models / "metrics.json"   # copia de compatibilidad del 05
     missing = [p for p in (source, silver, metrics_path) if not p.exists()]
     if missing:
         print("Faltan entradas requeridas:\n" + "\n".join(f"  - {p}" for p in missing))
         return 1
 
-    delivery = gold / "entrega"
+    # La región por defecto sigue en gold/entrega (lo que ya usan el backend local y DESPLIEGUE.md); las demás aparte.
+    delivery = gold / ("entrega" if args.region == config.DEFAULT_REGION else f"entrega_{args.region}")
     delivery.mkdir(parents=True, exist_ok=True)
     silver_glob = sql_path(silver / "**" / "*.parquet")
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
