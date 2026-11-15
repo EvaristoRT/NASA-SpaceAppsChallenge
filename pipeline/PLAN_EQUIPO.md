@@ -15,7 +15,8 @@
 | Dirección | MODIS 2001–2011 se convierte a **unidades VIIRS**. De 2012 en adelante la serie es VIIRS real |
 | VIIRS de referencia | **Solo S-NPP**: es el único que existe desde 2012. Si se suman NOAA-20/21, los conteos "suben" en 2018 y 2023 sin que haya más fuego |
 | MODIS | Terra + Aqua, collection 6.1, tipo **archive** (no NRT) |
-| Región | Primero **Argentina + Chile**; después **global** con el mismo código, cambiando un parámetro |
+| Región | **La conversión (bronze) es global desde el inicio**, una sola vez. El filtro de región se aplica a partir de la capa silver (`--region argentina_chile` o `--region global`). MVP con Argentina + Chile; para pasar a global solo se vuelven a correr silver → calibración → modelo → gold, sin reconvertir |
+| Estratos del modelo | Con Argentina + Chile basta `terreno × mes`. En global se agrega **hemisferio o banda de latitud** (enero es verano en el sur e invierno en el norte). El código debe aceptar ese estrato desde el principio |
 | Limpieza | Fuera `type` 1 (volcán) y 3 (offshore). Fuera confianza `low`. `type` 2 (fuente estática) se marca aparte |
 | Unidad para calibrar | Hexágono **H3 resolución 5 × mes** |
 | Corte de prueba | Entrenar **2012–2019**, probar **2020–2025**. Nadie lo cambia |
@@ -40,9 +41,9 @@
 ## Quién hace qué
 
 ### Dev A — MODIS + tabla de calibración (Romero)
-1. Descargar **MODIS C6.1, 2001–2025** (Argentina y Chile primero; global después).
-2. Escribir y probar el script de conversión `scripts/01_to_parquet.py` (lo usa también Dev B).
-3. Convertir MODIS → `bronze/sensor=MODIS/`.
+1. ~~Descargar MODIS 2000–2025~~ ✅ ya está (global, todos los países).
+2. Escribir y probar el script de conversión `scripts/01_to_parquet.py` (lo usa también Dev B). Probar primero con un año.
+3. Convertir **todo MODIS, global** → `bronze/sensor=MODIS/`.
 4. Revisión de calidad de MODIS (`scripts/02_qa.py`): años completos, duplicados, nulos, rangos de fecha por satélite.
 5. Cuando tenga el bronze de VIIRS de Dev B: armar la **capa silver** (`03_silver.py`) y la **tabla de calibración** (`04_calibration_set.py`), y repartirla.
 6. Al final, con el modelo de Dev C: aplicar a 2001–2011 y exportar `harmonized.parquet` (`06_apply_gold.py`, `07_export.py`).
@@ -51,8 +52,8 @@
 **Entrega:** `bronze/sensor=MODIS/`, `calibration.parquet`, `harmonized.parquet`, `hotspots.parquet`.
 
 ### Dev B — VIIRS + cobertura del suelo
-1. Descargar **VIIRS S-NPP 2012–2025** (Argentina y Chile primero; global después).
-2. Con el script de Dev A, convertir VIIRS → `bronze/sensor=VIIRS/`.
+1. ~~Descargar VIIRS S-NPP 2012–2025~~ ✅ ya está (global, todos los países).
+2. Con el script de Dev A, convertir **todo VIIRS S-NPP, global** → `bronze/sensor=VIIRS/` (dejarlo corriendo; es lo más pesado).
 3. Revisión de calidad de VIIRS con el mismo `02_qa.py`.
 4. **Capa de cobertura del suelo por hexágono** (`scripts/aux_landcover.py`): para cada hexágono H3 r5, cuál es el tipo de terreno dominante (bosque, pastizal, cultivo, etc.). Fuente sugerida: MODIS Land Cover **MCD12Q1** (sirve también para lo global). Salida: `aux/h3_landcover.parquet` con `h3_r5, landcover_class, pct`.
    → Esto **no depende de los datos de fuego**, así que se puede empezar desde ya.
@@ -90,7 +91,10 @@
 | 4 | Nivel 1 con datos reales + gráfica de validación | C | 3 |
 | 5 | `harmonized.parquet` + `hotspots.parquet` entregados al equipo de front | A | 4 |
 | 6 | Serie extendida hasta hoy con NRT (y NOAA-20 si S-NPP paró) | B, C | 5 |
-| 7 | Nivel 2 / intervalos / versión global | todos | 6 |
+| 7 | **Versión global**: landcover global, silver → calibración → modelo (con estrato de hemisferio) → gold con `--region global` | todos | 5 |
+| 8 | Nivel 2 / intervalos | C | 5 |
+
+**Costo estimado de pasar a global** (con el bronze global ya hecho): unas **3–5 horas**, casi todo tiempo de cómputo y la capa de cobertura del suelo global. No hay que reconvertir ni reescribir scripts.
 
 **Regla de oro:** llegar al punto 5 con el Nivel 1 antes de invertir tiempo en el Nivel 2 o en lo global.
 
