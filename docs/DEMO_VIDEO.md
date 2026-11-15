@@ -1,55 +1,177 @@
-# Guion del video demo (30 segundos)
+# Guion del video demo — 30 segundos
 
-**Para:** quien grabe el video de la entrega · **Regla de Space Apps:** el video dura **30 segundos o menos** y va en un enlace público
-(YouTube, Drive, etc.) que no pida contraseña ni registro. Si se pasa de 30 s, no compite por premios globales.
-
-**Historia:** Bolivia 2024, el año de los grandes incendios de la Chiquitanía. Con datos de FIRMS (NOAA-20, sin volcanes ni industrias),
-Bolivia tuvo ~936 mil focos en 2024 contra 290–380 mil en 2019–2023 (~2.7×), con el pico en **septiembre de 2024** (~376 mil).
-Así el calendario muestra un caso real y llamativo en segundos.
-Plan B con la misma ruta: **Canadá 2023** (1.64 M de focos, diez veces 2022; pico en agosto).
+**Proyecto:** IgnisSync · **Equipo:** MEIREKI · **Duración máxima: 0:30** (regla de Space Apps: si pasa de 30 s no compite por premios globales)
+**Idioma de la voz:** inglés (los jueces son internacionales). Cada línea trae su traducción para ensayar.
+**Historia:** Bolivia, septiembre de 2024 (incendios de la Chiquitanía). Con datos de FIRMS, Bolivia tuvo ~2.7 veces más focos en 2024
+que en un año normal, con el pico en septiembre. Plan B con el mismo guion: Canadá, agosto de 2023.
 
 ---
 
-## 1. Antes de grabar
+## Cómo se graba (recomendado)
 
-1. **Datos reales:** backend con la entrega de América (`DATA_DIR` = carpeta de `ignis-backend-america.zip`) y el front con
-   `VITE_API_URL=http://localhost:8000` (ver README §5). Comprobar que el panel **no** diga "Demo data".
-2. **Idioma: inglés** (botón EN arriba). Los jueces son internacionales.
-3. **Pantalla:** navegador a pantalla completa (F11), 1920×1080, sin barra de marcadores ni pestañas extra, zoom del navegador al 100%.
-4. **Ensayo previo (importante):** hacer la ruta completa una vez antes de grabar. La app guarda en caché las consultas y así
-   en el video no aparecen pantallas de "cargando".
-5. **Grabar:** OBS Studio, o la barra de juegos de Windows (`Win + Alt + R`). Editar en Clipchamp (viene con Windows): cortar
-   tiempos muertos y acelerar las transiciones a 1.5–2×.
-6. **Sin logos de NASA** ni contenido generado con IA en el video. Si se agrega voz o música generadas con IA, las reglas piden
-   marcarlo: mejor solo texto en pantalla.
+1. **Primero la pantalla, sin voz.** Una persona hace las acciones siguiendo los tiempos del guion. Se graba con OBS Studio o con `Win + Alt + R`.
+2. **Después la voz, aparte.** Otra persona (o la misma) lee el guion en un lugar silencioso, con el celular a unos 20 cm de la boca.
+   Se graban 2 o 3 tomas y se queda la mejor.
+3. **Se juntan en Clipchamp** (viene con Windows): se acomoda cada frase sobre su escena, se acelera la pantalla donde haga falta
+   (1.5–2×) y se agregan los textos en pantalla. **El video final debe durar 0:29 o 0:30, no más.**
 
-## 2. Ruta (30 s)
+Así no hay que hacer clics y hablar a la vez, y cada parte se puede repetir sin rehacer la otra.
 
-| Tiempo | Qué se hace | Qué muestra (funcionalidad del reto) | Texto en pantalla (opcional, en inglés) |
-|---|---|---|---|
-| 0–3 s | Globo girando, vista inicial | La app web | **"26 years of satellite fire data, one comparable series"** |
-| 3–7 s | Explorer → *Americas* → **Bolivia** (o escribir "Bolivia" en el buscador) | Elegir una región | — |
-| 7–12 s | Pestaña **Analysis**: calendario de **2024**. Pasar el cursor sobre **septiembre**, el mes más intenso, y leer la frase del mes contra lo normal | Calendario de quema, colores accesibles, mes vs. mediana histórica, anomalía | **"Sep 2024: record burning in Bolivia"** |
-| 12–15 s | Clic en **septiembre de 2024** → el mapa pinta los hexágonos con fuego de ese mes | Mapa de la actividad del mes | — |
-| 15–18 s | Bajar a la **Fig. 2** (serie 2000–2026 con banda) | Serie armonizada sin saltos en 2002, 2012 y 2018, con incertidumbre | **"MODIS + VIIRS harmonized to NOAA-20, 2000–2026"** |
-| 18–21 s | Pestaña **Prediction**: "Next three months…" y el mes más activo según la mediana | Anticipar periodos críticos | **"Expected range for the coming months"** |
-| 21–25 s | **Draw Area → Enter coordinates → Center and radius**: lat −17.0, lon −61.0, radio 150 km → *Create area* | Elegir el área con coordenadas (o dibujando) | — |
-| 25–29 s | En el área: **Period** = sep 2024 → menú **Download** → *Hotspots* (CSV) y *Calendar* (PNG) | Descarga de focos y de visualizaciones | **"Download hotspots (CSV) and charts (PNG)"** |
-| 29–30 s | Cierre | — | **"github.com/EvaristoRT/NASA-SpaceAppsChallenge"** |
+## Antes de grabar la pantalla
 
-**Ojo con la descarga de focos:** para Bolivia entera, septiembre de 2024 supera el límite de 300,000 focos por archivo y la app
-lo avisa. Por eso la descarga se muestra en el área de 150 km. Si aun así lo supera, bajar el radio a 100 km.
+- Backend con **los datos de América** y la app en **inglés** (botón **EN**). El panel **no** debe decir "Demo data".
+- Navegador a pantalla completa (`F11`), 1920×1080, zoom al 100%, sin marcadores ni otras pestañas.
+- **Ensayo completo una vez antes de grabar**: la app guarda las consultas en caché y así no aparecen pantallas de "cargando".
+- Tener a mano las coordenadas: **−17.0, −61.0, 150 km**.
+- Cursor visible y movimientos lentos y directos: nada de "buscar" con el mouse en cámara.
 
-## 3. Lo que debe quedar claro aunque se vea rápido
+## Pronunciación (para quien hable)
 
-- Se elige **cualquier zona** (país, polígono dibujado o coordenadas).
-- El calendario permite ver **qué meses y qué años** tuvieron más fuego.
-- El mes se compara **contra lo normal** de la zona.
-- La serie es **una sola desde 2000** aunque cambien los satélites, y lleva **incertidumbre**.
-- Hay **predicción** de los meses que vienen.
-- Se **descargan** los focos y las gráficas.
+| Palabra | Se dice aproximadamente |
+|---|---|
+| MODIS | *MÓU-dis* |
+| VIIRS | *víirs* (como "veers") |
+| NOAA-20 | *NÓU-a tuénti* |
+| IgnisSync | *ÍG-nis sínk* |
+| hotspots | *JÓT-spots* |
 
-## 4. Si sobra o falta tiempo
+---
 
-- **Si se pasa de 30 s:** quitar primero el paso de la Fig. 2 (15–18 s). Luego, acortar la elección de Bolivia escribiendo en el buscador.
-- **Si sobra tiempo:** cambiar a español con el botón ES durante 1 s ("bilingüe") o mostrar la navegación del calendario con el teclado.
+## GUION
+
+```
+FADE IN.
+```
+
+### ESCENA 1 — APERTURA · 0:00 → 0:03
+
+**PANTALLA:** Globo terráqueo girando, vista inicial de la app.
+**ACCIÓN:** Ninguna. Se deja girar el globo.
+**TEXTO EN PANTALLA:** *IgnisSync — 26 years of fire, one comparable record*
+
+> **VOZ:** "Twenty-six years of satellite fire data. Finally comparable."
+> *(Veintiséis años de datos satelitales de fuego. Por fin comparables.)*
+
+---
+
+### ESCENA 2 — ELEGIR LA ZONA · 0:03 → 0:07
+
+**PANTALLA:** El globo se detiene sobre América.
+**ACCIÓN:**
+1. Abrir el **Explorer** → **Americas**.
+2. Clic en **Bolivia** (también vale escribir "Bolivia" en el buscador *Search place…*).
+3. El mapa vuela a Bolivia y se abre el panel.
+
+> **VOZ:** "Pick any area in the Americas. Here: Bolivia."
+> *(Elige cualquier zona de América. Aquí: Bolivia.)*
+
+---
+
+### ESCENA 3 — EL CALENDARIO · 0:07 → 0:12
+
+**PANTALLA:** Panel lateral, pestaña **Analysis**, calendario de quema.
+**ACCIÓN:**
+1. Clic en la pestaña **Analysis**.
+2. Ir al año **2024** en el calendario.
+3. Pasar el cursor despacio sobre **September**: es la casilla más intensa.
+**TEXTO EN PANTALLA:** *September 2024: record burning*
+
+> **VOZ:** "The burn calendar shows when it burns. September twenty twenty-four stands out as a record."
+> *(El calendario de quema muestra cuándo arde. Septiembre de 2024 destaca como un récord.)*
+
+---
+
+### ESCENA 4 — DÓNDE ARDIÓ · 0:12 → 0:15
+
+**PANTALLA:** El mapa de Bolivia.
+**ACCIÓN:** Clic en la casilla **September 2024**. El mapa pinta los hexágonos con fuego de ese mes.
+
+> **VOZ:** "One click shows where."
+> *(Un clic muestra dónde.)*
+
+---
+
+### ESCENA 5 — LA ARMONIZACIÓN · 0:15 → 0:19
+
+**PANTALLA:** Panel, gráfica **Fig. 2**: serie mensual 2000–2026 con su banda de incertidumbre.
+**ACCIÓN:** Bajar en el panel hasta la Fig. 2 y dejarla visible 2 segundos.
+**TEXTO EN PANTALLA:** *MODIS + VIIRS → NOAA-20 equivalent, 2000–2026*
+
+> **VOZ:** "MODIS and VIIRS, harmonized into one series, with no sensor jumps and a validated uncertainty band."
+> *(MODIS y VIIRS armonizados en una sola serie, sin saltos de sensor y con una banda de incertidumbre validada.)*
+
+---
+
+### ESCENA 6 — PREDICCIÓN · 0:19 → 0:22
+
+**PANTALLA:** Pestaña **Prediction**.
+**ACCIÓN:** Clic en **Prediction**. Se ve "Next three months…" y la lista **Coming months**.
+**TEXTO EN PANTALLA:** *Expected range for the coming months*
+
+> **VOZ:** "And it anticipates the critical months ahead."
+> *(Y anticipa los meses críticos que vienen.)*
+
+---
+
+### ESCENA 7 — TU PROPIA ÁREA · 0:22 → 0:26
+
+**PANTALLA:** Barra de herramientas de dibujo.
+**ACCIÓN:**
+1. Clic en **Draw Area** → **Enter coordinates** → **Center and radius**.
+2. Escribir **−17.0**, **−61.0** y **150** km → **Create area**.
+3. Aparece el círculo sobre la Chiquitanía.
+
+> **VOZ:** "Draw your own area, or type its coordinates…"
+> *(Dibuja tu propia área, o escribe sus coordenadas…)*
+
+---
+
+### ESCENA 8 — DESCARGAS · 0:26 → 0:29
+
+**PANTALLA:** Panel del área dibujada.
+**ACCIÓN:**
+1. **Period:** septiembre 2024.
+2. Abrir el menú **Download** → clic en **Hotspots** (CSV).
+3. Clic en **Calendar** (PNG). Se ven las descargas en el navegador.
+**TEXTO EN PANTALLA:** *Download hotspots (CSV) and charts (PNG)*
+
+> **VOZ:** "…and download the hotspots and the charts."
+> *(…y descarga los focos y las gráficas.)*
+
+---
+
+### ESCENA 9 — CIERRE · 0:29 → 0:30
+
+**PANTALLA:** Fondo oscuro con el nombre del proyecto y el enlace.
+**TEXTO EN PANTALLA:** **IgnisSync** · *github.com/EvaristoRT/NASA-SpaceAppsChallenge*
+
+> **VOZ:** "IgnisSync."
+
+```
+FADE OUT.
+```
+
+---
+
+## Voz completa, para leer de corrido
+
+> Twenty-six years of satellite fire data. Finally comparable.
+> Pick any area in the Americas. Here: Bolivia.
+> The burn calendar shows when it burns. September twenty twenty-four stands out as a record.
+> One click shows where.
+> MODIS and VIIRS, harmonized into one series, with no sensor jumps and a validated uncertainty band.
+> And it anticipates the critical months ahead.
+> Draw your own area, or type its coordinates… and download the hotspots and the charts.
+> IgnisSync.
+
+**74 palabras.** A un ritmo de presentación ágil (~2.6 palabras por segundo) son unos **28–29 segundos**. Si en el ensayo
+pasa de 30 s, quitar la frase de la escena 5 que va después de "one series" (*"with no sensor jumps…"*).
+
+## Avisos
+
+- **Descarga de focos:** para Bolivia entera, septiembre de 2024 supera el límite de 300,000 focos por archivo y la app lo avisa.
+  Por eso se descarga en el círculo de 150 km. Si aun así lo supera, bajar el radio a 100 km.
+- **No afirmar cifras que no se vean en pantalla.** La voz dice "record", no un número: la cifra exacta la muestra el panel.
+- **Sin logos de NASA** en el video. Si se usa voz o música generadas con IA, las reglas piden marcarlo; con voz humana no hace falta.
+- **Plan B (Canadá):** mismo guion, cambiando "Bolivia" por "Canada", "September 2024" por "August 2023", y las coordenadas por
+  **58.0, −118.0, 150 km** (norte de Alberta).
