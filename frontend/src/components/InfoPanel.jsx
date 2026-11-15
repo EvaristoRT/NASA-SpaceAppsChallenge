@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
+import { ZONES } from '../data/zonesData';
+import { continentIdOf } from '../utils/continents';
 import ZoneSummary from './ZoneSummary';
 import AreaSummary from './AreaSummary';
 import AnalysisView from './AnalysisView';
@@ -13,6 +15,8 @@ export default function InfoPanel({
   zone,
   drawnArea,
   onCloseZone,
+  onNavigate,
+  onGoWorld,
   onCloseArea,
   onDeepZoom,
   onStartOrbit,
@@ -25,6 +29,9 @@ export default function InfoPanel({
   const isArea = Boolean(drawnArea);
 
   const localized = !isArea && zone ? localizeZone(zone, lang) : null;
+  // Ruta: Mundo > continente > país. Cada tramo anterior al actual es un botón.
+  const parent = !isArea && zone && zone.category === 'País' ? ZONES.find((z) => z.id === continentIdOf(zone)) : null;
+  const parentName = parent ? localizeZone(parent, lang).name : '';
   const typeLabel = isArea
     ? t(
         drawnArea.type === 'rectangle'
@@ -53,6 +60,17 @@ export default function InfoPanel({
             </div>
           ) : (
             <div>
+              <nav className="zone-crumbs" aria-label={t('zoneDrawer.path')}>
+                <button type="button" onClick={onGoWorld}>{t('zoneDrawer.world')}</button>
+                {parent && (
+                  <>
+                    <span aria-hidden="true">›</span>
+                    <button type="button" onClick={() => onNavigate(parent)}>{parentName}</button>
+                  </>
+                )}
+                <span aria-hidden="true">›</span>
+                <span aria-current="location">{localized.name}</span>
+              </nav>
               <div className="zone-category-badge" data-category={zone.category}>{localized.category}</div>
               <h2 className="zone-title">{localized.name}</h2>
               {localized.nativeName && localized.nativeName !== localized.name && (
@@ -64,7 +82,9 @@ export default function InfoPanel({
         <button
           className="btn-close"
           onClick={isArea ? onCloseArea : onCloseZone}
-          aria-label={t(isArea ? 'drawnAreaDrawer.close' : 'zoneDrawer.close')}
+          aria-label={
+            isArea ? t('drawnAreaDrawer.close') : parent ? t('zoneDrawer.closeToContinent', { continent: parentName }) : t('zoneDrawer.close')
+          }
         >
           <X size={18} />
         </button>

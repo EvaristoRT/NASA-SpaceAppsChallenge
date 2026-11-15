@@ -208,21 +208,37 @@ export const MAP_STYLES = [
     name: 'Satélite Fotorrealista',
     styleUrl: 'mapbox://styles/mapbox/satellite-streets-v12',
     icon: '🛰️',
-    description: 'Fotografía satelital de alta resolución con capas de carreteras y relieve.'
+    description: 'Fotografía satelital de alta resolución con capas de carreteras y relieve.',
+    // Colores de nuestras capas de países (fronteras, hover y selección) sobre esta base. `casing` es el contorno oscuro bajo la selección.
+    overlay: {
+      line: 'rgba(255, 255, 255, 0.7)', lineOpacity: 0.85, fill: '#ffffff',
+      hover: '#ffffff', hoverFill: 0.16, hoverLine: '#ffffff',
+      highlightFill: 0.25, casing: '#151622'
+    }
   },
   {
-    id: 'streets',
-    name: 'Cartografía Urbana',
-    styleUrl: 'mapbox://styles/mapbox/streets-v12',
-    icon: '🗺️',
-    description: 'Mapa vectorial detallado con nombres de países, ciudades y redes viales.'
+    id: 'political',
+    name: 'Político',
+    styleUrl: 'mapbox://styles/mapbox/dark-v11',
+    icon: '🧭',
+    description: 'Fronteras de países y estados sobre fondo oscuro, sin carreteras.',
+    overlay: {
+      line: 'rgba(223, 225, 226, 0.45)', lineOpacity: 0.8, fill: '#dfe1e2',
+      hover: '#ffffff', hoverFill: 0.14, hoverLine: '#ffffff',
+      highlightFill: 0.2, casing: '#151622'
+    }
   },
   {
     id: 'outdoors',
     name: 'Relieve & Topografía',
     styleUrl: 'mapbox://styles/mapbox/outdoors-v12',
     icon: '🏔️',
-    description: 'Énfasis en curvas de nivel, cadenas montañosas y accidentes geográficos.'
+    description: 'Énfasis en curvas de nivel, cadenas montañosas y accidentes geográficos.',
+    overlay: {
+      line: 'rgba(21, 22, 34, 0.6)', lineOpacity: 0.85, fill: '#151622',
+      hover: '#1b2b85', hoverFill: 0.14, hoverLine: '#1b2b85',
+      highlightFill: 0.38, casing: '#151622'
+    }
   }
 ];
 

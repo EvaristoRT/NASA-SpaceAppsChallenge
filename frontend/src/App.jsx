@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Globe from './components/Globe';
 import Navbar from './components/Navbar';
 import SidebarZones from './components/SidebarZones';
@@ -6,7 +6,8 @@ import InfoPanel from './components/InfoPanel';
 import DrawToolbar from './components/DrawToolbar';
 import MapControls from './components/MapControls';
 import CoordinatesHUD from './components/CoordinatesHUD';
-import { MAP_STYLES } from './data/zonesData';
+import { MAP_STYLES, ZONES } from './data/zonesData';
+import { continentIdOf } from './utils/continents';
 import { AlertCircle, X } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import './App.css';
@@ -79,6 +80,39 @@ function MainApp() {
     // Al elegir un continente se abre el explorador para poder elegir uno de sus países
     if (zone?.category === 'Continente') setIsSidebarOpen(true);
   };
+
+  // Subir un nivel: país -> su continente -> sin selección. Lo usan el botón de cerrar, la tecla Esc y el clic en el océano.
+  const handleGoUp = () => {
+    if (!selectedZone) return;
+    if (selectedZone.category === 'País') {
+      const parent = ZONES.find((z) => z.id === continentIdOf(selectedZone));
+      if (parent) {
+        handleSelectZone(parent);
+        return;
+      }
+    }
+    setSelectedZone(null);
+    setOrbitMode(false);
+  };
+
+  // "Mundo" en la ruta del panel: limpia la selección y vuelve a la vista global
+  const handleGoWorld = () => {
+    setSelectedZone(null);
+    setOrbitMode(false);
+    globeRef.current?.resetView();
+  };
+
+  // Esc sube un nivel (no actúa mientras se dibuja ni si el foco está en un campo de texto)
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape' || isDrawOpen || drawMode) return;
+      const tag = e.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      handleGoUp();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
 
   // Alternar rotación continua
   const handleToggleAutoSpin = () => {
@@ -191,6 +225,7 @@ function MainApp() {
         projection={projection}
         selectedZone={selectedZone}
         onSelectZone={handleSelectZone}
+        onGoUp={handleGoUp}
         autoSpin={autoSpin}
         orbitMode={orbitMode}
         isTilted={isTilted}
@@ -237,10 +272,9 @@ function MainApp() {
           key={drawnArea ? 'area' : selectedZone.id}
           zone={selectedZone}
           drawnArea={drawnArea}
-          onCloseZone={() => {
-            setSelectedZone(null);
-            setOrbitMode(false);
-          }}
+          onCloseZone={handleGoUp}
+          onNavigate={handleSelectZone}
+          onGoWorld={handleGoWorld}
           onCloseArea={() => setDrawnArea(null)}
           onDeepZoom={handleDeepZoom}
           onStartOrbit={() => setOrbitMode((prev) => !prev)}

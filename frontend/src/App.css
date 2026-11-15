@@ -614,6 +614,36 @@
   gap: 12px;
 }
 
+.zone-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.zone-crumbs button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.zone-crumbs button:hover {
+  color: var(--text);
+}
+
+.zone-crumbs [aria-current] {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .zone-category-badge {
   font-size: 13px;
   font-weight: 600;

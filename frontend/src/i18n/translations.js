@@ -27,9 +27,9 @@ export const translations = {
         name: 'Satélite Fotorrealista',
         desc: 'Fotografía satelital de alta resolución con capas de carreteras y relieve.'
       },
-      streets: {
-        name: 'Cartografía Urbana',
-        desc: 'Mapa vectorial detallado con nombres de países, ciudades y redes viales.'
+      political: {
+        name: 'Político',
+        desc: 'Fronteras de países y estados sobre fondo oscuro, sin carreteras.'
       },
       outdoors: {
         name: 'Topografía y Relieve',
@@ -101,6 +101,9 @@ export const translations = {
     },
     zoneDrawer: {
       close: 'Cerrar panel',
+      closeToContinent: 'Cerrar y volver a {continent}',
+      path: 'Ruta',
+      world: 'Mundo',
       copyCoords: 'Copiar latitud y longitud',
       copy: 'Copiar',
       copied: 'Copiado',
@@ -207,9 +210,9 @@ export const translations = {
         name: 'Photorealistic Satellite',
         desc: 'High-resolution satellite photography with roads and terrain relief.'
       },
-      streets: {
-        name: 'Urban Cartography',
-        desc: 'Detailed vector map with country names, cities, and road networks.'
+      political: {
+        name: 'Political',
+        desc: 'Country and state borders on a dark background, no roads.'
       },
       outdoors: {
         name: 'Topography & Relief',
@@ -281,6 +284,9 @@ export const translations = {
     },
     zoneDrawer: {
       close: 'Close panel',
+      closeToContinent: 'Close and go back to {continent}',
+      path: 'Path',
+      world: 'World',
       copyCoords: 'Copy latitude and longitude',
       copy: 'Copy',
       copied: 'Copied',

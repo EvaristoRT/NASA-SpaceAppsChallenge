@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { ZONES } from '../data/zonesData';
+import { ZONES, MAP_STYLES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
 import { continentIdOf } from '../utils/continents';
@@ -32,6 +32,7 @@ const Globe = forwardRef(function Globe(
     projection,
     selectedZone,
     onSelectZone,
+    onGoUp,
     autoSpin,
     orbitMode,
     isTilted,
@@ -458,6 +459,8 @@ const Globe = forwardRef(function Globe(
   onCameraSettledRef.current = onCameraSettled;
   const onSelectZoneRef = useRef(onSelectZone);
   onSelectZoneRef.current = onSelectZone;
+  const onGoUpRef = useRef(onGoUp);
+  onGoUpRef.current = onGoUp;
   const onFlightChangeRef = useRef(onFlightChange);
   onFlightChangeRef.current = onFlightChange;
   const flightIdRef = useRef(0);
@@ -554,6 +557,12 @@ const Globe = forwardRef(function Globe(
     const paint = isContinent ? soft : strong;
     map.setPaintProperty(`zones-${kind}-line`, 'line-width', paint.width);
     map.setPaintProperty(`zones-${kind}-line`, 'line-opacity', paint.opacity);
+    // Contorno oscuro bajo la selección: la separa del fondo en las vistas claras
+    if (kind === 'highlight' && map.getLayer('zones-highlight-casing')) {
+      map.setFilter('zones-highlight-casing', filter);
+      map.setPaintProperty('zones-highlight-casing', 'line-width', paint.width + 2.6);
+      map.setPaintProperty('zones-highlight-casing', 'line-opacity', paint.opacity * 0.7);
+    }
   };
 
   // Etiqueta con el nombre de la zona bajo el cursor (en el idioma activo). Sigue al cursor.
@@ -574,7 +583,9 @@ const Globe = forwardRef(function Globe(
       });
     }
     const popup = hoverPopupRef.current;
-    popup.setLngLat(lngLat).setText(localizeZone(zone, langRef.current).name);
+    // El nivel va en la etiqueta ("Continente · África", "País · Chile") para saber qué elegirá el clic
+    const localized = localizeZone(zone, langRef.current);
+    popup.setLngLat(lngLat).setText(`${localized.category} · ${localized.name}`);
     if (!popup.isOpen()) popup.addTo(map);
   };
 
@@ -612,10 +623,14 @@ const Globe = forwardRef(function Globe(
 
   // Capas de países y continentes, con los límites de Mapbox (`mapbox.country-boundaries-v1`): costas y fronteras exactas a cualquier zoom.
   // Un continente no tiene polígono propio: se ilumina con los de todos sus países (ver applyZoneHighlight).
+  // Colores de las capas de zonas según la vista activa (cada fondo pide los suyos para que se vean)
+  const overlayForStyle = () => (MAP_STYLES.find((s) => s.id === currentStyleIdRef.current) || MAP_STYLES[0]).overlay;
+
   const setupZoneLayers = (map) => {
     if (!map) return;
+    const ov = overlayForStyle();
 
-    ['zones-highlight-line', 'zones-highlight-fill', 'zones-hover-line', 'zones-hover-fill', 'zones-line', 'zones-fill'].forEach((id) => {
+    ['zones-highlight-line', 'zones-highlight-casing', 'zones-highlight-fill', 'zones-hover-line', 'zones-hover-fill', 'zones-line', 'zones-fill'].forEach((id) => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
     ['country-boundaries', 'zones-geojson', 'zones-outline'].forEach((id) => {
@@ -631,7 +646,7 @@ const Globe = forwardRef(function Globe(
       id: 'zones-fill',
       type: 'fill',
       filter: WORLDVIEW_FILTER,
-      paint: { 'fill-color': '#dfe1e2', 'fill-opacity': 0.08 }
+      paint: { 'fill-color': ov.fill, 'fill-opacity': 0.08 }
     });
 
     // Fronteras y costas (colores, anchos y opacidad originales); uniones y extremos redondeados
@@ -642,11 +657,22 @@ const Globe = forwardRef(function Globe(
       filter: WORLDVIEW_FILTER,
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: {
-        'line-color': 'rgba(223, 225, 226, 0.45)',
+        'line-color': ov.line,
         'line-width': ['interpolate', ['linear'], ['zoom'], 1, 0.9, 4, 1.4, 7, 2.0],
-        'line-opacity': 0.8
+        'line-opacity': 0,
+        'line-opacity-transition': { duration: 500, delay: 0 }
       }
     });
+    // Fundido de entrada: se muestran cuando llegan las teselas de la fuente; si no hay aviso, a los 1.5 s (nunca quedan invisibles)
+    const revealLines = () => {
+      map.off('sourcedata', onZonesData);
+      if (map.getLayer('zones-line')) map.setPaintProperty('zones-line', 'line-opacity', ov.lineOpacity);
+    };
+    const onZonesData = (e) => {
+      if (e.sourceId === 'country-boundaries' && e.isSourceLoaded) revealLines();
+    };
+    map.on('sourcedata', onZonesData);
+    setTimeout(revealLines, 1500);
 
     // Hover: el país (o el continente) bajo el cursor
     map.addLayer({
@@ -654,7 +680,7 @@ const Globe = forwardRef(function Globe(
       id: 'zones-hover-fill',
       type: 'fill',
       filter: zoneFilter(null),
-      paint: { 'fill-color': '#ffffff', 'fill-opacity': 0.14 }
+      paint: { 'fill-color': ov.hover, 'fill-opacity': ov.hoverFill }
     });
     map.addLayer({
       ...base,
@@ -662,7 +688,7 @@ const Globe = forwardRef(function Globe(
       type: 'line',
       filter: zoneFilter(null),
       layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': '#ffffff', 'line-width': 2.0, 'line-opacity': 0.9 }
+      paint: { 'line-color': ov.hoverLine, 'line-width': 2.0, 'line-opacity': 0.9 }
     });
 
     // Selección = amarillo neón de la marca
@@ -671,7 +697,15 @@ const Globe = forwardRef(function Globe(
       id: 'zones-highlight-fill',
       type: 'fill',
       filter: zoneFilter(selectedZoneRef.current),
-      paint: { 'fill-color': '#e7f434', 'fill-opacity': 0.2 }
+      paint: { 'fill-color': '#e7f434', 'fill-opacity': ov.highlightFill }
+    });
+    map.addLayer({
+      ...base,
+      id: 'zones-highlight-casing',
+      type: 'line',
+      filter: zoneFilter(selectedZoneRef.current),
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': ov.casing, 'line-width': 5.6, 'line-opacity': 0.7 }
     });
     map.addLayer({
       ...base,
@@ -747,6 +781,26 @@ const Globe = forwardRef(function Globe(
     });
   };
 
+  // Vista "Político": sin carreteras ni aeropuertos y con los límites de estados bien marcados. Todo sale de las teselas que el estilo
+  // ya pide (capas `road` y `aeroway`, y `admin-1-boundary`), así que no cuesta ninguna descarga extra.
+  const applyPoliticalTweaks = (map) => {
+    if (!map || currentStyleIdRef.current !== 'political') return;
+    try {
+      for (const layer of map.getStyle().layers) {
+        const source = layer['source-layer'];
+        if (source === 'road' || source === 'aeroway') map.setLayoutProperty(layer.id, 'visibility', 'none');
+      }
+      if (map.getLayer('admin-1-boundary')) {
+        map.setPaintProperty('admin-1-boundary', 'line-color', '#2491ff');
+        map.setPaintProperty('admin-1-boundary', 'line-opacity', 0.95);
+        map.setPaintProperty('admin-1-boundary', 'line-dasharray', [3, 2]);
+        map.setPaintProperty('admin-1-boundary', 'line-width', ['interpolate', ['linear'], ['zoom'], 2, 0.8, 5, 1.4, 8, 2]);
+      }
+    } catch (e) {
+      console.warn('No se pudo ajustar la vista política:', e);
+    }
+  };
+
   // Configuración integral tras carga de cualquier estilo cartográfico
   const applyMapConfiguration = (map) => {
     if (!map) return;
@@ -778,6 +832,7 @@ const Globe = forwardRef(function Globe(
     // 3b. Etiquetas del mapa en el idioma activo (el estilo nuevo trae sus textos originales)
     labelOriginalsRef.current = new Map();
     applyMapLanguage(map);
+    applyPoliticalTweaks(map);
 
     // 4. Recrear capas de zonas y dibujo con protección de errores
     try {
@@ -969,6 +1024,7 @@ const Globe = forwardRef(function Globe(
 
         const picked = pickZone(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }), map);
         if (picked) onSelectZoneRef.current(picked);
+        else if (onGoUpRef.current) onGoUpRef.current(); // clic en el océano: subir un nivel
       });
 
       // Doble clic para finalizar polígono por vértices
