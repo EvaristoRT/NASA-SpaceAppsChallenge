@@ -1,7 +1,7 @@
 # Plan del equipo de datos — Armonización MODIS / VIIRS
 
-**Equipo de datos:** Paco, Evaristo y Carlos. El front y la API los hace el equipo web (los otros dos compañeros).
-**Versión del plan:** 2026-11-14 (reemplaza a la anterior: cambia el sensor de referencia y dónde viven los datos).
+**Equipo de datos:** Evaristo y Carlos (Paco dejó el equipo el 2026-11-15). El front y la API los hace el equipo web.
+**Versión del plan:** 2026-11-15 (cambia "Quién hace qué": reparto entre dos, aceptado en [PROPUESTA_CARLOS_ENTREGA.md](PROPUESTA_CARLOS_ENTREGA.md)).
 
 **Lo que entregamos al equipo web:**
 - `harmonized.parquet`: la serie armonizada de 2000-11 hasta hoy, por hexágono y día, con la anomalía ya calculada.
@@ -35,24 +35,22 @@ Cómo instalar y correr: [README.md](README.md). Las constantes de este plan viv
 
 ## Quién hace qué
 
-Propuesta según lo que cada quien ya tenía avanzado. Se puede intercambiar, pero **cada paso tiene un solo dueño**.
+Desde 2026-11-15 el equipo de datos son dos. **Cada script tiene un solo dueño**; si otro lo cambia, avisa en el repo.
 
-### Evaristo — conversión, tabla de calibración y serie final
-1. ✅ `01_to_parquet.py` (su script, ahora también lee los bloques de 2026).
-2. Correr el 01 completo en su máquina y confirmar los totales con el 02.
-3. `04_calibration_set.py`: días-celda, focos y FRP por hexágono r5 × mes, **una columna por satélite**.
-4. `06_apply_gold.py`: aplicar los factores y armar `harmonized.parquet`.
+### Evaristo — código de conversión, calibración, serie final y entrega, y despliegue
+- Dueño del código de ✅ `01_to_parquet.py`, ✅ `04_calibration_set.py`, ✅ `06_apply_gold.py` y ✅ `07_export.py` (este último era de Paco).
+- **Despliegue** con el equipo web: Render (API), Vercel (`VITE_API_URL`) y reiniciar Render cuando haya un release de datos nuevo. Ver [DESPLIEGUE.md](DESPLIEGUE.md).
 
-### Paco — limpieza, H3 y entrega al equipo web
-1. `03_silver.py`: limpieza, máscara de fuentes estáticas, celdas H3 (r8, r6, r5, r3) y filtro de región. Aquí va lo que ya tenía de ingesta canónica e indexación H3; el H3 se calcula con la extensión `h3` de DuckDB, no fila por fila en Python.
-2. `07_export.py`: anomalías, `hotspots.parquet` y `LEEME_ENTREGA.md`.
-3. Acordar con Manuel cómo lee el backend la entrega (ver "Punto abierto").
+### Carlos — datos de entrada, limpieza, modelo y publicación de la entrega
+- Dueño del código de ✅ `00b_descargar_2026.sh`, ✅ `02_qa.py`, ✅ `03_silver.py` (era de Paco) y ✅ `05_model.py`.
+- **Genera la entrega en su máquina** (cadena 01 → 07 `--zip`) y **publica los releases de datos** en GitHub.
+- **Contacto de datos con Manuel.**
 
-### Carlos — datos, calidad y modelo
-1. ✅ Datos de 2026: 4.4 M de focos de cuatro satélites, 1 ene → 14 nov (S-NPP hasta el 2 nov).
-2. ✅ `02_qa.py`. Correrlo sobre todo el bronze y avisar de lo que salga raro.
-3. `05_model.py`: factores nivel 1, validación temporal, gráfica clave y control con FRP. Empezar con una tabla de calibración falsa para no esperar al paso 04.
-4. Refrescar la cola NRT de 2026 (`00b_descargar_2026.sh`) antes de la entrega final.
+### Reglas entre los dos
+- **Una sola máquina genera la entrega: la de Carlos.** Ningún otro publica releases de datos.
+- Si alguien cambia el código de 01, 04, 06 o 07, avisa a Carlos en el repo para volver a generar la entrega.
+- Antes de publicar un release nuevo, Carlos lo anota en el repo: con Render desplegado, la app toma el release `latest` la próxima vez que el servidor arranca.
+- Paco hizo `03_silver.py` y `07_export.py`; su trabajo queda en el historial de git.
 
 ---
 
@@ -75,7 +73,7 @@ Propuesta según lo que cada quien ya tenía avanzado. Se puede intercambiar, pe
 
 ## Punto abierto con el equipo web
 
-Hoy hay **dos armonizaciones** en el repo: la del backend (`backend/ignis/harmonize.py`, referencia MODIS, hecha con datos sintéticos para que el front pudiera avanzar) y la de este pipeline (referencia NOAA-20). En la demo solo puede quedar una. Propuesta: el backend sirve lo que entrega el paso 07 y deja de calcular la suya. Lo cierra Paco con Manuel antes del punto 5.
+✅ **Cerrado el 2026-11-15.** El backend sirve lo que entrega el paso 07 (opción B de [PLAN_INTEGRACION_WEB.md](PLAN_INTEGRACION_WEB.md)) y ya no usa `backend/ignis/harmonize.py` con datos reales. Manuel lo integró en `d688866`.
 
 ---
 

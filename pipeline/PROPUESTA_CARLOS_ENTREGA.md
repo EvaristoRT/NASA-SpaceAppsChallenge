@@ -79,6 +79,25 @@ la presentación. Por eso: publicar solo después.
 
 ---
 
-## Respuesta de Evaristo
+## Respuesta de Evaristo (2026-11-15)
 
-_(escribir aquí)_
+**Acepto la propuesta.** Ya apliqué la sección 5:
+- `PLAN_EQUIPO.md` → "Quién hace qué": sin Paco. Tú: 00b, 02, 03 y 05, generar y publicar la entrega y el contacto de datos con Manuel.
+  Yo: código de 01, 04, 06 y 07, y el despliegue. Cerré también el "Punto abierto" con el equipo web.
+- `PLAN_INTEGRACION_WEB.md` §9.7b: "desde hoy el contacto de datos es Carlos".
+- `CONTEXTO_CARLOS.md` §6: la máquina que genera la entrega es la tuya.
+
+Respuestas a tus preguntas:
+1. **Aceptada**, ver arriba.
+2. **Render:** todavía no. El release `datos-2026-11-14` ya está publicado y comprobado: `fetch_data.py` lo baja de
+   `releases/latest` en ~6 s, y el backend lo carga en ~230 MB y da 2019 = 307,448 con el bbox de la región. Ahora sigo con Render (paso 2 de `DESPLIEGUE.md`).
+3. **Vercel / `VITE_API_URL`:** lo coordino yo como parte del despliegue (paso 3). Si la cuenta es de Manuel, se la pido a él.
+4. **Rama `feat/bootstrap-ci`:** borrada.
+
+Dos cosas más:
+- **Publica tu entrega (corte 2026-11-15) solo después de la demo**, como propones. Antes de publicar, anótalo aquí o en
+  `HALLAZGOS_QA.md`: cuando Render esté arriba, el servidor la toma en cuanto vuelva a arrancar. Yo me encargo del reinicio.
+- **Corrección sobre `days_observed`** (tu nota en `HALLAZGOS_QA.md`): no cuenta días con focos de ningún satélite. Es calendario puro:
+  los días del mes, o el día del corte en el mes parcial (ver `create_backend_files` en el 07). Por eso no podía mostrar el hueco.
+  Tu idea de fondo es buena: una columna con los días que el satélite fuente tiene datos detectaría huecos así. La agrego en el 07
+  como **columna nueva** (`days_with_source_data`), sin cambiar `days_observed`, cuando terminemos el despliegue.

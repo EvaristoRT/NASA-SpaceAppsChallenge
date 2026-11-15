@@ -114,7 +114,7 @@ Criterio: cada quien se queda con los pasos que ya conoce. Las tareas que necesi
 | E7 | Región `sudamerica`. **Antes:** poner la región en las rutas de `models/` (tu 05) y `gold/entrega/` (07), que hoy se sobrescriben entre regiones | Baja | Si sobra tiempo |
 
 ### Reglas para no pisarnos
-- **Una sola máquina genera la entrega final** (la de Evaristo, que ya tiene todo). Tú le pasas los CSV nuevos de 2026.
+- **Una sola máquina genera la entrega final: la de Carlos** (acordado en `PROPUESTA_CARLOS_ENTREGA.md`). Él corre la cadena y publica los releases.
 - Si tocas el 05, avísame para volver a correr el 06 y el 07.
 - `config.py` y `PLAN_EQUIPO.md` siguen sin cambiarse sin avisar al otro.
 

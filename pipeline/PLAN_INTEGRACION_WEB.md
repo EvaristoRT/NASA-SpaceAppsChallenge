@@ -200,7 +200,11 @@ Todavía no lo tenemos, y para la demo de la 1:00 PM está bien correr el backen
   o **Hugging Face Spaces** (Docker, 16 GB) si no alcanza.
 
 ### 9.7 Rama `feat/bootstrap-ci`
-Ya está en `main`. La borramos cuando Carlos termine de revisarla.
+✅ Borrada (2026-11-15): todo su contenido ya estaba en `main`.
+
+### 9.7b Contacto de datos desde hoy: **Carlos**
+Desde el 2026-11-15 el contacto de datos para el equipo web es **Carlos**: él genera la entrega y publica los releases de datos.
+Evaristo sigue con el despliegue (Render y Vercel). Reparto completo en `PLAN_EQUIPO.md` → "Quién hace qué".
 
 ### 9.8 Avisos nuevos de nuestra parte
 1. **Faltan 3 días de VIIRS en 2026: del 1 al 3 de agosto.** MODIS sí los tiene. Es el empalme entre los datos archive y los NRT.
