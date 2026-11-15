@@ -4,8 +4,6 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { ZONES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
-import { buildCountryDots } from '../utils/countryDots';
-import { continentIdOf } from '../utils/continents';
 import {
   generateZonesGeoJSON,
   generateZonesOutlineGeoJSON,
@@ -79,6 +77,7 @@ const Globe = forwardRef(function Globe(
   const projectionRef = useRef(projection);
   const orbitBearingRef = useRef(0);
   const hoveredZoneIdRef = useRef('');
+  const hoverPopupRef = useRef(null);
 
   // Referencias para el modo dibujo
   const drawModeRef = useRef(drawMode);
@@ -523,19 +522,37 @@ const Globe = forwardRef(function Globe(
     });
   };
 
-  // Los puntos de países siguen la zona elegida (los del continente) y el idioma (el nombre)
-  useEffect(() => {
-    if (mapRef.current && mapRef.current.isStyleLoaded()) updateCountryDots(mapRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedZone]);
+  // Bajo el cursor hay a la vez un país y su continente (los continentes están al final de los datos, así que Mapbox los devuelve primero).
+  // Siempre se prefiere el país; el continente solo si no hay ninguno debajo (por ejemplo, la Antártida).
+  const pickZoneFeature = (features) =>
+    features && features.length > 0 ? features.find((f) => f.properties.category === 'País') || features[0] : null;
+
+  // Etiqueta con el nombre de la zona bajo el cursor (en el idioma activo). Sigue al cursor.
+  const showHoverLabel = (map, lngLat, zoneId) => {
+    const zone = zoneId ? ZONES.find((z) => z.id === zoneId) : null;
+    if (!zone) {
+      if (hoverPopupRef.current) hoverPopupRef.current.remove();
+      return;
+    }
+    if (!hoverPopupRef.current) {
+      hoverPopupRef.current = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        focusAfterOpen: false,
+        offset: 14,
+        anchor: 'bottom',
+        className: 'hover-label'
+      });
+    }
+    const popup = hoverPopupRef.current;
+    popup.setLngLat(lngLat).setText(localizeZone(zone, langRef.current).name);
+    if (!popup.isOpen()) popup.addTo(map);
+  };
 
   // Al cambiar de idioma, volver a dibujar las etiquetas de los continentes
   useEffect(() => {
     if (mapRef.current && markersRef.current.length > 0) renderZoneMarkers(mapRef.current);
     if (mapRef.current && mapRef.current.isStyleLoaded()) applyMapLanguage(mapRef.current);
-    if (mapRef.current && mapRef.current.getSource('country-dots')) {
-      mapRef.current.getSource('country-dots').setData(buildCountryDots(lang));
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
@@ -565,65 +582,6 @@ const Globe = forwardRef(function Globe(
   };
 
   // Capas poligonales de países y zonas
-  // Puntos de países: al elegir un continente (o un país) se ven discretos los puntos de los países de ese continente, para
-  // poder elegirlos tocando el mapa. Sin continente elegido no se dibuja ninguno, para no meter ruido.
-  const updateCountryDots = (map) => {
-    if (!map || !map.getLayer('country-dots')) return;
-    const zone = selectedZoneRef.current;
-    const cid = continentIdOf(zone) || '';
-    const filter = ['==', ['get', 'continent'], cid];
-    ['country-dots-halo', 'country-dots', 'country-dots-label'].forEach((id) => map.setFilter(id, filter));
-    map.setPaintProperty('country-dots', 'circle-color', [
-      'case',
-      ['==', ['get', 'id'], zone && zone.category === 'País' ? zone.id : ''],
-      '#e7f434',
-      '#ffffff'
-    ]);
-  };
-
-  const setupCountryDots = (map) => {
-    if (!map) return;
-    ['country-dots-label', 'country-dots', 'country-dots-halo'].forEach((id) => {
-      if (map.getLayer(id)) map.removeLayer(id);
-    });
-    if (map.getSource('country-dots')) map.removeSource('country-dots');
-    map.addSource('country-dots', { type: 'geojson', data: buildCountryDots(langRef.current) });
-    const none = ['==', ['get', 'continent'], ''];
-
-    // halo oscuro para que el punto se lea sobre satélite y sobre mapas claros
-    map.addLayer({
-      id: 'country-dots-halo',
-      type: 'circle',
-      source: 'country-dots',
-      filter: none,
-      paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 4.5, 6, 8], 'circle-color': '#151622', 'circle-opacity': 0.55 }
-    });
-    map.addLayer({
-      id: 'country-dots',
-      type: 'circle',
-      source: 'country-dots',
-      filter: none,
-      paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 2.6, 6, 4.6], 'circle-color': '#ffffff', 'circle-opacity': 0.9 }
-    });
-    // el nombre solo aparece al acercarse
-    map.addLayer({
-      id: 'country-dots-label',
-      type: 'symbol',
-      source: 'country-dots',
-      filter: none,
-      minzoom: 3.6,
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
-        'text-size': 11,
-        'text-anchor': 'top',
-        'text-offset': [0, 0.9]
-      },
-      paint: { 'text-color': '#ffffff', 'text-halo-color': '#151622', 'text-halo-width': 1.2 }
-    });
-    updateCountryDots(map);
-  };
-
   const setupZoneLayers = (map) => {
     if (!map) return;
     const geojsonData = generateZonesGeoJSON();
@@ -632,7 +590,6 @@ const Globe = forwardRef(function Globe(
     if (map.getLayer('zones-highlight-fill')) map.removeLayer('zones-highlight-fill');
     if (map.getLayer('zones-hover-line')) map.removeLayer('zones-hover-line');
     if (map.getLayer('zones-hover-fill')) map.removeLayer('zones-hover-fill');
-    if (map.getLayer('zones-line-countries')) map.removeLayer('zones-line-countries');
     if (map.getLayer('zones-line')) map.removeLayer('zones-line');
     if (map.getLayer('zones-fill')) map.removeLayer('zones-fill');
     if (map.getSource('zones-geojson')) map.removeSource('zones-geojson');
@@ -665,37 +622,29 @@ const Globe = forwardRef(function Globe(
       }
     });
 
-    // Fronteras de los 196 países: finas y casi invisibles de lejos, para que el globo no se llene de líneas; se
-    // van marcando al acercarse. Uniones y extremos redondeados para que no se vean quebradas.
-    map.addLayer({
-      id: 'zones-line-countries',
-      type: 'line',
-      source: 'zones-outline',
-      filter: ['==', ['get', 'category'], 'País'],
-      layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: {
-        'line-color': '#dfe1e2',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 1, 0.5, 4, 0.9, 7, 1.4],
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 1.5, 0.12, 3.5, 0.3, 6, 0.5]
-      }
-    });
-
-    // Continentes y zonas especiales: el trazo principal
+    // Contornos de países y continentes (colores, anchos y opacidad originales); uniones y extremos redondeados
     map.addLayer({
       id: 'zones-line',
       type: 'line',
       source: 'zones-outline',
-      filter: ['!=', ['get', 'category'], 'País'],
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: {
         'line-color': [
           'match',
           ['get', 'category'],
-          'Continente', '#2491ff',
-          '#6a76bd'
+          'Continente', 'rgba(36, 145, 255, 0.75)',
+          'País', 'rgba(223, 225, 226, 0.45)',
+          'rgba(106, 118, 189, 0.55)'
         ],
-        'line-width': ['interpolate', ['linear'], ['zoom'], 1, 1, 4, 1.5, 7, 2.2],
-        'line-opacity': 0.75
+        'line-width': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          1, 0.9,
+          4, 1.4,
+          7, 2.0
+        ],
+        'line-opacity': 0.8
       }
     });
 
@@ -848,7 +797,6 @@ const Globe = forwardRef(function Globe(
     // 4. Recrear capas de zonas y dibujo con protección de errores
     try {
       setupZoneLayers(map);
-      setupCountryDots(map);
     } catch (err) {
       console.warn('Error setting up zone layers:', err);
     }
@@ -927,14 +875,6 @@ const Globe = forwardRef(function Globe(
         });
         resizeObserver.observe(mapContainerRef.current);
       }
-
-      // Cursor de mano sobre los puntos de países
-      map.on('mouseenter', 'country-dots', () => {
-        if (!drawModeRef.current) map.getCanvas().style.cursor = 'pointer';
-      });
-      map.on('mouseleave', 'country-dots', () => {
-        map.getCanvas().style.cursor = '';
-      });
 
       // En el mapa plano el rumbo siempre es norte arriba
       map.on('rotate', () => {
@@ -1045,29 +985,13 @@ const Globe = forwardRef(function Globe(
 
         if (drawModeRef.current) return;
 
-        // Un punto de país tiene prioridad sobre el polígono que hay debajo
-        if (map.getLayer('country-dots')) {
-          // área de clic de unos 10 px alrededor del punto: el punto es pequeño
-          const box = [
-            [e.point.x - 10, e.point.y - 10],
-            [e.point.x + 10, e.point.y + 10]
-          ];
-          const hit = map.queryRenderedFeatures(box, { layers: ['country-dots'] });
-          const dotZone = hit.length > 0 ? ZONES.find((z) => z.id === hit[0].properties.id) : null;
-          if (dotZone) {
-            onSelectZoneRef.current(dotZone);
-            return;
-          }
-        }
-
         if (!map.getLayer('zones-fill')) return;
 
-        const features = map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] });
-        if (features && features.length > 0) {
-          const featureId = features[0].properties.id;
-          const found = ZONES.find((z) => z.id === featureId);
+        const picked = pickZoneFeature(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }));
+        if (picked) {
+          const found = ZONES.find((z) => z.id === picked.properties.id);
           if (found) {
-            onSelectZone(found);
+            onSelectZoneRef.current(found);
           }
         }
       });
@@ -1172,9 +1096,10 @@ const Globe = forwardRef(function Globe(
 
         // Puntero y realce interactivo al posar el cursor sobre cualquier país
         if (!drawModeRef.current && map.getLayer('zones-fill')) {
-          const features = map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] });
-          const hoverId = features && features.length > 0 ? features[0].properties.id : '';
+          const picked = pickZoneFeature(map.queryRenderedFeatures(e.point, { layers: ['zones-fill'] }));
+          const hoverId = picked ? picked.properties.id : '';
           map.getCanvas().style.cursor = hoverId ? 'pointer' : '';
+          showHoverLabel(map, e.lngLat, hoverId);
 
           if (hoverId !== hoveredZoneIdRef.current) {
             hoveredZoneIdRef.current = hoverId;
@@ -1199,6 +1124,7 @@ const Globe = forwardRef(function Globe(
       });
 
       map.on('mouseleave', () => {
+        if (hoverPopupRef.current) hoverPopupRef.current.remove();
         if (hoveredZoneIdRef.current) {
           hoveredZoneIdRef.current = '';
           if (map.getLayer('zones-hover-fill')) {

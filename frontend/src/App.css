@@ -1468,3 +1468,26 @@
   visibility: hidden;
   pointer-events: none;
 }
+
+/* Etiqueta con el nombre del país bajo el cursor (popup de Mapbox, sin flecha ni botón) */
+.hover-label.mapboxgl-popup {
+  pointer-events: none;
+  z-index: 40;
+}
+
+.hover-label .mapboxgl-popup-content {
+  padding: 3px 9px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hover-label .mapboxgl-popup-tip {
+  display: none;
+}
