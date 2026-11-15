@@ -329,6 +329,39 @@ const Globe = forwardRef(function Globe(
     }
   }, [drawnArea]);
 
+  // Sombreado del terreno (hillshade): sin él las montañas se ven como una mancha lisa aunque el relieve 3D esté activo.
+  // Va debajo de carreteras, límites y etiquetas del estilo; las capas de zonas y de dibujo se añaden después y quedan encima.
+  const addReliefShading = (map, strong) => {
+    if (map.getLayer('relief-hillshade')) return;
+    const layers = map.getStyle().layers;
+    const anchor = layers.find((l) => l.type === 'symbol' || /^(road|bridge|tunnel|aeroway|admin|ferry|turning|waterway-label|natural-)/.test(l.id));
+    map.addLayer(
+      {
+        id: 'relief-hillshade',
+        type: 'hillshade',
+        source: 'mapbox-dem',
+        paint: strong
+          ? {
+              'hillshade-exaggeration': 0.75,
+              'hillshade-shadow-color': '#2a4a30',
+              'hillshade-accent-color': '#4f7d52',
+              'hillshade-highlight-color': '#fffbe8',
+              'hillshade-illumination-direction': 315,
+              'hillshade-illumination-anchor': 'map'
+            }
+          : {
+              'hillshade-exaggeration': 0.35,
+              'hillshade-shadow-color': '#0b1220',
+              'hillshade-accent-color': '#1b2b85',
+              'hillshade-highlight-color': '#ffffff',
+              'hillshade-illumination-direction': 315,
+              'hillshade-illumination-anchor': 'map'
+            }
+      },
+      anchor ? anchor.id : undefined
+    );
+  };
+
   // Relieve 3D para modo Topografía y Satélite (usando Mapbox Terrain-DEM)
   const applyTerrain = (map) => {
     if (!map) return;
@@ -346,10 +379,13 @@ const Globe = forwardRef(function Globe(
             maxzoom: 14
           });
         }
-        // Exageración de 2.6 en modo topografía para que las cordilleras, valles y picos montañosos resalten claramente en 3D
-        // (era 1.95: a escala de país casi no se notaba). En satélite, un relieve algo más marcado que el natural (1.6)
-        const exaggeration = isTopography ? 2.6 : 1.6;
+        // Exageración del relieve según el zoom: fuerte de lejos (a escala de país un valor bajo se ve plano) y más
+        // moderada al acercarse, para que los picos no queden desmesurados. Probado en vivo sobre Veracruz/Puebla.
+        const exaggeration = isTopography
+          ? ['interpolate', ['linear'], ['zoom'], 4, 6, 8, 4.5, 11, 3, 14, 2]
+          : ['interpolate', ['linear'], ['zoom'], 4, 3.5, 8, 2.6, 11, 1.8, 14, 1.3];
         map.setTerrain({ source: 'mapbox-dem', exaggeration });
+        addReliefShading(map, isTopography);
       } else {
         if (map.getTerrain()) {
           map.setTerrain(null);
