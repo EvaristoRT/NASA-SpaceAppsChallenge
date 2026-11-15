@@ -19,8 +19,8 @@ Objetivo a mediano plazo: toda América, por etapas, sin arriesgar lo que ya fun
 
 Era la tarea E7 de `CONTEXTO_CARLOS.md`. Cambios mínimos, de rutas; no cambia ningún cálculo.
 
-**Argentina + Chile no cambia:** con esta rama, 05 → 06 → 07 da la misma entrega que la publicada en la pre-release
-`datos-2026-11-15` (factores idénticos; `monthly.parquet` con las mismas 2,209,842 filas y las mismas sumas de valor e IC;
+**Argentina + Chile no cambia:** con esta rama, 05 → 06 → 07 da la misma entrega que la que Carlos tiene lista para el release
+`datos-2026-11-15` (aún sin publicar; factores idénticos; `monthly.parquet` con las mismas 2,209,842 filas y las mismas sumas de valor e IC;
 `hotspots/` con los mismos 14,600,732 focos). Respaldo completo en la máquina de Carlos.
 
 ## 2. Resultados de Sudamérica
@@ -61,14 +61,21 @@ no es deriva del sensor: es variación entre años, y la banda la cubre. Año pi
 | Pico con `/api/search` de toda la región (máquina de Carlos) | 517 MB | **1,346 MB** |
 | Pico estimado en Render (escalando tu medición de 340 MB) | 340 MB | **~0.9 GB** |
 
-**No cabe en Render gratis (512 MB).** Para servir Sudamérica hace falta un servidor con 1–2 GB o más
-(p. ej. Hugging Face Spaces, como ya propone `DESPLIEGUE.md`). Toda América será más grande todavía.
-Los zip de Sudamérica están armados en la máquina de Carlos pero **no publicados**.
+**No cabe en Render gratis (512 MB), pero sí en Cloud Run** (commit `4c4ee` de Evaristo, hasta 32 GB).
+Como en Cloud Run `/tmp` vive en la RAM, a ese pico hay que sumar los ~104 MB de datos descomprimidos:
+**`--memory 2Gi`** alcanza con margen para Sudamérica (hoy AR+CL usa `1Gi`).
+
+- Los zip ya llevan la región en el nombre: basta con cambiar `DATA_URL` a `.../ignis-backend-sudamerica.zip`, como dice la
+  fila "Otra región o el mundo" de `DESPLIEGUE.md`.
+- `ignis-hotspots-sudamerica.zip` pesa 892 MB: cabe en el límite de 2 GB por archivo de GitHub. Toda América probablemente no;
+  ahí habría que partirlo por año, como ya anota `DESPLIEGUE.md`.
+- Los zip de Sudamérica están armados en la máquina de Carlos pero **no publicados**.
 
 ## 4. Preguntas para Evaristo
 
 1. ¿Te parecen bien los cambios de rutas en 06 y 07? ¿Prefieres hacerlos tú?
-2. ¿Servidor para Sudamérica: Hugging Face Spaces, o seguimos solo con Argentina + Chile en la demo y la entrega?
+2. Con Cloud Run, ¿servimos Sudamérica (`--memory 2Gi`) en la entrega final, o la demo se queda con Argentina + Chile y
+   Sudamérica entra después? El front tiene que dejar dibujar fuera de Argentina y Chile (Manuel).
 3. Si vamos a toda América: hay que agregar la región en `config.py` (compartido) y bajar 2026 para Norte y Centroamérica.
    ¿Te parece una región `america` o varias (`sudamerica`, `centroamerica`, `norteamerica`)?
 
