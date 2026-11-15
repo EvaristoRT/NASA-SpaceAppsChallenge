@@ -718,13 +718,10 @@ const Globe = forwardRef(function Globe(
     setTimeout(revealLines, 1500);
 
     // Hover: el país (o el continente) bajo el cursor
-    // Nivel del efecto: el hover del cursor manda; si no hay, el de la zona elegida (1 = país, 2 = continente)
-    const hoverLevel = [
-      'case',
-      ['>', ['to-number', ['feature-state', 'hover'], 0], 0],
-      ['to-number', ['feature-state', 'hover'], 0],
-      ['to-number', ['feature-state', 'selected'], 0]
-    ];
+    // Dos niveles distintos para que se note qué se puede elegir: el hover del cursor (1 = país, 2 = continente) es mucho más marcado
+    // que el efecto fijo de la zona elegida. Así, con un continente elegido, el país bajo el cursor destaca entre los demás.
+    const hov = ['to-number', ['feature-state', 'hover'], 0];
+    const sel = ['to-number', ['feature-state', 'selected'], 0];
     map.addLayer({
       ...base,
       id: 'zones-hover-fill',
@@ -732,7 +729,7 @@ const Globe = forwardRef(function Globe(
       filter: WORLDVIEW_FILTER,
       paint: {
         'fill-color': ov.hover,
-        'fill-opacity': ['case', ['>', hoverLevel, 0], ov.hoverFill, 0],
+        'fill-opacity': ['case', ['==', hov, 1], 0.38, ['==', hov, 2], 0.2, ['>', sel, 0], ov.hoverFill, 0],
         'fill-opacity-transition': { duration: 140, delay: 0 }
       }
     });
@@ -744,8 +741,8 @@ const Globe = forwardRef(function Globe(
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: {
         'line-color': ov.hoverLine,
-        'line-width': ['match', hoverLevel, 2, 1, 2.0],
-        'line-opacity': ['match', hoverLevel, 1, 0.9, 2, 0.5, 0],
+        'line-width': ['case', ['==', hov, 1], 3.2, ['==', hov, 2], 1.2, ['==', sel, 1], 2.0, 1.0],
+        'line-opacity': ['case', ['==', hov, 1], 1, ['==', hov, 2], 0.55, ['==', sel, 1], 0.9, ['==', sel, 2], 0.5, 0],
         'line-opacity-transition': { duration: 140, delay: 0 }
       }
     });
@@ -767,6 +764,9 @@ const Globe = forwardRef(function Globe(
       paint: { 'line-color': '#e7f434', 'line-width': 3, 'line-opacity': 1.0 }
     });
     applyZoneHighlight(map, 'highlight', selectedZoneRef.current);
+    // El hover va por encima de la selección amarilla: si no, un país dentro del continente elegido apenas se distingue
+    map.moveLayer('zones-hover-fill');
+    map.moveLayer('zones-hover-line');
   };
 
   // Capa de actividad del mes elegido: hexágonos H3 con fuego, coloreados con la misma rampa del calendario.
