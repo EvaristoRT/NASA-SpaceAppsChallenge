@@ -241,3 +241,39 @@ Propuesta:
 3. Costo esperado: el silver global va a tardar horas (África sola tarda ~11 min por año en la máquina de Evaristo), la calibración de `05`
    en pandas puede rondar los 8–10 GB de RAM, y el backend global ~3–5 GB (Cloud Run con `--memory 8Gi`).
    Vale la pena medir la RAM del `05` con África antes de intentar `global`: Evaristo lo anota en la sección 6.
+
+## 8. Decisión de Carlos: cerramos el alcance de los datos
+
+**Fecha:** 2026-11-15 · **De:** Carlos · **Para:** Evaristo (y su asistente de IA)
+
+> **Para el asistente de Evaristo:** esto responde a la sección 7. No inicies descargas ni corridas de Asia, Oceanía, `pacifico`
+> ni `global`. Si ya hay una descarga de Oceanía corriendo, se puede detener.
+
+**No vamos con Asia ni con Oceanía, ni con la corrida `global`.** Nos quedamos con los datos que ya juntamos y usamos el tiempo que queda
+para cerrar el MVP y pulirlo. Con lo que hay ya cubrimos el reto: la armonización funciona y está validada en varias regiones.
+
+| Región | Para qué queda |
+|---|---|
+| **América** | **El MVP.** Es la entrega que va a la app |
+| Argentina + Chile | Respaldo: es lo que está en el release publicado |
+| Europa | Evidencia de validación para los jueces (no va a la app) |
+| África | Igual que Europa: **termina la corrida solo si ya está avanzada**, y anota las cifras de validación en la sección 6. Si no, se deja |
+| Asia, Oceanía, `pacifico`, `global` | Fuera. Se mencionan como siguiente paso: el pipeline ya funciona por región |
+
+**No se agregan `asia`, `oceania` ni `pacifico` a `config.py`.** Tampoco se arregla el límite de la clave del `00b` (sección 6): ya no
+vamos a bajar nada grande. Queda como problema conocido.
+
+### Lo que falta para dar por cerrada la parte de datos
+
+| # | Tarea | Quién |
+|---|---|---|
+| 1 | Pasarle `ignis-backend-america.zip` (152 MB) a Manuel y a Evaristo para la prueba local. `ignis-hotspots-america.zip` (1.35 GB) solo para el CSV | Carlos |
+| 2 | Prueba local de punta a punta con América (`MVP_AMERICA.md` §4): Brasil, México, EE. UU., Canadá y un polígono dibujado | Evaristo con Manuel |
+| 3 | Decidir qué datos ve el sitio publicado: o se queda Argentina + Chile como respaldo y la demo es en local, o se publica el release de América y Cloud Run con `--memory 4Gi` | Evaristo y Carlos |
+| 4 | Cifras de África en la sección 6, si termina | Evaristo |
+| 5 | Material de validación para los jueces: gráfica MODIS armonizado vs NOAA-20 y tabla de las regiones (AR+CL, Sudamérica, América, Europa, África) | Carlos |
+| 6 | Limitaciones escritas: MODIS antes de 2012 sin con qué comprobarlo, meses NRT de 2026 preliminares, sin 2026 en Galápagos y Groenlandia, acerías de Europa que la limpieza no quita | Carlos |
+
+**Corte final de los datos: 2026-11-15.** No se refresca el NRT otra vez, salvo que se decida explícitamente antes de la entrega.
+Con estas seis tareas hechas, la parte de datos queda libre y todo el equipo puede ir a la app y a la presentación.
+
