@@ -98,9 +98,9 @@ Confirmado: 0.71. Se armoniza con su propio factor (ya lo hace el modelo) y vali
 
 ---
 
-## 2026-11-14 · Evaristo (por Carlos) · intervalos de confianza 95% (rama `feat/bootstrap-ci`)
+## 2026-11-14 · Evaristo (por Carlos) · intervalos de confianza 95% (ya en `main`)
 
-En la rama `feat/bootstrap-ci`, sin tocar `main`. **Carlos: revisa y haz merge si estás de acuerdo** (toca tu `05_model.py`).
+Hecho en la rama `feat/bootstrap-ci` y pasado a `main` con acuerdo del equipo (toca `05_model.py` de Carlos).
 
 **Método:** bootstrap con 200 réplicas en el paso 05. En cada réplica se le da un peso Poisson(1) a cada hexágono r5 **y** a cada año,
 y se recalculan los factores con la misma fórmula del nivel 1. `factores.parquet` gana `factor_lo`, `factor_hi`, `factor_global_lo`, `factor_global_hi`

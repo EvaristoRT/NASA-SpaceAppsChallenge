@@ -1,6 +1,6 @@
 """Paso 05 - Modelo de armonización: factores que llevan cada satélite a "equivalente NOAA-20".
 
-RESPONSABLE: Carlos          ESTADO: nivel 1 funcionando (probado con tabla falsa)
+RESPONSABLE: Carlos          ESTADO: nivel 1 + IC 95% por bootstrap, validado con datos reales (argentina_chile)
 
 Entrada
     calibration/region=<region>/calibration.parquet     (paso 04)
