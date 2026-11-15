@@ -45,11 +45,11 @@ Siempre desde la raíz del repo, con el entorno activado:
 | 00b | `00b_descargar_2026.sh` | baja / refresca 2026 por la API (necesita MAP_KEY) | ✅ funciona |
 | 01 | `01_to_parquet.py` | zips + bloques 2026 → **bronze** (todos los focos, sin filtrar) | ✅ funciona |
 | 02 | `02_qa.py` | revisión de calidad de bronze | ✅ funciona |
-| 03 | `03_silver.py` | limpieza + celdas H3 + región → **silver** | ⏳ Paco |
+| 03 | `03_silver.py` | limpieza + celdas H3 + región → **silver** | ✅ Paco |
 | 04 | `04_calibration_set.py` | días-celda por hexágono × mes × satélite | ✅ funciona |
 | 05 | `05_model.py` | factores hacia NOAA-20 + validación | ✅ nivel 1 (probado con `--fake`; espera la tabla del 04) |
 | 06 | `06_apply_gold.py` | serie armonizada → **gold** | ✅ funciona (nivel 1) |
-| 07 | `07_export.py` | anomalías + focos para el CSV → entrega al equipo web | ⏳ Paco |
+| 07 | `07_export.py` | anomalías + focos para el CSV → entrega al equipo web | ✅ implementado; falta correr entrega real |
 
 ```powershell
 python pipeline/scripts/01_to_parquet.py      # ~40 min la primera vez (todo el archivo, global)
