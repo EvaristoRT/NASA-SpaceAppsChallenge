@@ -329,6 +329,86 @@ const Globe = forwardRef(function Globe(
     }
   }, [drawnArea]);
 
+  // Sombreado (hillshade) y curvas de nivel con altitudes sobre el terreno, para que las montañas se lean aunque el mapa no esté inclinado.
+  // Van justo debajo de las etiquetas del estilo; las capas de zonas y de dibujo se añaden después, así que quedan por encima.
+  const addReliefLayers = (map, strong) => {
+    const firstSymbol = map.getStyle().layers.find((l) => l.type === 'symbol');
+    const before = firstSymbol ? firstSymbol.id : undefined;
+
+    if (!map.getLayer('relief-hillshade')) {
+      map.addLayer(
+        {
+          id: 'relief-hillshade',
+          type: 'hillshade',
+          source: 'mapbox-dem',
+          paint: {
+            'hillshade-exaggeration': strong ? 0.6 : 0.3,
+            'hillshade-shadow-color': '#0a0c18',
+            'hillshade-highlight-color': '#ffffff',
+            'hillshade-accent-color': '#1b2b85',
+            'hillshade-illumination-direction': 335
+          }
+        },
+        before
+      );
+    }
+
+    if (!map.getSource('relief-contours')) {
+      map.addSource('relief-contours', { type: 'vector', url: 'mapbox://mapbox.mapbox-terrain-v2' });
+    }
+
+    // Curvas de nivel: las principales (índice 5 y 10) desde más lejos, las secundarias solo al acercarse
+    if (!map.getLayer('relief-contour-minor')) {
+      map.addLayer(
+        {
+          id: 'relief-contour-minor',
+          type: 'line',
+          source: 'relief-contours',
+          'source-layer': 'contour',
+          minzoom: 11,
+          filter: ['!', ['in', ['get', 'index'], ['literal', [5, 10]]]],
+          layout: { 'line-join': 'round' },
+          paint: { 'line-color': '#ffffff', 'line-opacity': strong ? 0.22 : 0.14, 'line-width': 0.6 }
+        },
+        before
+      );
+    }
+    if (!map.getLayer('relief-contour-major')) {
+      map.addLayer(
+        {
+          id: 'relief-contour-major',
+          type: 'line',
+          source: 'relief-contours',
+          'source-layer': 'contour',
+          minzoom: 9,
+          filter: ['in', ['get', 'index'], ['literal', [5, 10]]],
+          layout: { 'line-join': 'round' },
+          paint: { 'line-color': '#ffffff', 'line-opacity': strong ? 0.45 : 0.28, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.6, 14, 1.2] }
+        },
+        before
+      );
+    }
+    // Altitud (en metros) sobre las curvas principales; solo en el modo de topografía
+    if (strong && !map.getLayer('relief-contour-labels')) {
+      map.addLayer({
+        id: 'relief-contour-labels',
+        type: 'symbol',
+        source: 'relief-contours',
+        'source-layer': 'contour',
+        minzoom: 11,
+        filter: ['in', ['get', 'index'], ['literal', [5, 10]]],
+        layout: {
+          'symbol-placement': 'line',
+          'symbol-spacing': 280,
+          'text-field': ['concat', ['to-string', ['get', 'ele']], ' m'],
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-size': 10
+        },
+        paint: { 'text-color': '#ffffff', 'text-halo-color': '#151622', 'text-halo-width': 1.2 }
+      });
+    }
+  };
+
   // Relieve 3D para modo Topografía y Satélite (usando Mapbox Terrain-DEM)
   const applyTerrain = (map) => {
     if (!map) return;
@@ -347,9 +427,10 @@ const Globe = forwardRef(function Globe(
           });
         }
         // Exageración de 1.95 en modo topografía para que las cordilleras, valles y picos montañosos resalten claramente en 3D
-        // En satélite, un relieve natural de 1.35
+        // En satélite, un relieve natural de 1.35. Además, sombreado y curvas de nivel (ver addReliefLayers)
         const exaggeration = isTopography ? 1.95 : 1.35;
         map.setTerrain({ source: 'mapbox-dem', exaggeration });
+        addReliefLayers(map, isTopography);
       } else {
         if (map.getTerrain()) {
           map.setTerrain(null);
