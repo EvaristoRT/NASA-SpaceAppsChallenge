@@ -370,7 +370,7 @@ def main() -> int:
         "ic95_factores_globales": {f"{o}_{p}": [round(float(g["factor_global_lo"].iloc[0]), 4),
                                                 round(float(g["factor_global_hi"].iloc[0]), 4)]
                                    for (o, p), g in fac.groupby(["origen", "metrica"])} if "factor_lo" in fac else None,
-        "bootstrap": {"replicas": args.n_boot, "unidad": "hexágono h3_r5", "pesos": "Poisson(1)"} if args.n_boot > 0 else None,
+        "bootstrap": {"replicas": args.n_boot, "unidad": "hexágono h3_r5 x año", "pesos": "Poisson(1)"} if args.n_boot > 0 else None,
         "validacion": val,
         "deriva_factor_por_anio": drift(df),
         "control_frp": frp_control(series, df),

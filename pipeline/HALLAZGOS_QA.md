@@ -140,3 +140,33 @@ El 07 de Paco cuadra con el gold y el backend lo lee sin cambios: totales idént
    Hoy: 2026-11 tiene 14 de 30 días. El backend lo mostraba como anomalía "baja" (0.39); Manuel tiene la tarea 5b en `PLAN_INTEGRACION_WEB.md`.
 
 Prueba `pipeline/tests/test_07_export.py` actualizada (mediana con ceros, sin `region`, mes parcial): pasa.
+
+---
+
+## 2026-11-15 · Carlos · revisión del bootstrap del paso 05 (tarea C1 de `CONTEXTO_CARLOS.md`)
+
+**Aprobado.** Reproduje en mi máquina los mismos números: cobertura 95.7% (MODIS) y 94.9% (S-NPP), `k_modis` = 2.32 [2.24–2.42],
+`k_snpp` = 1.01 [0.99–1.02], `f_terra` = 2.77 [2.69–2.91]. El código es correcto. Rama `feat/bootstrap-ci`: se puede borrar (E6).
+Único cambio: en `metrics.json` la unidad del bootstrap decía "hexágono h3_r5"; ahora "hexágono h3_r5 x año", que es lo que hace.
+No cambia `factores.parquet`, así que **no hace falta volver a correr 06 ni 07**.
+
+### Cómo presentar el intervalo (importante para la lámina de los jueces)
+La banda de un total mensual (`harmonized_ci_lower/upper` sumados) se arma sumando los extremos de cada región. Eso **no es un
+intervalo de confianza del total**: comparé tres formas en la prueba 2023–2026 (MODIS → NOAA-20, días-celda, total mensual):
+
+| Banda | Ancho mediano | Cobertura real |
+|---|---|---|
+| **Actual:** suma de `factor_lo` / `factor_hi` regionales | 59% | **95.7%** |
+| IC del factor, calculado réplica por réplica sobre el total | 12% | 38% |
+| Intervalo de predicción con los errores del periodo de ajuste (total mensual) | 22% | 60% |
+
+Lectura: la incertidumbre del factor es chica (±6%). Lo que pesa es que la razón NOAA-20 / MODIS cambia de un año a otro.
+La banda actual es más ancha de lo que su construcción justifica, pero **en años que no se usaron para ajustar cubre el 95.7% de
+los meses**: es el ancho que hace falta.
+
+- **Decir:** "banda de incertidumbre que, en 2023–2026, contiene el valor real en el 95.7% de los meses".
+- **No decir:** "intervalo de confianza del 95% del factor": con esa definición el ancho sería 12% y fallaría casi dos de cada tres meses.
+- Solo está validada para **totales mensuales de toda la región**. Para un polígono chico no se midió.
+- Con solo 5 años de ajuste el remuestreo por año es grueso: ~1 de cada 200 réplicas sale vacía y se descarta.
+
+Mejora posible después de la entrega (cambia el 05 y el 06): un intervalo de predicción por tamaño de área, validado también en polígonos chicos.
