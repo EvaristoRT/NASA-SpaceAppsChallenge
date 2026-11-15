@@ -9,6 +9,7 @@ import MapControls from './components/MapControls';
 import CoordinatesHUD from './components/CoordinatesHUD';
 import { MAP_STYLES } from './data/zonesData';
 import { AlertCircle, X } from 'lucide-react';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import './App.css';
 
 // El token de Mapbox sale SOLO de la variable de entorno VITE_MAPBOX_TOKEN: del archivo .env (o .env.local) en
@@ -16,7 +17,8 @@ import './App.css';
 // volver a compilar o desplegar. No se puede escribir desde la interfaz ni se guarda en el navegador.
 const MAPBOX_TOKEN = (import.meta.env.VITE_MAPBOX_TOKEN || '').trim();
 
-export default function App() {
+function MainApp() {
+  const { t } = useLanguage();
   const globeRef = useRef(null);
 
   // Estado de Cartografía y Proyección
@@ -48,6 +50,14 @@ export default function App() {
   const [mapError, setMapError] = useState(null);
 
   const activeStyle = MAP_STYLES.find((s) => s.id === currentStyleId) || MAP_STYLES[0];
+
+  // Cambiar estilo de cartografía (si es modo topografía, activar inclinación para apreciar relieve 3D)
+  const handleSelectStyle = (styleId) => {
+    setCurrentStyleId(styleId);
+    if (styleId === 'outdoors' && !isTilted) {
+      setIsTilted(true);
+    }
+  };
 
   // Seleccionar una zona
   const handleSelectZone = (zone) => {
@@ -140,7 +150,7 @@ export default function App() {
       {/* Barra de navegación superior */}
       <Navbar
         currentStyleId={currentStyleId}
-        onSelectStyle={setCurrentStyleId}
+        onSelectStyle={handleSelectStyle}
         projection={projection}
         onToggleProjection={handleToggleProjection}
         onSelectZone={handleSelectZone}
@@ -155,6 +165,7 @@ export default function App() {
         ref={globeRef}
         token={MAPBOX_TOKEN}
         styleUrl={activeStyle.styleUrl}
+        currentStyleId={currentStyleId}
         projection={projection}
         selectedZone={selectedZone}
         onSelectZone={handleSelectZone}
@@ -249,17 +260,25 @@ export default function App() {
         <div className="error-toast panel">
           <AlertCircle size={18} className="text-amber-400" />
           <div className="error-text">
-            <strong>Aviso de Mapbox:</strong> {mapError}
+            <strong>{t('errorToast.mapboxNotice')}</strong> {mapError}
           </div>
           <button
             className="btn-close-sm"
             onClick={() => setMapError(null)}
-            aria-label="Descartar"
+            aria-label={t('errorToast.dismiss')}
           >
             <X size={14} />
           </button>
         </div>
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <MainApp />
+    </LanguageProvider>
   );
 }

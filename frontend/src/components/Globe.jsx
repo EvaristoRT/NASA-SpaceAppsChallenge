@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { ZONES } from '../data/zonesData';
+import { useLanguage } from '../context/LanguageContext';
 import {
   generateZonesGeoJSON,
   generateZonesOutlineGeoJSON,
@@ -15,6 +16,7 @@ const Globe = forwardRef(function Globe(
   {
     token,
     styleUrl,
+    currentStyleId,
     projection,
     selectedZone,
     onSelectZone,
@@ -30,12 +32,29 @@ const Globe = forwardRef(function Globe(
   },
   ref
 ) {
+  const { lang, t } = useLanguage();
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const selectedMarkerRef = useRef(null);
   const animFrameRef = useRef(null);
-  const isFirstRender = useRef(true);
+
+  const currentStyleIdRef = useRef(currentStyleId);
+  useEffect(() => {
+    currentStyleIdRef.current = currentStyleId;
+  }, [currentStyleId]);
+
+  // Estado de carga inicial para evitar parpadeos y desalineaciones de canvas
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const mapLoadedRef = useRef(false);
+  const canAutoSpinRef = useRef(false);
+  const initialSpinTimeoutRef = useRef(null);
+
+  // Seguimiento de valores previos para no disparar animaciones easeTo en el montaje inicial
+  const prevStyleUrlRef = useRef(styleUrl);
+  const prevProjectionRef = useRef(projection);
+  const prevTiltedRef = useRef(isTilted);
+  const prevSelectedZoneRef = useRef(selectedZone);
 
   // Referencias para interacción del usuario y rotación automática
   const userInteractingRef = useRef(false);
@@ -309,23 +328,69 @@ const Globe = forwardRef(function Globe(
     }
   }, [drawnArea]);
 
-  // Atmósfera y estrellas espaciales
-  const applyAtmosphereAndFog = (map) => {
+  // Relieve 3D para modo Topografía y Satélite (usando Mapbox Terrain-DEM)
+  const applyTerrain = (map) => {
     if (!map) return;
     try {
-      map.setFog({
-        range: [0.5, 10],
-        // Atmósfera con los azules de la marca Space Apps
-        color: '#1b2b85',
-        'high-color': '#151622',
-        'space-color': '#151622',
-        'horizon-blend': 0.03,
-        'star-intensity': 0.75
-      });
+      const activeId = currentStyleIdRef.current || '';
+      const isTopography = activeId === 'outdoors' || (styleUrl && styleUrl.includes('outdoors'));
+      const isSatellite = activeId === 'satellite' || (styleUrl && styleUrl.includes('satellite'));
+
+      if (isTopography || isSatellite) {
+        if (!map.getSource('mapbox-dem')) {
+          map.addSource('mapbox-dem', {
+            type: 'raster-dem',
+            url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+            tileSize: 512,
+            maxzoom: 14
+          });
+        }
+        // Exageración de 1.95 en modo topografía para que las cordilleras, valles y picos montañosos resalten claramente en 3D
+        // En satélite, un relieve natural de 1.35
+        const exaggeration = isTopography ? 1.95 : 1.35;
+        map.setTerrain({ source: 'mapbox-dem', exaggeration });
+      } else {
+        if (map.getTerrain()) {
+          map.setTerrain(null);
+        }
+      }
+    } catch (err) {
+      console.warn('Error configuring 3D terrain:', err);
+    }
+  };
+
+  // Atmósfera y estrellas espaciales
+  const applyAtmosphereAndFog = useCallback((map) => {
+    if (!map) return;
+    try {
+      const activeId = currentStyleIdRef.current || '';
+      const isTopography = activeId === 'outdoors' || (styleUrl && styleUrl.includes('outdoors'));
+
+      if (isTopography) {
+        map.setFog({
+          range: [0.5, 10],
+          // Bruma y horizonte natural para apreciar la silueta tridimensional de las montañas
+          color: '#dbeafe',
+          'high-color': '#1e3a8a',
+          'space-color': '#151622',
+          'horizon-blend': 0.08,
+          'star-intensity': 0.4
+        });
+      } else {
+        map.setFog({
+          range: [0.5, 10],
+          // Atmósfera con los azules de la marca Space Apps
+          color: '#1b2b85',
+          'high-color': '#151622',
+          'space-color': '#151622',
+          'horizon-blend': 0.03,
+          'star-intensity': 0.75
+        });
+      }
     } catch (e) {
       console.warn('Atmosphere fog notice:', e);
     }
-  };
+  }, [styleUrl]);
 
   // Limpiar marcadores
   const clearMarkers = () => {
@@ -601,24 +666,49 @@ const Globe = forwardRef(function Globe(
       }
     }
 
-    // 3. Recrear capas de zonas y dibujo
-    setupZoneLayers(map);
-    setupDrawLayers(map);
-    renderZoneMarkers(map);
+    // 3. Configurar relieve 3D de terreno (montañas y valles)
+    applyTerrain(map);
+
+    // 4. Recrear capas de zonas y dibujo con protección de errores
+    try {
+      setupZoneLayers(map);
+    } catch (err) {
+      console.warn('Error setting up zone layers:', err);
+    }
+
+    try {
+      setupDrawLayers(map);
+    } catch (err) {
+      console.warn('Error setting up draw layers:', err);
+    }
+
+    try {
+      renderZoneMarkers(map);
+    } catch (err) {
+      console.warn('Error rendering zone markers:', err);
+    }
 
     // 4. Restaurar trazado manual si existía
     if (drawnAreaRef.current && drawnAreaRef.current.coords) {
-      updateDrawSource(drawnAreaRef.current.coords);
+      try {
+        updateDrawSource(drawnAreaRef.current.coords);
+      } catch (err) {
+        console.warn('Error updating draw source:', err);
+      }
     }
 
     // 5. Restaurar pin y resaltado de zona seleccionada si existía
     if (selectedZoneRef.current) {
-      renderSelectedZoneMarker(map, selectedZoneRef.current);
-      if (map.getLayer('zones-highlight-fill')) {
-        map.setFilter('zones-highlight-fill', ['==', ['get', 'id'], selectedZoneRef.current.id]);
-      }
-      if (map.getLayer('zones-highlight-line')) {
-        map.setFilter('zones-highlight-line', ['==', ['get', 'id'], selectedZoneRef.current.id]);
+      try {
+        renderSelectedZoneMarker(map, selectedZoneRef.current);
+        if (map.getLayer('zones-highlight-fill')) {
+          map.setFilter('zones-highlight-fill', ['==', ['get', 'id'], selectedZoneRef.current.id]);
+        }
+        if (map.getLayer('zones-highlight-line')) {
+          map.setFilter('zones-highlight-line', ['==', ['get', 'id'], selectedZoneRef.current.id]);
+        }
+      } catch (err) {
+        console.warn('Error rendering selected zone highlight:', err);
       }
     }
   };
@@ -628,7 +718,7 @@ const Globe = forwardRef(function Globe(
     if (!mapContainerRef.current) return;
     if (!token) {
       if (onMapError) {
-        onMapError('No se encontró el token de Mapbox. Define VITE_MAPBOX_TOKEN en el archivo .env (o en las variables de entorno de Vercel) y vuelve a compilar o desplegar.');
+        onMapError(t('errorToast.missingToken'));
       }
       return;
     }
@@ -650,6 +740,17 @@ const Globe = forwardRef(function Globe(
 
       mapRef.current = map;
 
+      // Observer para reaccionar a cambios de dimensiones del contenedor en el DOM
+      let resizeObserver = null;
+      if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+        resizeObserver = new ResizeObserver(() => {
+          if (mapRef.current) {
+            mapRef.current.resize();
+          }
+        });
+        resizeObserver.observe(mapContainerRef.current);
+      }
+
       // Eventos de error de token o red
       map.on('error', (e) => {
         console.warn('Mapbox error:', e);
@@ -661,14 +762,51 @@ const Globe = forwardRef(function Globe(
             e.error.message?.includes('Forbidden') ||
             e.error.message?.includes('Unauthorized'))
         ) {
-          if (onMapError) onMapError(e.error.message || 'Token no válido o no autorizado.');
+          if (onMapError) onMapError(e.error.message || t('errorToast.invalidToken'));
         }
       });
 
       // Configurar atmósfera, capas y marcadores al cargar cualquier estilo (inicial o cambiado)
       map.on('style.load', () => {
         applyMapConfiguration(map);
+        map.resize();
       });
+
+      // Evento de carga completa de tiles y recursos iniciales
+      map.on('load', () => {
+        mapLoadedRef.current = true;
+        setIsMapLoaded(true);
+        map.resize();
+
+        // Si por sincronía no se hubieran cargado las capas, asegurar su configuración
+        if (!map.getLayer('zones-fill')) {
+          applyMapConfiguration(map);
+        }
+
+        // Breve pausa para asentar texturas y shaders antes de habilitar la rotación continua
+        if (initialSpinTimeoutRef.current) clearTimeout(initialSpinTimeoutRef.current);
+        initialSpinTimeoutRef.current = setTimeout(() => {
+          canAutoSpinRef.current = true;
+          if (mapRef.current) {
+            mapRef.current.resize();
+          }
+        }, 1200);
+      });
+
+      // Asegurar redimensionamiento al entrar en reposo
+      map.once('idle', () => {
+        if (mapRef.current) {
+          mapRef.current.resize();
+        }
+      });
+
+      // Forzar resize en frames clave para neutralizar desalineaciones del layout al montar
+      const rAF = requestAnimationFrame(() => {
+        if (mapRef.current) mapRef.current.resize();
+      });
+      const t1 = setTimeout(() => { if (mapRef.current) mapRef.current.resize(); }, 150);
+      const t2 = setTimeout(() => { if (mapRef.current) mapRef.current.resize(); }, 500);
+      const t3 = setTimeout(() => { if (mapRef.current) mapRef.current.resize(); }, 1200);
 
       // Selección de zonas por clic o colocación de vértices en modo polígono
       map.on('click', (e) => {
@@ -961,7 +1099,7 @@ const Globe = forwardRef(function Globe(
         const delta = Math.min((now - lastTime) / 1000, 0.1);
         lastTime = now;
 
-        if (mapRef.current) {
+        if (mapRef.current && mapLoadedRef.current) {
           // Órbita cinematográfica alrededor de la zona seleccionada
           if (orbitActiveRef.current && selectedZoneRef.current) {
             orbitBearingRef.current = (orbitBearingRef.current + 12 * delta) % 360;
@@ -974,9 +1112,10 @@ const Globe = forwardRef(function Globe(
               easing: (t) => t
             });
           }
-          // Rotación majestuosa continua del globo (si está en proyección globo y sin inspección activa)
+          // Rotación majestuosa continua del globo (solo si ya cargó, superó la pausa inicial y no hay interacción)
           else if (
             autoSpinActiveRef.current &&
+            canAutoSpinRef.current &&
             !userInteractingRef.current &&
             !drawModeRef.current &&
             !selectedZoneRef.current &&
@@ -1003,6 +1142,12 @@ const Globe = forwardRef(function Globe(
       animFrameRef.current = requestAnimationFrame(animateLoop);
 
       return () => {
+        if (resizeObserver) resizeObserver.disconnect();
+        cancelAnimationFrame(rAF);
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        if (initialSpinTimeoutRef.current) clearTimeout(initialSpinTimeoutRef.current);
         window.removeEventListener('mouseup', handleGlobalPointerUp);
         window.removeEventListener('touchend', handleGlobalPointerUp);
         if (spinResumeTimeoutRef.current) clearTimeout(spinResumeTimeoutRef.current);
@@ -1018,19 +1163,23 @@ const Globe = forwardRef(function Globe(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // Cambiar estilo de cartografía de manera reactiva
+  // Cambiar estilo de cartografía de manera reactiva (solo si cambia tras el montaje)
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+    if (prevStyleUrlRef.current === styleUrl) return;
+    prevStyleUrlRef.current = styleUrl;
     if (mapRef.current) {
       mapRef.current.setStyle(styleUrl);
+      const isTopography = currentStyleId === 'outdoors' || (styleUrl && styleUrl.includes('outdoors'));
+      if (isTopography && mapRef.current.getPitch() < 35) {
+        mapRef.current.easeTo({ pitch: 58, duration: 1200 });
+      }
     }
-  }, [styleUrl]);
+  }, [styleUrl, currentStyleId]);
 
-  // Cambiar proyección entre Globo 3D y Mercator 2D
+  // Cambiar proyección entre Globo 3D y Mercator 2D (solo si cambia tras el montaje)
   useEffect(() => {
+    if (prevProjectionRef.current === projection) return;
+    prevProjectionRef.current = projection;
     projectionRef.current = projection;
     if (!mapRef.current) return;
 
@@ -1050,6 +1199,7 @@ const Globe = forwardRef(function Globe(
           }
           mapRef.current.easeTo({ pitch: 0, duration: 600 });
         }
+        mapRef.current.resize();
       } catch (err) {
         console.warn('Error setting projection:', err);
       }
@@ -1060,11 +1210,13 @@ const Globe = forwardRef(function Globe(
     } else {
       mapRef.current.once('style.load', updateProjection);
     }
-  }, [projection, isTilted]);
+  }, [projection, isTilted, applyAtmosphereAndFog]);
 
-  // Cambiar inclinación
+  // Cambiar inclinación (solo si cambia tras el montaje)
   useEffect(() => {
-    if (mapRef.current) {
+    if (prevTiltedRef.current === isTilted) return;
+    prevTiltedRef.current = isTilted;
+    if (mapRef.current && mapLoadedRef.current) {
       mapRef.current.easeTo({
         pitch: isTilted ? 55 : 0,
         duration: 900
@@ -1074,6 +1226,8 @@ const Globe = forwardRef(function Globe(
 
   // Vuelo y selección de zona
   useEffect(() => {
+    if (prevSelectedZoneRef.current === selectedZone && !selectedZone) return;
+    prevSelectedZoneRef.current = selectedZone;
     selectedZoneRef.current = selectedZone;
     if (!mapRef.current) return;
 
@@ -1119,6 +1273,14 @@ const Globe = forwardRef(function Globe(
   return (
     <div className="globe-viewport">
       <div ref={mapContainerRef} className="mapbox-map-container" />
+      {Boolean(token) && !isMapLoaded && (
+        <div className="globe-loading-overlay">
+          <div className="globe-loading-spinner" />
+          <span className="globe-loading-text">
+            {lang === 'es' ? 'Cargando cartografía satelital...' : 'Loading satellite cartography...'}
+          </span>
+        </div>
+      )}
     </div>
   );
 });
