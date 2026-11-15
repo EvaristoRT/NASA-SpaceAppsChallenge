@@ -24,7 +24,7 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
   (solo las que cambian), descripción y puntos destacados por plantilla, y los 7 continentes con texto propio. El buscador acepta el nombre en ambos idiomas.
   Los datos originales siguen en español (el GeoJSON exportado conserva `paises_detectados` en español para la API).
   Al cambiar el texto del explorador, editar las dos lenguas en `translations.js` (`sidebarZones`).
-- **Relieve:** `applyTerrain` en `Globe.jsx` es el de la rama `view_tests` (Mapbox Terrain-DEM; exageración 1.95 en Relieve y 1.35 en Satélite; cámara a 58° al cambiar a
+- **Relieve:** `applyTerrain` en `Globe.jsx` es el de la rama `view_tests` (Mapbox Terrain-DEM; exageración 2.8 en Relieve y 1.8 en Satélite (en `view_tests` eran 1.95 y 1.35, subidas un poco); cámara a 58° al cambiar a
   Relieve y 45° al elegir una zona). Se probaron un sombreado propio, una exageración según el zoom y mensajes de diagnóstico, y se quitaron para dejarlo igual que en `view_tests`.
   Lo único añadido: si tras cargar el estilo falta el terreno, se vuelve a aplicar al entrar en reposo (hasta 5 intentos, en silencio). Si el relieve se ve plano en algún
   navegador web, lo más probable es la aceleración por hardware desactivada, una GPU en la lista negra del navegador o la protección de privacidad estricta (Brave, Firefox).

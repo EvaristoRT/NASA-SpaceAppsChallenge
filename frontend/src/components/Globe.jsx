@@ -348,7 +348,8 @@ const Globe = forwardRef(function Globe(
         }
         // Exageración de 1.95 en modo topografía para que las cordilleras, valles y picos montañosos resalten claramente en 3D
         // En satélite, un relieve natural de 1.35
-        const exaggeration = isTopography ? 1.95 : 1.35;
+        // Algo más que en view_tests (1.95 / 1.35) para que se note a escala de país
+        const exaggeration = isTopography ? 2.8 : 1.8;
         map.setTerrain({ source: 'mapbox-dem', exaggeration });
       } else {
         if (map.getTerrain()) {
