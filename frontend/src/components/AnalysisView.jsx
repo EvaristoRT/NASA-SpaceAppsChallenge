@@ -22,6 +22,8 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
   const seed = drawnArea ? `area:${Math.round(drawnArea.center?.[0] ?? 0)}:${Math.round(drawnArea.center?.[1] ?? 0)}` : zone?.id;
   const { status, data: fullData } = useAnalysis(zone, drawnArea, seed);
   const meta = useMeta();
+  const [yearPick, setYearPick] = useState({ source: null, year: null });
+  const [yearDraft, setYearDraft] = useState(null); // lo que se está escribiendo en el año, antes de ser válido
 
   // Periodo (desde, hasta): por defecto toda la serie; cambia con la zona porque guarda a qué resultado pertenece
   const bounds =
@@ -54,44 +56,47 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
 
   const months = t('analysis.monthsShort');
   const monthsLong = t('analysis.monthsLong');
-  const years = [];
-  for (let y = data.firstYear; y <= data.lastYear; y++) years.push(y);
+  // Calendario de un año: se ven los 12 meses del año elegido y se cambia de año con las flechas o escribiéndolo
+  const shownYear =
+    yearPick.source === fullData && yearPick.year >= data.firstYear && yearPick.year <= data.lastYear ? yearPick.year : data.lastYear;
+  const yearRow = data.calendar[shownYear];
+  const goToYear = (y) => {
+    if (y >= data.firstYear && y <= data.lastYear) setYearPick({ source: fullData, year: y });
+  };
+  const onYearTyped = (e) => {
+    const text = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setYearDraft(text);
+    const y = Number(text);
+    if (text.length === 4 && y >= data.firstYear && y <= data.lastYear) goToYear(y);
+  };
+  const onYearKey = (e) => {
+    const delta = { ArrowUp: 1, ArrowDown: -1 }[e.key];
+    if (!delta) return;
+    e.preventDefault();
+    setYearDraft(null);
+    goToYear(shownYear + delta);
+  };
 
   // Con datos reales los meses con dato armonizado y completos se pueden elegir (con la demostración no hay mapa que pintar)
   const interactive = !data.synthetic && typeof onSelectMonth === 'function';
-  // Un solo punto de tabulación en el calendario: el mes elegido o, si no hay, el último mes elegible
-  let tabY = null;
+  const selectableMonth = (m) => yearRow[m] !== null && !data.partial?.[shownYear]?.[m];
+  // Un solo punto de tabulación en el calendario: el mes elegido o, si no hay, el último mes elegible del año
   let tabM = null;
   if (interactive) {
-    if (selectedMonth) {
-      tabY = selectedMonth.year;
+    if (selectedMonth && selectedMonth.year === shownYear && selectableMonth(selectedMonth.month)) {
       tabM = selectedMonth.month;
     } else {
-      for (const y of years) {
-        data.calendar[y].forEach((v, m) => {
-          if (v !== null && !data.partial?.[y]?.[m]) {
-            tabY = y;
-            tabM = m;
-          }
-        });
-      }
+      for (let m = 0; m < 12; m++) if (selectableMonth(m)) tabM = m;
     }
   }
-  // Flechas para moverse entre los meses elegibles
+  // Flechas para moverse entre los meses elegibles: izquierda y derecha de uno en uno, arriba y abajo de cuatro en cuatro
   const moveFocus = (e) => {
-    const step = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }[e.key];
-    const from = e.target.closest?.('[data-y]');
+    const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -4, ArrowDown: 4 }[e.key];
+    const from = e.target.closest?.('[data-m]');
     if (!step || !from) return;
     e.preventDefault();
-    let y = Number(from.dataset.y);
-    let m = Number(from.dataset.m);
-    for (let i = 0; i < 400; i++) {
-      m += step[1];
-      y += step[0];
-      if (m < 0) { m = 11; y -= 1; }
-      if (m > 11) { m = 0; y += 1; }
-      if (y < data.firstYear || y > data.lastYear) return;
-      const next = e.currentTarget.querySelector(`button[data-y="${y}"][data-m="${m}"]:not(:disabled)`);
+    for (let m = Number(from.dataset.m) + step; m >= 0 && m < 12; m += step) {
+      const next = e.currentTarget.querySelector(`button[data-m="${m}"]:not(:disabled)`);
       if (next) {
         next.focus();
         return;
@@ -197,58 +202,83 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
       )}
 
       <figure className="analysis-figure">
-        <div className="cal" role={interactive ? 'group' : 'img'} aria-label={t('analysis.calendarLabel')} onKeyDown={interactive ? moveFocus : undefined}>
-          <span />
-          {months.map((m) => (
-            <span key={m} className="cal-axis">{m}</span>
-          ))}
-          {years.map((y) => (
-            <React.Fragment key={y}>
-              <span className="cal-axis">{y}</span>
-              {data.calendar[y].map((v, m) => {
-                // Sin dato armonizado (antes de nov. 2000, meses futuros): apagado y sin clic
-                if (v === null) {
-                  // Mes futuro del último año: se pinta tenue con el valor esperado (mediana histórica), no medido
-                  const ex = data.expected?.[y]?.[m];
-                  if (ex) {
-                    const text = `${months[m]} ${y}: ${t('analysis.cellExpected', { median: fmt(Math.round(ex.median)), low: fmt(Math.round(ex.p25)), high: fmt(Math.round(ex.p75)) })}`;
-                    return <span key={m} className="cal-cell expected" role="img" aria-label={text} title={text} style={{ background: cellColor(ex.median, data.max) }} />;
-                  }
-                  return <span key={m} className="cal-cell" title={interactive ? t('analysis.noMonthData') : undefined} />;
-                }
-                const isPeak = y === data.peak.year && m === data.peak.month;
-                const title = `${months[m]} ${y}: ${t('analysis.cellTitle', { days: v })}`;
-                const style = { background: cellColor(v, data.max), color: textOn(v, data.max) };
-                if (!interactive) {
-                  return (
-                    <span key={m} className="cal-cell filled" style={style} title={title}>
-                      {isPeak ? v : ''}
-                    </span>
-                  );
-                }
-                // Mes en curso incompleto: se ve, pero no se puede elegir
-                const locked = Boolean(data.partial?.[y]?.[m]);
-                const picked = selectedMonth && selectedMonth.year === y && selectedMonth.month === m;
+        <div className="mcal-head">
+          <button type="button" aria-label={t('analysis.yearPrev')} disabled={shownYear <= data.firstYear} onClick={() => goToYear(shownYear - 1)}>
+            ‹
+          </button>
+          <input
+            type="text"
+            inputMode="numeric"
+            className="mcal-year"
+            aria-label={t('analysis.yearInput', { from: data.firstYear, to: data.lastYear })}
+            value={yearDraft ?? String(shownYear)}
+            onChange={onYearTyped}
+            onBlur={() => setYearDraft(null)}
+            onKeyDown={onYearKey}
+          />
+          <button type="button" aria-label={t('analysis.yearNext')} disabled={shownYear >= data.lastYear} onClick={() => goToYear(shownYear + 1)}>
+            ›
+          </button>
+          <span className="mcal-span">{data.firstYear}–{data.lastYear}</span>
+        </div>
+
+        <div className="mcal" role={interactive ? 'group' : 'img'} aria-label={t('analysis.calendarYearLabel', { year: shownYear })} onKeyDown={interactive ? moveFocus : undefined}>
+          {monthsLong.map((name, m) => {
+            const v = yearRow[m];
+            if (v === null) {
+              // Mes futuro del último año: se pinta tenue con el valor esperado (mediana histórica), no medido
+              const ex = data.expected?.[shownYear]?.[m];
+              if (ex) {
+                const text = `${name} ${shownYear}: ${t('analysis.cellExpected', { median: fmt(Math.round(ex.median)), low: fmt(Math.round(ex.p25)), high: fmt(Math.round(ex.p75)) })}`;
                 return (
-                  <button
-                    key={m}
-                    type="button"
-                    data-y={y}
-                    data-m={m}
-                    className={`cal-cell filled${locked ? ' locked' : ' pick'}${picked ? ' picked' : ''}`}
-                    style={style}
-                    title={locked ? `${months[m]} ${y}: ${t('analysis.monthIncomplete')}` : title}
-                    disabled={locked}
-                    aria-pressed={locked ? undefined : Boolean(picked)}
-                    tabIndex={y === tabY && m === tabM ? 0 : -1}
-                    onClick={() => onSelectMonth(y, m)}
-                  >
-                    {isPeak ? v : ''}
-                  </button>
+                  <span key={m} className="mcal-tile expected" role="img" aria-label={text} title={text} style={{ background: cellColor(ex.median, data.max), color: textOn(ex.median, data.max) }}>
+                    <b>{name}</b>
+                    <span className="mcal-value">{t('analysis.expectedShort', { n: fmt(Math.round(ex.median)) })}</span>
+                  </span>
                 );
-              })}
-            </React.Fragment>
-          ))}
+              }
+              return (
+                <span key={m} className="mcal-tile empty" title={interactive ? t('analysis.noMonthData') : undefined}>
+                  <b>{name}</b>
+                  <span className="mcal-value">—</span>
+                </span>
+              );
+            }
+            const title = `${name} ${shownYear}: ${t('analysis.cellTitle', { days: v })}`;
+            const style = { background: cellColor(v, data.max), color: textOn(v, data.max) };
+            const content = (
+              <>
+                <b>{name}</b>
+                <span className="mcal-value">{fmt(v)}</span>
+              </>
+            );
+            if (!interactive) {
+              return (
+                <span key={m} className="mcal-tile" style={style} title={title}>
+                  {content}
+                </span>
+              );
+            }
+            // Mes en curso incompleto: se ve, pero no se puede elegir
+            const locked = Boolean(data.partial?.[shownYear]?.[m]);
+            const picked = selectedMonth && selectedMonth.year === shownYear && selectedMonth.month === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                data-m={m}
+                className={`mcal-tile${locked ? ' locked' : ' pick'}${picked ? ' picked' : ''}`}
+                style={style}
+                title={locked ? `${name} ${shownYear}: ${t('analysis.monthIncomplete')}` : title}
+                disabled={locked}
+                aria-pressed={locked ? undefined : Boolean(picked)}
+                tabIndex={m === tabM ? 0 : -1}
+                onClick={() => onSelectMonth(shownYear, m)}
+              >
+                {content}
+              </button>
+            );
+          })}
         </div>
 
         <div className="cal-scale">
