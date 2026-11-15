@@ -1,11 +1,12 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { FIRE_MAX, rampGradient } from '../utils/fireRamp';
+import { FIRE_MAX, rampGradient, useRampId } from '../utils/fireRamp';
 
 // Leyenda de la capa de actividad: qué mes se ve, cómo leer el color y de qué calidad son los datos de ese mes.
 export default function ActivityLegend({ month, activity, onClear }) {
   const { lang, t } = useLanguage();
+  useRampId(); // el degradado cambia con los colores accesibles
   if (!month) return null;
 
   const { status, data } = activity;

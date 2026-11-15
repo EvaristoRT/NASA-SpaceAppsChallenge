@@ -1547,93 +1547,73 @@ button.cal-cell:focus-visible {
   font-weight: 400;
 }
 
-/* Pestaña Predicción: gráfica del porqué de lo esperado */
-.basis-box {
-  fill: rgb(255 255 255 / 0.1);
+/* Pestaña Predicción: lista de próximos meses */
+/* Perfil del año: una barra por mes, coloreada por su nivel */
+.basis-month {
+  fill: var(--text);
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.basis-dot {
+.basis-value {
+  fill: var(--text-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.basis-bar {
   fill: var(--border-strong);
 }
 
-.basis-dot.recent {
-  fill: var(--link);
-  stroke: var(--bg);
-  stroke-width: 1;
+.basis-bar.clipped {
+  fill: var(--text-muted);
+}
+
+.basis-bar.hover {
+  fill: var(--text);
 }
 
 .basis-median {
   stroke: #ffffff;
-  stroke-width: 2;
-}
-
-.basis-hover {
-  fill: none;
-  stroke: var(--text);
   stroke-width: 1.5;
+  stroke-dasharray: 4 3;
 }
 
-.basis-month {
-  fill: var(--text-2);
-}
-
-.basis-level-high {
-  fill: var(--heat);
-  font-weight: 700;
-}
-
-.basis-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  margin: 6px 0 0;
+/* Predicción: un mes por fila con su valor esperado */
+.pred-months {
+  margin: 0 0 12px;
   padding: 0;
   list-style: none;
+}
+
+.pred-months li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.pred-months li:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.pred-month-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pred-month-value {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
-.basis-legend li {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.basis-key {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-}
-
-.basis-key.base {
-  border-radius: 50%;
-  background: var(--border-strong);
-}
-
-.basis-key.recent {
-  border-radius: 50%;
-  background: var(--link);
-}
-
-.basis-key.box {
-  background: rgb(255 255 255 / 0.18);
-}
-
-.basis-key.median {
-  height: 2px;
-  background: #ffffff;
-}
-
-.pred-how ol {
-  margin: 4px 0 0;
-  padding-left: 18px;
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.pred-how li {
-  margin-bottom: 4px;
+.pred-month-value strong {
+  margin-right: 2px;
+  color: var(--text);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Calendario de un año: 12 recuadros, uno por mes */
@@ -1761,45 +1741,6 @@ button.mcal-tile:focus-visible {
 }
 
 /* Próximos meses (según la climatología) */
-.analysis-next {
-  margin: 0 0 12px;
-}
-
-ul.analysis-next {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-ul.analysis-next li {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--rule);
-  font-size: 14px;
-}
-
-ul.analysis-next li span {
-  min-width: 96px;
-}
-
-.analysis-level {
-  min-width: 64px;
-  font-weight: 700;
-}
-
-.analysis-level-high {
-  color: var(--heat);
-}
-
-ul.analysis-next small {
-  margin-left: auto;
-  color: var(--text-muted);
-  font-size: 12px;
-  text-align: right;
-}
-
 /* Periodo del análisis (desde, hasta) */
 .analysis-range {
   display: flex;
@@ -1873,12 +1814,16 @@ ul.analysis-next small {
   display: grid;
 }
 
+.analysis-facts + .analysis-note {
+  margin-top: 14px;
+}
+
 .analysis-facts > div {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 16px;
-  padding: 7px 0;
+  padding: 12px 0;
   border-top: 1px solid var(--rule);
 }
 
@@ -1923,8 +1868,9 @@ ul.analysis-next small {
 .analysis-status-low::before { content: "○"; }
 
 .analysis-view .analysis-statement {
-  margin: 0;
+  margin: 6px 0 22px;
   font-size: 1.15rem;
+  line-height: 1.25;
 }
 
 .analysis-view {
@@ -1944,7 +1890,7 @@ ul.analysis-next small {
   align-items: center;
   justify-content: space-between;
   gap: 8px 12px;
-  margin-bottom: 10px;
+  margin-bottom: 18px;
 }
 
 .panel-section-title {
@@ -1957,6 +1903,24 @@ ul.analysis-next small {
 
 .panel-section-head .panel-section-title {
   margin: 0;
+}
+
+/* Interruptor de colores accesibles del calendario */
+.access-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.access-toggle input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 /* Descargar: un solo botón con menú */

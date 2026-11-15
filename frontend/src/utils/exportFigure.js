@@ -1,4 +1,4 @@
-import { FLOOR, ramp } from './fireRamp';
+import { getFloor, ramp } from './fireRamp';
 
 // Exportar las figuras del panel como imagen PNG: el calendario (se dibuja en un lienzo con los mismos colores) y la gráfica de la
 // serie (se copia el SVG de la pantalla con sus estilos). Cada imagen lleva título, periodo y fuente para que se entienda sola.
@@ -12,7 +12,7 @@ const SCALE = 2; // píxeles por unidad: nítido al imprimir o pegar en un infor
 
 const fontFamily = () => getComputedStyle(document.body).fontFamily || 'sans-serif';
 
-const cellColor = (value, max) => (value <= 0 ? NO_FIRE : ramp(FLOOR + (1 - FLOOR) * Math.sqrt(Math.min(value / max, 1))));
+const cellColor = (value, max) => (value <= 0 ? NO_FIRE : ramp(getFloor() + (1 - getFloor()) * Math.sqrt(Math.min(value / max, 1))));
 
 // Lienzo con fondo, título, subtítulo y pie. `draw(ctx, top)` pinta la figura desde `top` y devuelve su altura.
 function compose(width, { title, subtitle, footer }, bodyHeight, draw) {
@@ -92,7 +92,7 @@ export function exportCalendarPng(data, labels, fileName) {
     const sy = top + gridH + 10;
     const sw = gridW - 56;
     const gradient = ctx.createLinearGradient(left + 28, 0, left + 28 + sw, 0);
-    for (let i = 0; i <= 11; i += 1) gradient.addColorStop(i / 11, ramp(FLOOR + ((1 - FLOOR) * i) / 11));
+    for (let i = 0; i <= 11; i += 1) gradient.addColorStop(i / 11, ramp(getFloor() + ((1 - getFloor()) * i) / 11));
     ctx.fillStyle = gradient;
     ctx.fillRect(left + 28, sy, sw, 10);
     ctx.fillStyle = MUTED;

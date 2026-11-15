@@ -26,44 +26,31 @@ export default function PredictionView({ zone, drawnArea }) {
 
   const monthsLong = t('analysis.monthsLong');
   const fmt = (n) => Math.round(n).toLocaleString(lang === 'en' ? 'en-US' : 'es-MX');
-  const list = next.map((n) => `${lang === 'en' ? monthsLong[n.month] : monthsLong[n.month].toLowerCase()} ${t(`prediction.levelWord.${n.level}`)}`).join(', ');
   const { start_year: from, end_year: to } = data.baseline;
 
   return shell(
     <>
       <section className="panel-section">
-        <p className="analysis-statement">{t('prediction.statement', { list })}</p>
-      </section>
-
-      <section className="panel-section" aria-label={t('prediction.listTitle')}>
         <h3 className="panel-section-title">{t('prediction.listTitle')}</h3>
-        <ul className="analysis-next">
+        <ul className="pred-months">
           {next.map((n) => (
             <li key={`${n.year}-${n.month}`}>
-              <span>
+              <span className="pred-month-name">
                 {monthsLong[n.month]}
                 {n.month === 0 ? ` ${n.year}` : ''}
               </span>
-              <b className={`analysis-level analysis-level-${n.level}`}>{t(`analysis.level.${n.level}`)}</b>
-              <small>{t('analysis.cellExpected', { median: fmt(n.median), low: fmt(n.p25), high: fmt(n.p75) })}</small>
+              <span className="pred-month-value">
+                <strong>{fmt(n.median)}</strong> {t('analysis.unitCellDays')}
+              </span>
             </li>
           ))}
         </ul>
-        <p className="analysis-note">{t('prediction.peakMonth', { month: monthsLong[data.riskMonth] })}</p>
+        <p className="analysis-note">{t('prediction.reason', { from, to })}</p>
       </section>
 
       <section className="panel-section">
-        <h3 className="panel-section-title">{t('prediction.chartTitle')}</h3>
+        <h3 className="panel-section-title">{t('prediction.valueTitle')}</h3>
         <ExpectedBasisChart data={data} />
-      </section>
-
-      <section className="panel-section pred-how" aria-label={t('prediction.howTitle')}>
-        <h3 className="panel-section-title">{t('prediction.howTitle')}</h3>
-        <ol>
-          <li>{t('prediction.how1', { from, to })}</li>
-          <li>{t('prediction.how2')}</li>
-          <li>{t('prediction.how3')}</li>
-        </ol>
       </section>
     </>
   );

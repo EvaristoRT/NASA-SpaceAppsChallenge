@@ -8,11 +8,11 @@ import { localizeZone } from '../i18n/zoneText';
 import EstimateChart from './EstimateChart';
 import DownloadPanel from './DownloadPanel';
 
-import { FLOOR, ramp, rampGradient } from '../utils/fireRamp';
+import { getFloor, ramp, rampGradient, textColorAt, isAccessible, setRampId, useRampId } from '../utils/fireRamp';
 
 // Raíz cuadrada para que los meses con pocos focos no desaparezcan frente al pico
-const cellColor = (value, max) => (value <= 0 ? 'var(--no-fire)' : ramp(FLOOR + (1 - FLOOR) * Math.sqrt(Math.min(value / max, 1))));
-const textOn = (value, max) => (FLOOR + (1 - FLOOR) * Math.sqrt(Math.min(value / max, 1)) > 0.62 ? '#000000' : '#ffffff');
+const cellColor = (value, max) => (value <= 0 ? 'var(--no-fire)' : ramp(getFloor() + (1 - getFloor()) * Math.sqrt(Math.min(value / max, 1))));
+const textOn = (value, max) => textColorAt(getFloor() + (1 - getFloor()) * Math.sqrt(Math.min(value / max, 1)));
 
 // Panel de análisis de la zona o el área trazada. Por ahora con DATOS DE DEMOSTRACIÓN (ver utils/demoAnalysis.js):
 // sirve para ir definiendo cómo se despliega el calendario de quemas y el resto de los datos.
@@ -22,6 +22,7 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
   const seed = drawnArea ? `area:${Math.round(drawnArea.center?.[0] ?? 0)}:${Math.round(drawnArea.center?.[1] ?? 0)}` : zone?.id;
   const { status, data: fullData } = useAnalysis(zone, drawnArea, seed);
   const meta = useMeta();
+  useRampId(); // vuelve a pintar el calendario al cambiar a los colores accesibles
   const [yearPick, setYearPick] = useState({ source: null, year: null });
   const [yearDraft, setYearDraft] = useState(null); // lo que se está escribiendo en el año, antes de ser válido
 
@@ -186,7 +187,13 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
       </section>
 
       <section className="panel-section">
-        <h3 className="panel-section-title">{t('analysis.sectionCalendar')}</h3>
+        <div className="panel-section-head">
+          <h3 className="panel-section-title">{t('analysis.sectionCalendar')}</h3>
+          <label className="access-toggle" title={t('analysis.accessibleHint')}>
+            <input type="checkbox" role="switch" checked={isAccessible()} onChange={(e) => setRampId(e.target.checked ? 'cividis' : 'inferno')} />
+            <span>{t('analysis.accessibleLabel')}</span>
+          </label>
+        </div>
         <figure className="analysis-figure">
           <div className="mcal-head">
             <button type="button" aria-label={t('analysis.yearPrev')} disabled={shownYear <= data.firstYear} onClick={() => goToYear(shownYear - 1)}>

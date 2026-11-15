@@ -5,7 +5,7 @@ import { ZONES, MAP_STYLES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
 import { continentIdOf } from '../utils/continents';
-import { fireColorExpression } from '../utils/fireRamp';
+import { fireColorExpression, useRampId } from '../utils/fireRamp';
 import { zoneByIso, zoneFilter, isoListOf, WORLDVIEW_FILTER } from '../utils/countryIso';
 import {
   calculatePolygonArea,
@@ -56,6 +56,19 @@ const Globe = forwardRef(function Globe(
   const { lang, t } = useLanguage();
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const rampId = useRampId();
+
+  // Al cambiar a los colores accesibles se repintan los hexágonos que ya están en el mapa
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    try {
+      if (map.getLayer('fire-activity-fill')) map.setPaintProperty('fire-activity-fill', 'fill-color', fireColorExpression());
+      if (map.getLayer('fire-activity-line')) map.setPaintProperty('fire-activity-line', 'line-color', fireColorExpression());
+    } catch {
+      // el estilo todavía no está listo: las capas se crean con la paleta vigente
+    }
+  }, [rampId]);
   const markersRef = useRef([]);
   const selectedMarkerRef = useRef(null);
   const animFrameRef = useRef(null);
@@ -849,7 +862,7 @@ const Globe = forwardRef(function Globe(
         id: 'fire-activity-fill',
         type: 'fill',
         source: 'fire-activity',
-        paint: { 'fill-color': fireColorExpression, 'fill-opacity': HEX_OPACITY, 'fill-opacity-transition': { duration: 400, delay: 0 } }
+        paint: { 'fill-color': fireColorExpression(), 'fill-opacity': HEX_OPACITY, 'fill-opacity-transition': { duration: 400, delay: 0 } }
       },
       before
     );
@@ -861,7 +874,7 @@ const Globe = forwardRef(function Globe(
         type: 'line',
         source: 'fire-activity',
         paint: {
-          'line-color': fireColorExpression,
+          'line-color': fireColorExpression(),
           'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.8, 5, 1, 7, 0.5],
           'line-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.95, 7, 0.25]
         }

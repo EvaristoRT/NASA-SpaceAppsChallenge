@@ -17,15 +17,20 @@ const parseMonth = (text) => {
 
 // Meses que faltan del año y próximos tres meses, a partir de la climatología (mediana, p25 y p75 de cada mes calendario de la zona).
 // El nivel compara la mediana del mes con las 12 medianas: tercio inferior = bajo, tercio superior = alto. No es un pronóstico.
-function buildOutlook(climatology, last) {
-  if (!climatology?.length) return { expected: {}, nextMonths: [] };
-  const byMonth = {};
-  for (const c of climatology) byMonth[c.month] = c;
+// Nivel de un mes: compara su mediana con las 12 medianas del año (tercio inferior = bajo, tercio superior = alto)
+export function makeLevelOf(climatology) {
   const medians = climatology.map((c) => c.median).sort((a, b) => a - b);
   const n = medians.length;
   const lowCut = medians[Math.max(0, Math.floor(n / 3) - 1)];
   const highCut = medians[Math.min(n - 1, Math.ceil((2 * n) / 3))];
-  const levelOf = (median) => (median <= lowCut ? 'low' : median >= highCut ? 'high' : 'medium');
+  return (median) => (median <= lowCut ? 'low' : median >= highCut ? 'high' : 'medium');
+}
+
+function buildOutlook(climatology, last) {
+  if (!climatology?.length) return { expected: {}, nextMonths: [] };
+  const byMonth = {};
+  for (const c of climatology) byMonth[c.month] = c;
+  const levelOf = makeLevelOf(climatology);
   const entry = (year, month) => {
     const c = byMonth[month + 1];
     return c ? { year, month, median: c.median, p25: c.p25, p75: c.p75, level: levelOf(c.median) } : null;
