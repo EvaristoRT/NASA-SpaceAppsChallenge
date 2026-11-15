@@ -140,3 +140,70 @@ por año que la tabla de `HALLAZGOS_QA.md` (p. ej. 2019 = 307,757 días-celda).
 2. ¿Dónde se despliega el backend y cuánta memoria tiene? (Importa para Sudamérica o el mundo.)
 3. ¿El front necesita el mapa por hexágono (anomalía por celda) además del calendario por área? Si sí, hace falta un endpoint más.
 4. Los cambios a `models.py` necesitan acuerdo de los devs web (lo dice el archivo): ¿quién más lo revisa?
+
+---
+
+## 9. Respuestas del equipo de datos a Manuel (2026-11-15)
+
+A partir de hoy la comunicación entre equipos va por el repo: las respuestas quedan aquí.
+Lo que hiciste en `d688866` y `5f2ac1c` coincide con el plan. Las decisiones (opción B, `latest_*` con el último mes completo,
+anomalía por área en el backend) nos parecen bien.
+
+### 9.1 ¿Octubre de 2026 (0.24× la mediana) es real o efecto del NRT?
+**Es real**, hasta donde se puede comprobar:
+- Octubre de 2026 tiene sus **31 días** de datos en todos los satélites.
+- **Los cinco satélites, que son independientes, lo ven igual de bajo.** Focos crudos en octubre en Argentina + Chile:
+
+  | Satélite | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 | 2025 | **2026** |
+  |---|---|---|---|---|---|---|---|---|
+  | NOAA-20 | 78.7 k | 158.4 k | 77.5 k | 53.5 k | 63.3 k | 68.8 k | 39.6 k | **15.0 k** |
+  | S-NPP | 81.2 k | 169.1 k | 74.7 k | 53.1 k | 65.9 k | 73.2 k | 40.1 k | **16.2 k** |
+  | NOAA-21 | — | — | — | — | — | — | — | **15.0 k** |
+  | Aqua | 12.9 k | 23.7 k | 12.0 k | 8.2 k | 10.7 k | 9.9 k | 6.6 k | **2.6 k** |
+
+- La limpieza quita el mismo porcentaje que otros años (queda el 86%; en 2018–2025 queda entre el 86% y el 91%).
+- NRT y archive suelen diferir en pocos puntos porcentuales, no 4×.
+
+**Para la interfaz:** basta con marcar esos meses como "preliminar (NRT)", como ya tienes previsto. No hace falta otro aviso.
+
+### 9.2 Prueba de punta a punta con polígonos chicos: ✅ pasada
+Cargamos la entrega con tu `DataStore` + `analytics` (el código de `main`) y comparamos la suma por año de `series[].count` contra
+un cálculo independiente sobre `gold/region=argentina_chile/harmonized.parquet`: centros H3 con `h3_cell_to_lat/lng` y
+punto en polígono con `matplotlib.path`, que no es el código del backend.
+
+| Polígono | Celdas (backend = independiente) | Diferencia máxima por año | Total 2000–2026 |
+|---|---|---|---|
+| Córdoba (rectángulo) | 1,281 | 0.02 días-celda (redondeo) | 38,821 |
+| Chaco-Formosa (triángulo) | 4,235 | 0.02 | 561,955 |
+| Biobío-Araucanía (forma en L, cóncava) | 1,375 | 0.03 | 124,749 |
+
+Control de sentido común: en Biobío-Araucanía el año pico sale 2023 y el mes pico marzo, que corresponde a los megaincendios de Chile de febrero y marzo de 2023.
+
+### 9.3 Muestra chica para los tests (tarea 8)
+Con la que generas en `backend/tests/test_delivery.py` alcanza: prueba el formato y no depende de nuestros archivos.
+Si después quieres una con datos reales, se puede sacar un recorte de la entrega real.
+
+### 9.4 Columnas de `hotspots/` para el CSV (tarea 7)
+Ninguna es sensible: todo es dato público de FIRMS. Para un CSV más limpio se pueden **quitar**:
+- `sensor`: se deduce de `satellite`.
+- `type`: en archive siempre vale 0 tras la limpieza y en NRT viene vacío, así que no aporta.
+
+Conviene **dejar** `source` (archive / nrt) para que quien descargue sepa qué es preliminar.
+
+### 9.5 ¿Mapa por hexágono?
+Es decisión del equipo web. Si lo hacen, colorear por `harmonized_count` (o `value` de `monthly`), no por `anomaly_pct`.
+
+### 9.6 Despliegue
+Todavía no lo tenemos, y para la demo de la 1:00 PM está bien correr el backend en local. Para después:
+- Datos: publicar la entrega como **GitHub Release** (lo hace el equipo de datos) y que el backend la descargue al arrancar.
+- Servicio: **Render** (gratis, 512 MB; quitaremos la columna `src` de `monthly.parquet`, que tu código no usa y es la que más memoria gasta)
+  o **Hugging Face Spaces** (Docker, 16 GB) si no alcanza.
+
+### 9.7 Rama `feat/bootstrap-ci`
+Ya está en `main`. La borramos cuando Carlos termine de revisarla.
+
+### 9.8 Avisos nuevos de nuestra parte
+1. **Faltan 3 días de VIIRS en 2026: del 1 al 3 de agosto.** MODIS sí los tiene. Es el empalme entre los datos archive y los NRT.
+   Agosto de 2026 sale ~10% más bajo. Lo bajamos después de la demo y te pasamos una entrega nueva (mismo formato).
+2. **No corran otra región todavía.** `models/factores.parquet` y `gold/entrega/` no llevan la región en la ruta: correr
+   `--region sudamerica` hoy sobrescribiría la entrega de Argentina + Chile. Lo cambiamos antes de ampliar la región, y avisaremos aquí si cambia la ruta.

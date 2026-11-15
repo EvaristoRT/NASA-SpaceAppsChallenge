@@ -106,12 +106,12 @@ Criterio: cada quien se queda con los pasos que ya conoce. Las tareas que necesi
 | # | Tarea | Prioridad | Cuándo |
 |---|---|---|---|
 | E1 | **Quedarme con el paso 07 (entrega)** que era de Paco | Media | Desde ya, como dueño |
-| E2 | Contestarle a Manuel con lo que acordemos de la sección 5 | Alta | Hoy |
-| E3 | Prueba con un polígono chico, junto con Manuel | Alta | Antes de la demo |
+| E2 | ✅ Respuestas a Manuel en la sección 9 de `PLAN_INTEGRACION_WEB.md` | Alta | Hecho |
+| E3 | ✅ Prueba con 3 polígonos (rectángulo, triángulo, forma en L): coinciden con el gold | Alta | Hecho |
 | E4 | Correr la cadena 01 → 07 cuando tú bajes los datos (C2, C3) y pasarle la entrega nueva a Manuel | Media | Después de C2/C3 |
 | E5 | Despliegue: quitar `src` de `monthly`, publicar la entrega como GitHub Release y apoyar a Manuel con Render o HF Spaces | Media | Después de la demo |
 | E6 | Borrar la rama `feat/bootstrap-ci` | Baja | Cuando confirmes C1 |
-| E7 | Región `sudamerica` (03 → 07 con `--region sudamerica`, ~15 min) | Baja | Si sobra tiempo |
+| E7 | Región `sudamerica`. **Antes:** poner la región en las rutas de `models/` (tu 05) y `gold/entrega/` (07), que hoy se sobrescriben entre regiones | Baja | Si sobra tiempo |
 
 ### Reglas para no pisarnos
 - **Una sola máquina genera la entrega final** (la de Evaristo, que ya tiene todo). Tú le pasas los CSV nuevos de 2026.
