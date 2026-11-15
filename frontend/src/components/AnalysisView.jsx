@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { buildDemoAnalysis } from '../utils/demoAnalysis';
+import { useAnalysis } from '../utils/useAnalysis';
 
 // Rampa térmica (Inferno) para los días con fuego. Cero = "sin fuego" (color propio, no el primer color de la rampa).
 const INFERNO = ['#000004', '#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#f7d13d', '#fcffa4'];
@@ -30,7 +30,15 @@ export default function AnalysisView({ zone, drawnArea }) {
   const { lang, t } = useLanguage();
 
   const seed = drawnArea ? `area:${Math.round(drawnArea.center?.[0] ?? 0)}:${Math.round(drawnArea.center?.[1] ?? 0)}` : zone?.id;
-  const data = useMemo(() => buildDemoAnalysis(seed), [seed]);
+  const { status, data } = useAnalysis(zone, drawnArea, seed);
+
+  if (!data) {
+    return (
+      <div className="zone-drawer-body analysis-view" aria-label={t('analysis.title')}>
+        <p className="analysis-statement">{t(`analysis.${status === 'loading' ? 'loading' : status === 'error' ? 'error' : 'noData'}`)}</p>
+      </div>
+    );
+  }
 
   const months = t('analysis.monthsShort');
   const monthsLong = t('analysis.monthsLong');
@@ -50,7 +58,15 @@ export default function AnalysisView({ zone, drawnArea }) {
   return (
     <div className="zone-drawer-body analysis-view" aria-label={t('analysis.title')}>
       <div className="analysis-demo">
-        <b>{t('analysis.demoTitle')}</b> {t('analysis.demoText')}
+        {data.synthetic ? (
+          <>
+            <b>{t('analysis.demoTitle')}</b> {t('analysis.demoText')}
+          </>
+        ) : (
+          <>
+            <b>{t('analysis.realTitle')}</b> {t('analysis.realText')}
+          </>
+        )}
       </div>
 
       <div className="analysis-body">
