@@ -33,8 +33,7 @@ El token se lee **solo** de esa variable: se quitaron el botón "Configurar Toke
 en las variables de entorno del proyecto. Si falta, `vite build` avisa y el mapa muestra un aviso con el nombre de la variable.
 
 ## Pendiente y límites
-- **Los recursos de marca de Space Apps no están incluidos** (condiciones de uso sin confirmar). La barra superior muestra el símbolo y un patrón si se colocan en
-  `public/brand/space-apps-symbol-white.svg` y `public/brand/orbits.png`; sin ellos oculta el símbolo. Ver `../design/brand/README.md`.
+- **Recursos de marca:** el equipo confirmó que se pueden usar. En `public/brand/` van el símbolo blanco (sin texto) y los patrones `orbits` (barra superior), `voronoi` (cabecera del explorador) y `waves` (cabecera de la ficha del área trazada), al 25 % sobre el degradado azul. **Siguen fuera** los logotipos completos (dicen "NASA" en rojo) y el logotipo de la NASA. Ver `../design/brand/README.md`.
 - Probado: lint limpio, compilación correcta, trazado de un polígono y su ficha. **No visto con imágenes satelitales ni con las capas de zonas sobre el mapa real**:
   Mapbox respondió 429 (demasiadas peticiones) de forma sostenida con el token de prueba.
 - No probados: los modos Mano Alzada y Rectángulo, ni pantallas angostas con el explorador abierto (heredado: el explorador tapa la ficha).

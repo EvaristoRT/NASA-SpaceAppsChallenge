@@ -1086,6 +1086,49 @@
   border-color: var(--border-strong);
 }
 
+/* Bandas de marca en los paneles: degradado azul oficial con un patrón al ~25% (guía de marca).
+   Explorador = Voronoi (celdas, territorios); ficha del área trazada = Waves (curvas de nivel).
+   Siempre azul con texto blanco, en ambos temas. Los patrones de líneas oscuras se invierten antes de mezclarse. */
+.sidebar-header,
+.drawn-area-drawer .zone-drawer-header {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--brand-gradient);
+  color: #ffffff;
+  border-bottom-color: rgb(255 255 255 / 0.2);
+}
+
+.sidebar-header::before,
+.drawn-area-drawer .zone-drawer-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: center / cover no-repeat;
+  filter: invert(1);
+  opacity: 0.25;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.sidebar-header::before { background-image: url('/brand/voronoi.png'); }
+.drawn-area-drawer .zone-drawer-header::before { background-image: url('/brand/waves.png'); }
+
+.sidebar-header .sidebar-title,
+.drawn-area-drawer .zone-title { color: #ffffff; }
+
+.drawn-area-drawer .zone-category-badge { color: #dfe1e2; }
+
+.sidebar-header .btn-close,
+.drawn-area-drawer .zone-drawer-header .btn-close { color: #ffffff; }
+
+.sidebar-header .btn-close:hover,
+.drawn-area-drawer .zone-drawer-header .btn-close:hover { background: rgb(255 255 255 / 0.14); }
+
+.sidebar-header :focus-visible,
+.drawn-area-drawer .zone-drawer-header :focus-visible { outline-color: #fafaad; }
+
 /* Los límites (N, S, E, O) van en cuatro columnas debajo de su etiqueta */
 .metric-card.full-width:has(.bbox-grid) {
   flex-direction: column;
