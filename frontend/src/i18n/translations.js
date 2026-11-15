@@ -4,7 +4,7 @@ export const translations = {
       brandTag: 'NASA Space Apps 2026 · Boca del Río',
       toggleSidebar: 'Alternar panel de zonas',
       openExplorer: 'Abrir explorador de zonas',
-      searchPlaceholder: 'Buscar país (ej. México, España, Japón...), capital o continente...',
+      searchPlaceholder: 'Buscar lugar...',
       cartographyStyle: 'Estilo de Cartografía',
       changeStyle: 'Cambiar estilo de mapa',
       drawButton: 'Dibujar Zona',
@@ -24,10 +24,6 @@ export const translations = {
         name: 'Satélite Fotorrealista',
         desc: 'Fotografía satelital de alta resolución con capas de carreteras y relieve.'
       },
-      dark: {
-        name: 'Modo Cyber Dark',
-        desc: 'Diseño oscuro elegante de alto contraste, ideal para visualizar zonas y datos nocturnos.'
-      },
       streets: {
         name: 'Cartografía Urbana',
         desc: 'Mapa vectorial detallado con nombres de países, ciudades y redes viales.'
@@ -35,10 +31,6 @@ export const translations = {
       outdoors: {
         name: 'Topografía y Relieve',
         desc: 'Muestra curvas de nivel, elevaciones montañosas y senderos naturales.'
-      },
-      light: {
-        name: 'Claro y Minimalista',
-        desc: 'Estilo limpio y luminoso para presentaciones de alto impacto visual.'
       }
     },
     drawToolbar: {
@@ -95,11 +87,13 @@ export const translations = {
       mercator2D: 'Mercator 2D'
     },
     sidebarZones: {
-      title: 'Explorador de países',
+      title: 'Explorador',
+      continents: 'Continentes',
+      countries: 'Países',
       closeSidebar: 'Cerrar barra lateral',
-      searchPlaceholder: 'Buscar país, capital o continente...',
+      searchPlaceholder: 'Buscar país o continente',
       clear: 'Limpiar',
-      noZonesFound: 'No se encontraron países con ese término.',
+      noZonesFound: 'Sin resultados.',
       countOne: 'país',
       countMany: 'países'
     },
@@ -142,6 +136,30 @@ export const translations = {
         freehand: 'Forma Libre'
       }
     },
+    analysis: {
+      title: 'Análisis de quemas',
+      customArea: 'Área trazada',
+      demoTitle: 'Datos de demostración.',
+      demoText: 'Generados artificialmente; no son observaciones de incendios.',
+      collapse: 'Ocultar análisis',
+      expand: 'Mostrar análisis',
+      statementAbove: '{month} está {ratio}× por encima de lo normal.',
+      statementBelow: '{month} está por debajo de lo normal ({ratio}×).',
+      statementNormal: '{month} está dentro de lo normal.',
+      calendarLabel: 'Calendario: cada fila es un año, cada columna un mes',
+      cellTitle: '{days} días con fuego',
+      maxLabel: 'máximo',
+      fig1: 'Fig. 1',
+      fig1Text: 'Días con fuego detectado, por mes, equivalentes a MODIS. El recuadro amarillo marca el mes en curso. Gris: sin fuego.',
+      factTotal: 'Quemas, {from}–{to}',
+      factTotalUnit: 'días-celda eq. MODIS',
+      factPeakYear: 'Año con más actividad',
+      factRiskMonth: 'Mes de mayor riesgo',
+      factStatus: 'Estado del mes',
+      status: { normal: 'Normal', elevated: 'Elevado', low: 'Bajo' },
+      monthsShort: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+      monthsLong: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    },
     errorToast: {
       mapboxNotice: 'Aviso de Mapbox:',
       dismiss: 'Descartar',
@@ -154,7 +172,7 @@ export const translations = {
       brandTag: 'NASA Space Apps 2026 · Boca del Río',
       toggleSidebar: 'Toggle zones panel',
       openExplorer: 'Open zones explorer',
-      searchPlaceholder: 'Search country (e.g. Mexico, Spain, Japan...), capital or continent...',
+      searchPlaceholder: 'Search place...',
       cartographyStyle: 'Cartography Style',
       changeStyle: 'Change map style',
       drawButton: 'Draw Area',
@@ -174,10 +192,6 @@ export const translations = {
         name: 'Photorealistic Satellite',
         desc: 'High-resolution satellite photography with roads and terrain relief.'
       },
-      dark: {
-        name: 'Cyber Dark Mode',
-        desc: 'Sleek high-contrast dark design, ideal for visualizing night data and zones.'
-      },
       streets: {
         name: 'Urban Cartography',
         desc: 'Detailed vector map with country names, cities, and road networks.'
@@ -185,10 +199,6 @@ export const translations = {
       outdoors: {
         name: 'Topography & Relief',
         desc: 'Shows contour lines, mountain elevations, and hiking trails.'
-      },
-      light: {
-        name: 'Light & Minimalist',
-        desc: 'Clean and bright style for high-impact visual presentations.'
       }
     },
     drawToolbar: {
@@ -245,11 +255,13 @@ export const translations = {
       mercator2D: 'Mercator 2D'
     },
     sidebarZones: {
-      title: 'Country explorer',
+      title: 'Explorer',
+      continents: 'Continents',
+      countries: 'Countries',
       closeSidebar: 'Close sidebar',
-      searchPlaceholder: 'Search country, capital or continent...',
+      searchPlaceholder: 'Search country or continent',
       clear: 'Clear',
-      noZonesFound: 'No countries match that search.',
+      noZonesFound: 'No results.',
       countOne: 'country',
       countMany: 'countries'
     },
@@ -291,6 +303,30 @@ export const translations = {
         polygon: 'Vertex Polygon',
         freehand: 'Freehand Shape'
       }
+    },
+    analysis: {
+      title: 'Burn analysis',
+      customArea: 'Drawn area',
+      demoTitle: 'Demo data.',
+      demoText: 'Artificially generated; these are not fire observations.',
+      collapse: 'Hide analysis',
+      expand: 'Show analysis',
+      statementAbove: '{month} is {ratio}× above normal.',
+      statementBelow: '{month} is below normal ({ratio}×).',
+      statementNormal: '{month} is within the normal range.',
+      calendarLabel: 'Calendar: each row is a year, each column a month',
+      cellTitle: '{days} fire days',
+      maxLabel: 'max',
+      fig1: 'Fig. 1',
+      fig1Text: 'Days with detected fire per month, MODIS-equivalent. The yellow outline marks the current month. Grey: no fire.',
+      factTotal: 'Burns, {from}–{to}',
+      factTotalUnit: 'MODIS-eq. cell-days',
+      factPeakYear: 'Most active year',
+      factRiskMonth: 'Highest-risk month',
+      factStatus: 'Month status',
+      status: { normal: 'Normal', elevated: 'Elevated', low: 'Low' },
+      monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      monthsLong: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
     },
     errorToast: {
       mapboxNotice: 'Mapbox Notice:',

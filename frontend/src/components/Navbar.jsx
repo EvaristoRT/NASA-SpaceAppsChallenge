@@ -9,7 +9,7 @@ import {
   Languages
 } from 'lucide-react';
 import { MAP_STYLES, ZONES } from '../data/zonesData';
-import { localizeZone } from '../i18n/zoneText';
+import { localizeZone, normalizeSearch } from '../i18n/zoneText';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function Navbar({
@@ -32,12 +32,12 @@ export default function Navbar({
   const searchRef = useRef(null);
 
   // Filtrar sugerencias de búsqueda (por el nombre en español y en el idioma activo)
-  const query = searchQuery.trim().toLowerCase();
+  const query = normalizeSearch(searchQuery.trim());
   const searchResults = query
     ? ZONES.map((z) => ({ zone: z, text: localizeZone(z, lang) }))
         .filter(({ zone, text }) =>
           [zone.name, text.name, zone.capital, text.capital, zone.continent, text.continent].some(
-            (v) => v && v.toLowerCase().includes(query)
+            (v) => v && normalizeSearch(v).includes(query)
           )
         )
         .slice(0, 10)

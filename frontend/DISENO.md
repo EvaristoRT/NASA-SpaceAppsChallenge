@@ -29,6 +29,16 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
   Lo único añadido: si tras cargar el estilo falta el terreno, se vuelve a aplicar al entrar en reposo (hasta 5 intentos, en silencio). Si el relieve se ve plano en algún
   navegador web, lo más probable es la aceleración por hardware desactivada, una GPU en la lista negra del navegador o la protección de privacidad estricta (Brave, Firefox).
 
+## Estilos de mapa, explorador y panel de análisis (14-nov)
+- **Tres modos de visualización**, distintos entre sí y no solo de color: **Satélite** (fotografía), **Cartografía urbana** (mapa de calles) y **Topografía y Relieve** (terreno 3D). Se quitaron
+  Oscuro y Claro porque solo cambiaban colores (`MAP_STYLES` en `zonesData.js` y `styles` en `translations.js`).
+- **Explorador:** dos secciones, *Continentes* y *Países*, cada una de la A a la Z en el idioma activo, con buscador que ignora acentos y mayúsculas (`normalizeSearch`). Ya no tapa el cuadro de
+  coordenadas (`bottom: 76px`). Los textos de búsqueda son cortos: "Buscar lugar..." en la barra y "Buscar país o continente" en el explorador.
+- **Panel de análisis** (`AnalysisDock.jsx`): aparece abajo a la izquierda al elegir una zona o trazar un área; encima de las coordenadas, a la derecha del explorador abierto y a la izquierda de la
+  ficha. Frase que los datos respaldan, lista de hechos con líneas finas, calendario años × meses (rampa Inferno, mes en curso con recuadro amarillo, pie "Fig. 1") y aviso de demostración.
+  Se adapta al ancho del propio panel (`@container`): con el explorador abierto pasa a una columna. **Los datos son de demostración** (`utils/demoAnalysis.js`, deterministas por zona);
+  cuando el backend responda (`POST /api/search`), el panel debe recibir un objeto con la misma forma (`calendar[año][mes]`, `max`, `peak`, `total`, `ratio`, `status`…) y se borra esa función.
+
 ## Colores del mapa (en `Globe.jsx` y en `App.css`; si cambian en uno, cambiar el otro)
 - **Amarillo neón** = lo activo: zona seleccionada, área que se dibuja, herramienta activa, fila seleccionada, controles encendidos.
 - **Blanco** = hover. **Verde** = primer vértice del polígono y "Cerrar polígono". **Rojo** = destructivo.

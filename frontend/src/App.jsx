@@ -7,6 +7,7 @@ import DrawnAreaDrawer from './components/DrawnAreaDrawer';
 import DrawToolbar from './components/DrawToolbar';
 import MapControls from './components/MapControls';
 import CoordinatesHUD from './components/CoordinatesHUD';
+import AnalysisDock from './components/AnalysisDock';
 import { MAP_STYLES } from './data/zonesData';
 import { AlertCircle, X } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
@@ -229,6 +230,11 @@ function MainApp() {
           onFocusArea={handleFocusDrawnArea}
           onClear={handleClearDrawing}
         />
+      )}
+
+      {/* Panel de análisis (calendario de quemas, hechos clave). Por ahora con datos de demostración */}
+      {(selectedZone || drawnArea) && (
+        <AnalysisDock key={drawnArea ? 'area' : selectedZone.id} zone={selectedZone} drawnArea={drawnArea} />
       )}
 
       {/* Controles de cámara flotantes */}

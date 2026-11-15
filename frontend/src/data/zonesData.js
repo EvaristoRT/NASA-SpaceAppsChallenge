@@ -211,13 +211,6 @@ export const MAP_STYLES = [
     description: 'Fotografía satelital de alta resolución con capas de carreteras y relieve.'
   },
   {
-    id: 'dark',
-    name: 'Modo Cyber Dark',
-    styleUrl: 'mapbox://styles/mapbox/dark-v11',
-    icon: '🌑',
-    description: 'Diseño oscuro elegante de alto contraste, ideal para visualizar zonas y datos nocturnos.'
-  },
-  {
     id: 'streets',
     name: 'Cartografía Urbana',
     styleUrl: 'mapbox://styles/mapbox/streets-v12',
@@ -230,13 +223,6 @@ export const MAP_STYLES = [
     styleUrl: 'mapbox://styles/mapbox/outdoors-v12',
     icon: '🏔️',
     description: 'Énfasis en curvas de nivel, cadenas montañosas y accidentes geográficos.'
-  },
-  {
-    id: 'light',
-    name: 'Minimalista Claro',
-    styleUrl: 'mapbox://styles/mapbox/light-v11',
-    icon: '☀️',
-    description: 'Estética limpia y pulida con tonos suaves para visualización ejecutiva.'
   }
 ];
 

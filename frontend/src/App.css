@@ -395,7 +395,7 @@
   position: absolute;
   top: 80px;
   left: 16px;
-  bottom: 24px;
+  bottom: 76px; /* deja libre el cuadro de coordenadas (abajo a la izquierda) */
   width: 350px;
   z-index: 28;
   display: flex;
@@ -484,6 +484,19 @@
   color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
+}
+
+/* Títulos de sección del explorador (Continentes / Países): texto simple con línea fina */
+.zones-section-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 /* Lista: filas separadas por línea fina, sin tarjetas */
@@ -1249,5 +1262,233 @@
 @media (max-width: 900px) {
   .app-container:has(.draw-toolbar) .drawn-area-drawer {
     max-height: calc(100vh - 290px);
+  }
+}
+
+/* --- PANEL DE ANÁLISIS (calendario de quemas y hechos clave) ---
+   Abajo a la izquierda, encima del cuadro de coordenadas y a la izquierda de la ficha de la zona (380 px + controles).
+   Estilo "informe": una frase que los datos respaldan, lista de hechos con líneas finas, calendario con pie "Fig. N". */
+.analysis-dock {
+  position: absolute;
+  left: 16px;
+  right: 468px;
+  bottom: 76px;
+  max-height: calc(100vh - 80px - 76px - 16px);
+  z-index: 24;
+  display: flex;
+  flex-direction: column;
+  animation: slide-up 0.25s var(--ease) both;
+  container: analysis / inline-size; /* el diseño interior depende del ancho del panel, no del de la ventana */
+}
+
+/* con el explorador abierto, el panel empieza a su derecha */
+.app-container:has(.sidebar-zones.open) .analysis-dock {
+  left: 382px;
+}
+
+.analysis-dock.collapsed {
+  right: auto;
+  width: 340px;
+}
+
+.analysis-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+}
+
+.analysis-dock.open .analysis-head {
+  border-bottom: 1px solid var(--rule);
+}
+
+.analysis-titles {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.analysis-title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.analysis-area {
+  color: var(--text-muted);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.analysis-scroll {
+  overflow-y: auto;
+}
+
+.analysis-demo {
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--warn);
+  font-size: 13px;
+  background: var(--surface);
+}
+
+.analysis-demo b {
+  color: var(--warn);
+}
+
+/* composición asimétrica: calendario a la izquierda (8) y hechos a la derecha (4) */
+.analysis-body {
+  display: grid;
+  grid-template-columns: minmax(0, 8fr) minmax(220px, 4fr);
+  gap: 24px 32px;
+  padding: 16px;
+  align-items: start;
+}
+
+.analysis-statement {
+  margin: 0 0 12px;
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  font-weight: 700;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.analysis-figure {
+  margin: 0;
+}
+
+.cal {
+  display: grid;
+  grid-template-columns: 40px repeat(12, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.cal-axis {
+  align-self: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-cell {
+  height: 17px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+.cal-cell.filled:hover {
+  outline-color: var(--text);
+}
+
+/* el mes en curso: lo único amarillo del calendario */
+.cal-cell.now {
+  outline-color: var(--accent);
+}
+
+.cal-scale {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.cal-ramp {
+  flex: 0 1 220px;
+  height: 10px;
+}
+
+.analysis-caption {
+  margin-top: 8px;
+  max-width: 70ch;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.analysis-caption b {
+  margin-right: 8px;
+  color: var(--text);
+}
+
+.analysis-facts {
+  margin: 0;
+  display: grid;
+}
+
+.analysis-facts > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.analysis-facts > div:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.analysis-facts dt {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.analysis-facts dd {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.analysis-facts dd small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* estado = símbolo + palabra, no solo color */
+.analysis-status {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.analysis-status::before {
+  margin-right: 4px;
+}
+
+.analysis-status-normal { color: var(--ok); }
+.analysis-status-normal::before { content: "●"; }
+.analysis-status-elevated { color: var(--warn); }
+.analysis-status-elevated::before { content: "▲"; }
+.analysis-status-low { color: var(--info); }
+.analysis-status-low::before { content: "○"; }
+
+/* pantallas medianas y angostas: el panel ocupa todo el ancho y los hechos pasan debajo */
+@media (max-width: 1100px) {
+  .analysis-dock {
+    right: 72px;
+  }
+}
+
+/* panel estrecho (ventana angosta o explorador abierto): una sola columna, los hechos debajo del calendario */
+@container analysis (max-width: 760px) {
+  .analysis-body {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-statement {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .analysis-dock {
+    right: 16px;
   }
 }

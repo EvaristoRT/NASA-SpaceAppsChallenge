@@ -160,3 +160,11 @@ export function localizeZone(zone, lang) {
 export function localizeContinentName(name, lang) {
   return lang === 'en' ? continentEn(name) : name;
 }
+
+/** Texto sin acentos ni mayúsculas, para que "mexico" encuentre "México". */
+export function normalizeSearch(text) {
+  return String(text ?? '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+}
