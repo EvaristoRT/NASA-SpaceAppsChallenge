@@ -69,7 +69,7 @@ FADE IN.
 - ▶ en **"calendario"**: clic en la pestaña **Análisis** y llevar el calendario al año **2024**.
 - ▶ en **"septiembre"**: cursor despacio sobre la casilla de **septiembre**, la más intensa.
 
-> **NARRADOR:** "El **calendario** de quema muestra cuándo arde: **septiembre** de dos mil veinticuatro fue un récord."
+> **NARRADOR:** "El **calendario** muestra cuándo arde: **septiembre** de dos mil veinticuatro fue un récord."
 
 ---
 
@@ -88,7 +88,7 @@ FADE IN.
 **PANTALLA:** Panel, gráfica **Fig. 2**: serie mensual 2000–2026 con su banda de incertidumbre.
 **OPERADOR:** ▶ en **"MODIS"**: bajar en el panel hasta la Fig. 2 y dejarla quieta.
 
-> **NARRADOR:** "**MODIS** y VIIRS quedan armonizados en una sola serie, sin saltos y con su incertidumbre."
+> **NARRADOR:** "**MODIS** y VIIRS, armonizados en una sola serie, sin saltos y con su incertidumbre."
 
 ---
 
@@ -108,7 +108,7 @@ FADE IN.
 - ▶ en **"dibujar"**: clic en **Dibujar Zona** → **Escribir coordenadas** → **Centro y radio**.
 - Escribir **−17.0**, **−61.0** y **150** → **Crear área**. Aparece el círculo sobre la Chiquitanía.
 
-> **NARRADOR:** "Podemos **dibujar** un área o escribir sus coordenadas…"
+> **NARRADOR:** "Podemos **dibujar** un área o escribir coordenadas…"
 
 ---
 
@@ -141,18 +141,18 @@ FADE OUT.
 
 > Veintiséis años de datos satelitales de incendios… por fin comparables.
 > Elegimos cualquier zona de América. Por ejemplo, Bolivia.
-> El calendario de quema muestra cuándo arde: septiembre de dos mil veinticuatro fue un récord.
+> El calendario muestra cuándo arde: septiembre de dos mil veinticuatro fue un récord.
 > Con un clic, vemos dónde. ‖
-> MODIS y VIIRS quedan armonizados en una sola serie, sin saltos y con su incertidumbre.
+> MODIS y VIIRS, armonizados en una sola serie, sin saltos y con su incertidumbre.
 > Y anticipa los meses críticos.
-> Podemos dibujar un área o escribir sus coordenadas… y descargar los focos y las gráficas.
+> Podemos dibujar un área o escribir coordenadas… y descargar los focos y las gráficas.
 > IgnisSync.
 
-**~70 palabras.** A un ritmo de presentación (~2.5 palabras por segundo) más la pausa son unos **29 segundos**.
+**70 palabras.** A un ritmo de presentación (~2.5 palabras por segundo) son 28 segundos, más la pausa de la escena 4: **~29 segundos**.
 
 **La escena 7 es la más lenta para el operador:** escribir tres números toma tiempo. Si en el ensayo se pasa de 30 s, en este orden:
 1. Tener la herramienta de coordenadas **ya abierta** y los números **ya escritos** antes de empezar a grabar; en cámara solo se da clic en **Crear área**.
-2. Quitar de la escena 5 "sin saltos y con su incertidumbre": queda "MODIS y VIIRS quedan armonizados en una sola serie".
+2. Quitar de la escena 5 "sin saltos y con su incertidumbre": queda "MODIS y VIIRS, armonizados en una sola serie".
 3. Quitar la escena 4 y decir en la 3: "…septiembre de dos mil veinticuatro fue un récord, y el mapa muestra dónde."
 
 ## Avisos
