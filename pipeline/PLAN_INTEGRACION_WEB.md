@@ -37,7 +37,7 @@ El backend sigue leyendo `DATA_DIR/` con los mismos cuatro archivos y casi no ca
 | Archivo | Columnas | Notas |
 |---|---|---|
 | `cells.parquet` | `cell_id` INT (0..N-1, ordenado), `h3` VARCHAR, `lat`, `lon` DOUBLE, `region` UBIGINT | **una celda = hexágono H3 r6** (~36 km²), no r8. ~117 k celdas en AR+CL |
-| `monthly.parquet` | `cell_id`, `m` (meses desde 2000-01), `value` (armonizado), `modis_ta`, `modis_t`, `viirs` (crudos), `src`, **nuevas:** `value_ci_lower`, `value_ci_upper`, `frp_mw`, `is_nrt` | ordenado por `cell_id, m`. ~2.2 M filas en AR+CL. `value` = suma mensual de `harmonized_count` |
+| `monthly.parquet` | `cell_id`, `m` (meses desde 2000-01), `value` (armonizado), `modis_ta`, `modis_t`, `viirs` (crudos), **nuevas:** `value_ci_lower`, `value_ci_upper`, `frp_mw`, `is_nrt` | ordenado por `cell_id, m`. ~2.2 M filas en AR+CL. `value` = suma mensual de `harmonized_count`. Desde 2026-11-15 sin `src` (no se usaba) y con banda y FRP en 32 bits, para que quepa en 512 MB |
 | `months.parquet` | `m`, `viirs_sats`, `terra_only`, `modis_full`, **nueva:** `source` (`Terra` / `MODIS` / `S-NPP` / `NOAA-20`) | una fila por mes |
 | `info.json` | `synthetic: false`, `harmonization` = contenido de `models/metrics.json` (referencia, factores, validación), `cutoff_date`, `region`, `model_version` | lo muestra la sección de metodología |
 | `hotspots.parquet` | ver contrato en PLAN_EQUIPO.md | para el CSV de focos individuales |
@@ -193,7 +193,7 @@ Conviene **dejar** `source` (archive / nrt) para que quien descargue sepa qué e
 ### 9.5 ¿Mapa por hexágono?
 Es decisión del equipo web. Si lo hacen, colorear por `harmonized_count` (o `value` de `monthly`), no por `anomaly_pct`.
 
-### 9.6 Despliegue
+### 9.6 Despliegue → ver [DESPLIEGUE.md](DESPLIEGUE.md) (ya preparado: `render.yaml`, `backend/fetch_data.py`, zips del paso 07)
 Todavía no lo tenemos, y para la demo de la 1:00 PM está bien correr el backend en local. Para después:
 - Datos: publicar la entrega como **GitHub Release** (lo hace el equipo de datos) y que el backend la descargue al arrancar.
 - Servicio: **Render** (gratis, 512 MB; quitaremos la columna `src` de `monthly.parquet`, que tu código no usa y es la que más memoria gasta)

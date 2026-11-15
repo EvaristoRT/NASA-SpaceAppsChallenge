@@ -109,7 +109,7 @@ Criterio: cada quien se queda con los pasos que ya conoce. Las tareas que necesi
 | E2 | ✅ Respuestas a Manuel en la sección 9 de `PLAN_INTEGRACION_WEB.md` | Alta | Hecho |
 | E3 | ✅ Prueba con 3 polígonos (rectángulo, triángulo, forma en L): coinciden con el gold | Alta | Hecho |
 | E4 | Correr la cadena 01 → 07 cuando tú bajes los datos (C2, C3) y pasarle la entrega nueva a Manuel | Media | Después de C2/C3 |
-| E5 | Despliegue: quitar `src` de `monthly`, publicar la entrega como GitHub Release y apoyar a Manuel con Render o HF Spaces | Media | Después de la demo |
+| E5 | Despliegue: ✅ código listo (`render.yaml`, `backend/fetch_data.py`, `07 --zip`, sin `src`). ⏳ Falta lo que pide cuentas: Release, Render y `VITE_API_URL` en Vercel. Ver `DESPLIEGUE.md` | Media | En curso |
 | E6 | Borrar la rama `feat/bootstrap-ci` | Baja | Cuando confirmes C1 |
 | E7 | Región `sudamerica`. **Antes:** poner la región en las rutas de `models/` (tu 05) y `gold/entrega/` (07), que hoy se sobrescriben entre regiones | Baja | Si sobra tiempo |
 
