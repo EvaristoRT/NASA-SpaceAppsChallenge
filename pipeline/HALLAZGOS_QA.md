@@ -95,3 +95,32 @@ Factores globales: `k_modis` = 2.32 (días-celda) y 0.71 (FRP) · `k_snpp` = 1.0
 
 ### El FRP no es neutro (respuesta a la nota 2)
 Confirmado: 0.71. Se armoniza con su propio factor (ya lo hace el modelo) y valida bien. Se corrigió la fila "Segunda métrica" del plan.
+
+---
+
+## 2026-11-14 · Evaristo (por Carlos) · intervalos de confianza 95% (rama `feat/bootstrap-ci`)
+
+En la rama `feat/bootstrap-ci`, sin tocar `main`. **Carlos: revisa y haz merge si estás de acuerdo** (toca tu `05_model.py`).
+
+**Método:** bootstrap con 200 réplicas en el paso 05. En cada réplica se le da un peso Poisson(1) a cada hexágono r5 **y** a cada año,
+y se recalculan los factores con la misma fórmula del nivel 1. `factores.parquet` gana `factor_lo`, `factor_hi`, `factor_global_lo`, `factor_global_hi`
+(percentiles 2.5 y 97.5). El factor central no cambia: los resultados del nivel 1 son idénticos. Tarda ~20 s más.
+
+**Calibración (prueba 2023–2026, total mensual):**
+| Conversión | Cobertura del IC 95% | Ancho relativo mediano |
+|---|---|---|
+| MODIS → NOAA-20, días-celda | **95.7%** | 59% |
+| MODIS → NOAA-20, FRP | 93.6% | 83% |
+| S-NPP → NOAA-20, días-celda | 94.9% | 46% |
+| S-NPP → NOAA-20, FRP | 97.4% | 78% |
+
+Remuestreando solo hexágonos la cobertura salía en 83% (intervalo demasiado angosto): el que más varía es el año, por eso se remuestrean los dos.
+
+Factores globales con IC: `k_modis` 2.32 [2.24 – 2.42] · `k_snpp` 1.01 [0.99 – 1.02] · `f_terra` 2.77 [2.69 – 2.91].
+
+**En el paso 06:** `harmonized_ci_lower/upper` = fuente × `factor_lo/hi` (Terra: `f_terra` y `k_modis` encadenados). En la era NOAA-20 son iguales al valor.
+Si `factores.parquet` no trae IC, el 06 sigue funcionando y deja los límites iguales al valor.
+Ejemplo por año: 2005 = 368 k [291 k – 493 k] · 2011 = 309 k [246 k – 412 k] · 2015 = 218 k [181 k – 271 k] · 2019 = 308 k (medido).
+
+**Cómo leerlo:** es la incertidumbre del factor, no del conteo. Sumar `ci_lower` y `ci_upper` de varias celdas da una banda algo conservadora,
+pero así se midió la cobertura de arriba, así que para totales de región es la banda correcta. El tramo Terra solo (2000-11 a 2002-06) es el más ancho (±60%).

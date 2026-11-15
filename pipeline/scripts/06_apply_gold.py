@@ -20,7 +20,9 @@ Columnas (contrato con el front; no quitar los crudos: son la trazabilidad):
     h3_index VARCHAR, date DATE, year INT, month INT, dekad INT
     modis_raw_count INT, viirs_raw_count INT            focos crudos del día (VIIRS = solo el satélite usado)
     harmonized_count DOUBLE                             días-celda en equivalente NOAA-20
-    harmonized_ci_lower DOUBLE, harmonized_ci_upper DOUBLE     (iguales a harmonized_count hasta tener nivel 2)
+    harmonized_ci_lower DOUBLE, harmonized_ci_upper DOUBLE     IC 95% del factor (paso 05, bootstrap). En la era
+                                                        NOAA-20 son iguales al valor (es medido). Si factores.parquet
+                                                        no trae factor_lo/factor_hi, también son iguales al valor.
     harmonized_frp_mw DOUBLE
     primary_source VARCHAR, is_nrt BOOLEAN
     fire_regime VARCHAR                                 'wildfire' por ahora
@@ -77,23 +79,27 @@ def sat_cols(name: str, sats: tuple[str, ...]) -> str:
         coalesce(bool_or(source = 'nrt') FILTER (WHERE {cond}), false) AS {name}_nrt"""
 
 
-def gold_sql(silver_glob: str, factors: str) -> str:
-    # Una columna por (origen, métrica), con el factor regional y el global de respaldo.
+def gold_sql(silver_glob: str, factors: str, has_ci: bool) -> str:
+    # Una columna por (origen, métrica, variante), con el factor regional y el global de respaldo.
+    # Variantes: '' = factor central; '_lo' / '_hi' = límites del IC 95% (paso 05, bootstrap).
+    # Si factores.parquet no trae IC, los límites son el mismo factor central.
+    variants = {"": "factor", "_lo": "factor_lo" if has_ci else "factor", "_hi": "factor_hi" if has_ci else "factor"}
     fac_cols = ",\n".join(
-        f"max(factor) FILTER (WHERE origen = '{o}' AND metrica = '{m}') AS k_{o}_{m}"
-        for o in ORIGINS for m in METRICS)
+        f"max({col}) FILTER (WHERE origen = '{o}' AND metrica = '{m}') AS k_{o}_{m}{v}"
+        for v, col in variants.items() for o in ORIGINS for m in METRICS)
     glob_cols = ",\n".join(
-        f"max(factor_global) FILTER (WHERE origen = '{o}' AND metrica = '{m}') AS g_{o}_{m}"
-        for o in ORIGINS for m in METRICS)
-    k = {f"{o}_{m}": f"coalesce(f.k_{o}_{m}, g.g_{o}_{m})" for o in ORIGINS for m in METRICS}
+        f"max({col.replace('factor', 'factor_global')}) FILTER (WHERE origen = '{o}' AND metrica = '{m}') AS g_{o}_{m}{v}"
+        for v, col in variants.items() for o in ORIGINS for m in METRICS)
+    k = {f"{o}_{m}{v}": f"coalesce(f.k_{o}_{m}{v}, g.g_{o}_{m}{v})"
+         for v in variants for o in ORIGINS for m in METRICS}
 
-    def chain(m: str) -> str:
-        # Fuente elegida x su factor, para la métrica m (cd o frp).
+    def chain(m: str, v: str = "") -> str:
+        # Fuente elegida x su factor, para la métrica m (cd o frp). NOAA-20 es medido: sin incertidumbre de modelo.
         return f"""CASE d.era
             WHEN 'NOAA-20' THEN d.n20_{m}
-            WHEN 'S-NPP'   THEN d.snpp_{m} * {k[f'snpp_{m}']}
-            WHEN 'MODIS'   THEN d.modis_{m} * {k[f'modis_{m}']}
-            WHEN 'Terra'   THEN d.terra_{m} * {k[f'terra_{m}']} * {k[f'modis_{m}']}
+            WHEN 'S-NPP'   THEN d.snpp_{m} * {k[f'snpp_{m}{v}']}
+            WHEN 'MODIS'   THEN d.modis_{m} * {k[f'modis_{m}{v}']}
+            WHEN 'Terra'   THEN d.terra_{m} * {k[f'terra_{m}{v}']} * {k[f'modis_{m}{v}']}
         END"""
 
     return f"""
@@ -130,8 +136,8 @@ def gold_sql(silver_glob: str, factors: str) -> str:
             (CASE d.era WHEN 'NOAA-20' THEN d.n20_n WHEN 'S-NPP' THEN d.snpp_n ELSE 0 END)::INTEGER
                                                            AS viirs_raw_count,
             ({chain('cd')})::DOUBLE                        AS harmonized_count,
-            ({chain('cd')})::DOUBLE                        AS harmonized_ci_lower,
-            ({chain('cd')})::DOUBLE                        AS harmonized_ci_upper,
+            ({chain('cd', '_lo')})::DOUBLE                 AS harmonized_ci_lower,
+            ({chain('cd', '_hi')})::DOUBLE                 AS harmonized_ci_upper,
             ({chain('frp')})::DOUBLE                       AS harmonized_frp_mw,
             d.era                                          AS primary_source,
             CASE d.era WHEN 'NOAA-20' THEN d.n20_nrt WHEN 'S-NPP' THEN d.snpp_nrt
@@ -180,8 +186,11 @@ def main() -> int:
     print(f"Paso 06 - Gold: región '{args.region}' · factores {factors}")
     t0 = time.time()
     con = init_duckdb()
+    fac_cols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{factors.as_posix()}')").fetchall()}
+    has_ci = {"factor_lo", "factor_hi", "factor_global_lo", "factor_global_hi"} <= fac_cols
+    print("  IC 95%: " + ("del bootstrap del paso 05" if has_ci else "factores sin IC -> límites = valor central"))
     con.execute(f"""
-        COPY ({gold_sql((silver_dir / '**' / '*.parquet').as_posix(), factors.as_posix())})
+        COPY ({gold_sql((silver_dir / '**' / '*.parquet').as_posix(), factors.as_posix(), has_ci)})
         TO '{partial.as_posix()}' (FORMAT parquet, COMPRESSION zstd, ROW_GROUP_SIZE 500000)
     """)
     partial.replace(out)  # reemplaza el anterior solo cuando el nuevo está completo

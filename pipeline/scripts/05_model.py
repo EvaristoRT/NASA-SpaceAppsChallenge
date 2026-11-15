@@ -7,8 +7,9 @@ Entrada
     o, mientras el paso 04 no exista:  --fake  (genera una tabla falsa con factores conocidos)
 
 Salida  (en <FIRE_DATA_DIR>/models/)
-    factores.parquet      una fila por (origen, metrica, h3_r3, mes): factor, factor_global, n_meses, num, den
-    metrics.json          validación, deriva del factor por año y control con FRP
+    factores.parquet      una fila por (origen, metrica, h3_r3, mes): factor, factor_global, n_meses, num, den,
+                          factor_lo, factor_hi, factor_global_lo, factor_global_hi  (IC 95% por bootstrap, --n-boot)
+    metrics.json          validación (con cobertura del IC), deriva del factor por año y control con FRP
     figs/*.png            gráficas de validación
 
 Columnas que se esperan en la tabla de calibración (contrato del paso 04):
@@ -171,10 +172,59 @@ def fit(df: pd.DataFrame, years: tuple[int, int], prior: float) -> pd.DataFrame:
     return pd.concat(out, ignore_index=True)
 
 
-def factor_for(df: pd.DataFrame, fac: pd.DataFrame, origin: str, metric: str) -> np.ndarray:
+def bootstrap(df: pd.DataFrame, fac: pd.DataFrame, years: tuple[int, int], prior: float,
+              n_boot: int, seed: int = 42) -> pd.DataFrame:
+    """Intervalo de confianza del 95% de cada factor: bootstrap por hexágono r5.
+
+    Cada réplica le da un peso Poisson(1) a cada hexágono r5 y otro a cada año (equivale a remuestrear
+    hexágonos y años con reemplazo) y recalcula factor regional y global con la misma fórmula de `fit`.
+    Remuestrear grupos, y no filas, respeta que los meses de un mismo hexágono o año no son independientes.
+    Con solo hexágonos la cobertura en la prueba fue 83%; con hexágonos x años, ~95% (medido en argentina_chile).
+    Añade a `fac`: factor_lo, factor_hi (percentiles 2.5 y 97.5) y factor_global_lo, factor_global_hi.
+    """
+    rng = np.random.default_rng(seed)
+    fac = fac.copy()
+    for c in ("factor_lo", "factor_hi", "factor_global_lo", "factor_global_hi"):
+        fac[c] = np.nan
+    in_years = df["year"].between(*years)
+    for origin, (num, den, ok) in ORIGINS.items():
+        d = df[ok(df["m"]) & (in_years if origin != "terra" else True)]
+        if d.empty:
+            continue
+        cell_idx, cells = pd.factorize(d["h3_r5"])
+        year_idx, yrs = pd.factorize(d["year"])
+        g_idx, groups = pd.factorize(pd.MultiIndex.from_arrays([d["h3_r3"], d["month"]]))
+        for p in METRICS:
+            nv = d[f"{p}_{num}"].to_numpy()
+            dv = d[f"{p}_{den}"].to_numpy()
+            tot_den = dv.sum()
+            # mismo prior que `fit` (fijo entre réplicas)
+            pr = prior if p == "cd" else prior * (tot_den / max(d[f"cd_{den}"].sum(), 1))
+            reg = np.empty((n_boot, len(groups)))
+            glob = np.empty(n_boot)
+            for b in range(n_boot):
+                w = rng.poisson(1.0, len(cells))[cell_idx] * rng.poisson(1.0, len(yrs))[year_idx]
+                sn, sd = (w * nv).sum(), (w * dv).sum()
+                kg = sn / sd if sd > 0 else np.nan
+                ng = np.bincount(g_idx, weights=w * nv, minlength=len(groups))
+                dg = np.bincount(g_idx, weights=w * dv, minlength=len(groups))
+                reg[b] = (ng + pr * kg) / (dg + pr)
+                glob[b] = kg
+            lo, hi = np.nanpercentile(reg, [2.5, 97.5], axis=0)
+            look = pd.DataFrame({"h3_r3": groups.get_level_values(0), "mes": groups.get_level_values(1), "lo": lo, "hi": hi})
+            sel = (fac["origen"] == origin) & (fac["metrica"] == p)
+            m = fac.loc[sel, ["h3_r3", "mes"]].merge(look, on=["h3_r3", "mes"], how="left")
+            fac.loc[sel, "factor_lo"] = m["lo"].to_numpy()
+            fac.loc[sel, "factor_hi"] = m["hi"].to_numpy()
+            fac.loc[sel, "factor_global_lo"], fac.loc[sel, "factor_global_hi"] = np.nanpercentile(glob, [2.5, 97.5])
+    return fac
+
+
+def factor_for(df: pd.DataFrame, fac: pd.DataFrame, origin: str, metric: str, col: str = "factor") -> np.ndarray:
     f = fac[(fac["origen"] == origin) & (fac["metrica"] == metric)]
-    glob = float(f["factor_global"].iloc[0]) if len(f) else np.nan
-    look = f.set_index(["h3_r3", "mes"])["factor"]
+    gcol = "factor_global" if col == "factor" else col.replace("factor", "factor_global")
+    glob = float(f[gcol].iloc[0]) if len(f) else np.nan
+    look = f.set_index(["h3_r3", "mes"])[col]
     idx = pd.MultiIndex.from_arrays([df["h3_r3"], df["month"]])
     return look.reindex(idx).fillna(glob).to_numpy()
 
@@ -206,6 +256,16 @@ def validate(df: pd.DataFrame, fac: pd.DataFrame) -> tuple[dict, pd.DataFrame]:
                 "armonizado_region_mes": score(reg[f"{p}_{num}"], reg["pred"]),
                 "sin_armonizar_mensual_total": score(tot[f"{p}_{num}"], tot[f"{p}_{den}"]),
             }
+            if "factor_lo" in fac:
+                # ¿Qué fracción de los meses observados cae dentro del intervalo del factor?
+                t["lo"] = t[f"{p}_{den}"] * factor_for(t, fac, origin, p, "factor_lo")
+                t["hi"] = t[f"{p}_{den}"] * factor_for(t, fac, origin, p, "factor_hi")
+                b = t.groupby("m")[[f"{p}_{num}", "lo", "hi"]].sum()
+                inside = (b[f"{p}_{num}"] >= b["lo"]) & (b[f"{p}_{num}"] <= b["hi"])
+                res[f"{origin}_{p}"]["ic95_factor"] = {
+                    "cobertura_mensual_total_pct": round(float(inside.mean() * 100), 1),
+                    "ancho_relativo_mediano_pct": round(float(((b["hi"] - b["lo"]) / b[f"{p}_{num}"].clip(lower=1)).median() * 100), 2),
+                }
             if origin == "modis" and p == "cd":
                 series = tot.rename(columns={f"{p}_{num}": "n20_real", "pred": "modis_armonizado", f"{p}_{den}": "modis_crudo"})
     return res, series
@@ -277,6 +337,7 @@ def main() -> int:
     ap.add_argument("--region", default=config.DEFAULT_REGION, choices=sorted(config.REGIONS))
     ap.add_argument("--prior", type=float, default=30.0, help="Peso del encogimiento hacia el factor global (días-celda)")
     ap.add_argument("--fake", action="store_true", help="Usar una tabla falsa con factores conocidos")
+    ap.add_argument("--n-boot", type=int, default=200, help="Réplicas bootstrap para el IC 95%% de los factores (0 = sin IC)")
     args = ap.parse_args()
 
     models = config.layer("models", args.data_dir)
@@ -295,6 +356,8 @@ def main() -> int:
     models.mkdir(parents=True, exist_ok=True)
 
     fac = fit(df, config.TRAIN_YEARS, args.prior)
+    if args.n_boot > 0:
+        fac = bootstrap(df, fac, config.TRAIN_YEARS, args.prior, args.n_boot)
     import duckdb  # sin pyarrow: DuckDB escribe el parquet directamente desde el DataFrame
     duckdb.sql(f"COPY (SELECT * FROM fac) TO '{(models / 'factores.parquet').as_posix()}' (FORMAT parquet)")
     val, series = validate(df, fac)
@@ -304,6 +367,10 @@ def main() -> int:
         "prior": args.prior,
         "factores_globales": {f"{o}_{p}": round(float(g["factor_global"].iloc[0]), 4)
                               for (o, p), g in fac.groupby(["origen", "metrica"])},
+        "ic95_factores_globales": {f"{o}_{p}": [round(float(g["factor_global_lo"].iloc[0]), 4),
+                                                round(float(g["factor_global_hi"].iloc[0]), 4)]
+                                   for (o, p), g in fac.groupby(["origen", "metrica"])} if "factor_lo" in fac else None,
+        "bootstrap": {"replicas": args.n_boot, "unidad": "hexágono h3_r5", "pesos": "Poisson(1)"} if args.n_boot > 0 else None,
         "validacion": val,
         "deriva_factor_por_anio": drift(df),
         "control_frp": frp_control(series, df),
