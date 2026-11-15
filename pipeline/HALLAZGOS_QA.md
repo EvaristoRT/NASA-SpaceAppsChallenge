@@ -48,3 +48,23 @@ Para Carlos:
 3. `cd_n21` solo tiene datos en 2026: no hay zips anuales de NOAA-21 (jpss2) en el archivo que bajamos.
 4. En mi máquina `pyarrow` no carga (Windows bloquea su DLL por control de aplicaciones), así que `pd.read_parquet` falla.
    Si a alguien le pasa, el 05 se puede leer con `duckdb.sql(...).df()`. Es de la máquina, no del código.
+
+---
+
+## 2026-11-14 · Evaristo · serie armonizada `argentina_chile` (paso 06)
+
+Con los factores de `05_model.py` corrido sobre la tabla real del paso 04 (en mi máquina; se rehace cuando Carlos publique los oficiales):
+**4,103,854 filas · 116,988 hexágonos r6 · 2000-11-01 a 2026-11-14**, 43 MB, en 12 s. Sin claves repetidas ni nulos.
+
+Cortes de fuente exactamente en las fechas de `config.py`: Terra hasta 2002-06-30, MODIS hasta 2012-01-19, S-NPP hasta 2018-03-31, NOAA-20 después.
+
+Días-celda armonizados por año (equivalente NOAA-20): 2003 467 k · 2011 309 k · **2013 289 k** · 2017 295 k · **2019 308 k** · 2020 534 k · 2024 342 k.
+No hay saltos en los cambios de fuente (2002, 2012, 2018). En los años NOAA-20 el total coincide exacto con `cd_n20` del paso 04.
+
+Para tener en cuenta:
+1. **Hay filas con `harmonized_count = 0`** (37% en la era NOAA-20, 16% en la de S-NPP): celdas-día donde solo otro satélite vio fuego.
+   Se dejan porque conservan los crudos. Para sumar no molestan; para contar "celdas con fuego" hay que filtrar `> 0`.
+2. **El FRP armonizado de la era Terra (2000-11 a 2002-06) sale alto**: 12.2 M MW en 2001 contra ~8 M en 2003. La cadena FRP
+   (f_terra 3.34 × k_modis 0.71) es menos confiable que la de días-celda. Carlos: revisar junto con el 0.71.
+3. `harmonized_ci_lower/upper` = `harmonized_count` hasta que exista el nivel 2.
+4. `region` no va dentro del archivo: DuckDB la agrega al leer por estar en la ruta (`region=...`).
