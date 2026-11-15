@@ -24,8 +24,10 @@ anomalías por celda.
 
 Uso:
     python pipeline/scripts/07_export.py
-    python pipeline/scripts/07_export.py --region sudamerica
+    python pipeline/scripts/07_export.py --zip                # además arma los zip para publicar
     python pipeline/scripts/07_export.py --data-dir D:\\datos_fuego
+
+Ojo: gold/entrega/ no lleva la región en la ruta. Correr otra región sobrescribe la entrega anterior.
 """
 from __future__ import annotations
 
@@ -195,10 +197,9 @@ def create_backend_files(
                sum(d.modis_ta)::INTEGER AS modis_ta,
                sum(d.modis_t)::INTEGER AS modis_t,
                sum(d.viirs)::INTEGER AS viirs,
-               max(d.primary_source) AS src,
-               sum(d.harmonized_ci_lower)::DOUBLE AS value_ci_lower,
-               sum(d.harmonized_ci_upper)::DOUBLE AS value_ci_upper,
-               sum(d.harmonized_frp_mw)::DOUBLE AS frp_mw,
+               sum(d.harmonized_ci_lower)::FLOAT AS value_ci_lower,
+               sum(d.harmonized_ci_upper)::FLOAT AS value_ci_upper,
+               sum(d.harmonized_frp_mw)::FLOAT AS frp_mw,
                bool_or(d.is_nrt) AS is_nrt
         FROM daily d
         JOIN cell_map c ON c.h3 = d.h3_index
@@ -335,6 +336,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--data-dir", help="Carpeta de datos (por defecto: FIRE_DATA_DIR)")
     ap.add_argument("--region", default=config.DEFAULT_REGION, choices=sorted(config.REGIONS))
+    ap.add_argument("--zip", action="store_true",
+                    help="Además, empaquetar la entrega en gold/paquetes/ para publicarla (ver DESPLIEGUE.md)")
     args = ap.parse_args()
 
     gold = config.layer("gold", args.data_dir)
@@ -365,7 +368,38 @@ def main() -> int:
     print(f"  {harmonized.name}: serie diaria con anomalías")
     print(f"  {hotspots.name}/: focos limpios por año")
     print("  cells/monthly/months/info: formato para backend")
+    if args.zip:
+        for z in package(delivery, args.region):
+            print(f"  zip: {z} ({z.stat().st_size / 1e6:.1f} MB)")
     return 0
+
+
+BACKEND_FILES = ("cells.parquet", "monthly.parquet", "months.parquet", "info.json", "LEEME_ENTREGA.md")
+
+
+def package(delivery: Path, region: str) -> list[Path]:
+    """Empaqueta la entrega para publicarla (GitHub Release) y que el backend la descargue al arrancar.
+
+    <gold>/paquetes/ignis-backend-<region>.zip   lo que necesita el backend (~30 MB): BACKEND_FILES
+    <gold>/paquetes/ignis-hotspots-<region>.zip  los focos individuales para el CSV (hotspots/)
+    Los nombres no llevan fecha: así la URL de descarga del backend no cambia entre versiones.
+    """
+    import zipfile
+
+    out = delivery.parent / "paquetes"
+    out.mkdir(exist_ok=True)
+    made = []
+    for name, members in ((f"ignis-backend-{region}.zip", [delivery / f for f in BACKEND_FILES]),
+                          (f"ignis-hotspots-{region}.zip", sorted((delivery / "hotspots").rglob("*.parquet")))):
+        target = out / name
+        partial = target.with_suffix(".zip.partial")
+        # Los parquet ya vienen comprimidos (zstd): ZIP_STORED evita recomprimir y es igual de chico.
+        with zipfile.ZipFile(partial, "w", zipfile.ZIP_STORED) as z:
+            for f in members:
+                z.write(f, f.relative_to(delivery).as_posix())
+        partial.replace(target)
+        made.append(target)
+    return made
 
 
 if __name__ == "__main__":

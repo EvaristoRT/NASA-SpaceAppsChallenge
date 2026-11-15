@@ -1,0 +1,23 @@
+# Despliegue del backend en Render (Blueprint). Pasos en pipeline/DESPLIEGUE.md.
+# El front sigue en Vercel; aquí solo va la API. Los datos no están en git: fetch_data.py los baja del
+# GitHub Release al arrancar.
+services:
+  - type: web
+    name: ignissync-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python fetch_data.py && uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: DATA_DIR
+        value: /tmp/ignis-data
+      - key: DATA_URL
+        value: https://github.com/EvaristoRT/NASA-SpaceAppsChallenge/releases/latest/download/ignis-backend-argentina_chile.zip
+      # URL del front en producción (Vercel), p. ej. https://tu-app.vercel.app. Las *.vercel.app ya se aceptan
+      # por el regex de main.py; esta variable sirve para un dominio propio. Se llena en el panel de Render.
+      - key: ALLOWED_ORIGINS
+        sync: false

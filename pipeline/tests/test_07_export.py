@@ -90,7 +90,8 @@ def test_exports_delivery_and_backend_format(tmp_path, monkeypatch):
     months = pd.read_parquet(delivery / "months.parquet")
     info = json.loads((delivery / "info.json").read_text(encoding="utf-8"))
     assert list(cells["cell_id"]) == [0]
-    assert set(monthly.columns) >= {"cell_id", "m", "value", "modis_ta", "modis_t", "viirs", "src"}
+    assert set(monthly.columns) >= {"cell_id", "m", "value", "modis_ta", "modis_t", "viirs", "value_ci_lower", "is_nrt"}
+    assert "src" not in monthly.columns  # el backend no la usa y era la columna que más memoria gastaba
     assert months.loc[months["m"] == 312, "source"].iloc[0] == "NOAA-20"
     assert info["synthetic"] is False and info["cutoff_date"] == "2026-01-02"
     # El corte es el 2 de enero: enero de 2026 es un mes parcial con 2 días observados.
@@ -106,3 +107,16 @@ def test_exports_delivery_and_backend_format(tmp_path, monkeypatch):
 
     store = DataStore(delivery)
     assert store.m_min == 10 and store.m_max == 312
+
+
+def test_package_has_backend_files_and_hotspots(tmp_path):
+    import zipfile
+    delivery = tmp_path / "gold" / "entrega"
+    (delivery / "hotspots" / "year=2026").mkdir(parents=True)
+    for name in step07.BACKEND_FILES:
+        (delivery / name).write_text("x", encoding="utf-8")
+    (delivery / "hotspots" / "year=2026" / "data_0.parquet").write_text("x", encoding="utf-8")
+    backend_zip, hotspots_zip = step07.package(delivery, "argentina_chile")
+    assert backend_zip.name == "ignis-backend-argentina_chile.zip"
+    assert sorted(zipfile.ZipFile(backend_zip).namelist()) == sorted(step07.BACKEND_FILES)
+    assert zipfile.ZipFile(hotspots_zip).namelist() == ["hotspots/year=2026/data_0.parquet"]
