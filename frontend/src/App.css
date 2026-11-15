@@ -1460,9 +1460,51 @@ button.cal-cell:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
+/* Periodo del análisis (desde, hasta) */
+.analysis-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.analysis-range label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.analysis-range input[type='month'] {
+  padding: 3px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  color-scheme: dark;
+  font: inherit;
+}
+
+.analysis-range-reset {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 /* Descargas CSV */
 .analysis-downloads {
   margin-top: 4px;
+}
+
+.analysis-downloads + .analysis-downloads {
+  margin-top: 14px;
 }
 
 .analysis-section-title {

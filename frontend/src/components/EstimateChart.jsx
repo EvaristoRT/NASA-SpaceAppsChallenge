@@ -89,9 +89,11 @@ export default function EstimateChart({ points }) {
           </text>
         ))}
         {/* rótulos directos en lugar de una leyenda aparte */}
-        <text x={PAD.l + 4} y={PAD.t + 10} className="estimate-label estimate-zone-label">
-          {t('estimate.estimated')}
-        </text>
+        {chart.firstMeasured > 0 && (
+          <text x={PAD.l + 4} y={PAD.t + 10} className="estimate-label estimate-zone-label">
+            {t('estimate.estimated')}
+          </text>
+        )}
         {chart.firstMeasured < n - 1 && (
           <text x={x(chart.firstMeasured) + 4} y={PAD.t + 10} className="estimate-label estimate-zone-label">
             {t('estimate.measured')}

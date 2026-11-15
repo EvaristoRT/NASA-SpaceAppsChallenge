@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAnalysis } from '../utils/useAnalysis';
+import { applyRange, shiftMonth } from '../utils/searchAdapter';
+import { useHotspotCount } from '../utils/useHotspotCount';
+import { useMeta } from '../utils/useMeta';
 import { localizeZone } from '../i18n/zoneText';
 import EstimateChart from './EstimateChart';
 import DownloadPanel from './DownloadPanel';
@@ -17,7 +20,29 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
   const { lang, t } = useLanguage();
 
   const seed = drawnArea ? `area:${Math.round(drawnArea.center?.[0] ?? 0)}:${Math.round(drawnArea.center?.[1] ?? 0)}` : zone?.id;
-  const { status, data } = useAnalysis(zone, drawnArea, seed);
+  const { status, data: fullData } = useAnalysis(zone, drawnArea, seed);
+  const meta = useMeta();
+
+  // Periodo (desde, hasta): por defecto toda la serie; cambia con la zona porque guarda a qué resultado pertenece
+  const bounds =
+    fullData && !fullData.synthetic && fullData.points?.length
+      ? { from: fullData.points[0].month, to: fullData.points[fullData.points.length - 1].month }
+      : null;
+  const [picked, setPicked] = useState({ source: null, from: null, to: null });
+  const range = bounds ? (picked.source === fullData ? { from: picked.from, to: picked.to } : bounds) : null;
+  const rangeFrom = range ? range.from : null;
+  const rangeTo = range ? range.to : null;
+  const ranged = Boolean(range && (rangeFrom !== bounds.from || rangeTo !== bounds.to));
+  const data = useMemo(() => (rangeFrom ? applyRange(fullData, rangeFrom, rangeTo) : fullData), [fullData, rangeFrom, rangeTo]);
+
+  // Mes elegido: solo cuenta si cae dentro del periodo
+  const monthKey = selectedMonth ? `${selectedMonth.year}-${String(selectedMonth.month + 1).padStart(2, '0')}` : null;
+  const activeMonth = range && monthKey && monthKey >= rangeFrom && monthKey <= rangeTo ? selectedMonth : null;
+  // Focos detectados: el mes elegido o, si no hay, los últimos 12 meses del periodo (el límite del servidor)
+  const hotspotsOn = Boolean(range && meta && meta.hotspots_available !== false);
+  const countFrom = !range ? null : activeMonth ? monthKey : shiftMonth(rangeTo, -11) > rangeFrom ? shiftMonth(rangeTo, -11) : rangeFrom;
+  const countTo = !range ? null : activeMonth ? monthKey : rangeTo;
+  const hotspotCount = useHotspotCount(zone, drawnArea, countFrom, countTo, hotspotsOn);
 
   if (!data) {
     return (
@@ -76,7 +101,19 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
 
   const fmt = (n) => n.toLocaleString(lang === 'en' ? 'en-US' : 'es-MX');
   const ratioText = data.ratio === null ? '—' : data.ratio.toFixed(1);
-  const monthName = monthsLong[data.currentMonth];
+  // Con un periodo que termina antes del último mes hay que decir de qué año se habla
+  const monthName = monthsLong[data.currentMonth] + (ranged && rangeTo < bounds.to ? ` ${data.currentYear}` : '');
+  const monthShort = (key) => `${months[Number(key.slice(5)) - 1]} ${key.slice(0, 4)}`;
+  const hotspotPeriod = countFrom === countTo ? monthShort(countFrom || '2000-01') : `${monthShort(countFrom || '2000-01')} – ${monthShort(countTo || '2000-01')}`;
+  const setRange = (from, to) => setPicked({ source: fullData, from, to });
+  const changeFrom = (value) => {
+    if (!value) return;
+    setRange(value, value > rangeTo ? value : rangeTo);
+  };
+  const changeTo = (value) => {
+    if (!value) return;
+    setRange(value < rangeFrom ? value : rangeFrom, value);
+  };
   const statement =
     data.status === 'elevated'
       ? t('analysis.statementAbove', { month: monthName, ratio: ratioText })
@@ -88,11 +125,35 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
     <div className="zone-drawer-body analysis-view" aria-label={t('analysis.title')}>
       <p className="analysis-statement">{statement}</p>
 
+      {range && (
+        <div className="analysis-range" role="group" aria-label={t('analysis.rangeLabel')}>
+          <label>
+            {t('analysis.rangeFrom')}
+            <input type="month" value={rangeFrom} min={bounds.from} max={bounds.to} onChange={(e) => changeFrom(e.target.value)} />
+          </label>
+          <label>
+            {t('analysis.rangeTo')}
+            <input type="month" value={rangeTo} min={bounds.from} max={bounds.to} onChange={(e) => changeTo(e.target.value)} />
+          </label>
+          {ranged && (
+            <button type="button" className="analysis-range-reset" onClick={() => setRange(bounds.from, bounds.to)}>
+              {t('analysis.rangeReset')}
+            </button>
+          )}
+        </div>
+      )}
+
       <dl className="analysis-facts">
         <div>
           <dt>{t('analysis.factTotal', { from: data.firstYear, to: data.lastYear })}</dt>
           <dd>{fmt(data.total)}</dd>
         </div>
+        {hotspotsOn && hotspotCount.status !== 'off' && (
+          <div>
+            <dt>{t('analysis.factHotspots', { period: hotspotPeriod })}</dt>
+            <dd aria-live="polite">{hotspotCount.status === 'ready' ? fmt(hotspotCount.count) : '…'}</dd>
+          </div>
+        )}
         <div>
           <dt>{t('analysis.factPeakYear')}</dt>
           <dd>{data.peakYear}</dd>
@@ -188,7 +249,10 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
             zone={zone}
             drawnArea={drawnArea}
             zoneName={drawnArea ? t('analysis.customArea') : localizeZone(zone, lang).name}
-            selectedMonth={selectedMonth}
+            selectedMonth={activeMonth}
+            data={data}
+            range={range}
+            ranged={ranged}
           />
         </>
       )}

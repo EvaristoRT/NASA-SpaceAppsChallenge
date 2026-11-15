@@ -8,6 +8,8 @@
 const ELEVATED = 1.25; // mismo umbral que la demostración
 const LOW = 0.75;
 
+const statusOf = (ratio) => (ratio === null ? 'normal' : ratio >= ELEVATED ? 'elevated' : ratio <= LOW ? 'low' : 'normal');
+
 const parseMonth = (text) => {
   const [y, m] = text.split('-').map(Number);
   return { year: y, month: m - 1 }; // el panel cuenta los meses desde 0
@@ -63,6 +65,7 @@ export function adaptSearchResponse(response) {
     firstYear,
     lastYear,
     currentMonth: latest.month,
+    currentYear: latest.year,
     calendar,
     max: Math.max(120, peak.value), // mismo piso que la demostración para la escala de color
     peak,
@@ -70,7 +73,7 @@ export function adaptSearchResponse(response) {
     peakYear,
     riskMonth,
     ratio,
-    status: ratio === null ? 'normal' : ratio >= ELEVATED ? 'elevated' : ratio <= LOW ? 'low' : 'normal',
+    status: statusOf(ratio),
     // Fuente por mes, banda de incertidumbre y meses preliminares (los usan el calendario y la gráfica de la estimación)
     source,
     ci,
@@ -82,9 +85,64 @@ export function adaptSearchResponse(response) {
       count: p.count,
       lo: p.count_ci_lower ?? null,
       hi: p.count_ci_upper ?? null,
+      ratio: p.anomaly_ratio ?? null,
       source: p.source ?? null,
       nrt: Boolean(p.is_nrt),
       partial: Boolean(p.is_partial)
     }))
+  };
+}
+
+// "YYYY-MM" desplazado `delta` meses
+export function shiftMonth(key, delta) {
+  const { year, month } = parseMonth(key);
+  const n = year * 12 + month + delta;
+  return `${Math.floor(n / 12)}-${String((n % 12) + 1).padStart(2, '0')}`;
+}
+
+// Recorta el análisis a un periodo (desde y hasta, "YYYY-MM"): calendario, serie, cifras clave y estado del mes salen solo de esos meses.
+// La línea base (mediana histórica) no cambia: ya viene calculada con toda la historia. Devuelve el mismo objeto si el periodo es todo.
+export function applyRange(data, from, to) {
+  if (!data?.points?.length) return data;
+  const pts = data.points.filter((p) => p.month >= from && p.month <= to);
+  if (!pts.length || pts.length === data.points.length) return data;
+
+  const firstYear = Number(pts[0].month.slice(0, 4));
+  const lastYear = Number(pts[pts.length - 1].month.slice(0, 4));
+  const calendar = {};
+  for (let y = firstYear; y <= lastYear; y++) calendar[y] = new Array(12).fill(null);
+
+  const yearTotals = {};
+  let total = 0;
+  let peak = { value: -1, year: firstYear, month: 0 };
+  for (const p of pts) {
+    const { year, month } = parseMonth(p.month);
+    const value = Math.round(p.count);
+    calendar[year][month] = value;
+    total += value;
+    yearTotals[year] = (yearTotals[year] ?? 0) + value;
+    if (value > peak.value) peak = { value, year, month };
+  }
+  const peakYear = Number(Object.keys(yearTotals).reduce((a, b) => (yearTotals[a] >= yearTotals[b] ? a : b)));
+
+  // Estado del periodo: el último mes completo con razón contra la mediana
+  const withRatio = pts.filter((p) => !p.partial && p.ratio != null);
+  const last = withRatio.length ? withRatio[withRatio.length - 1] : null;
+  const latest = parseMonth((last ?? pts[pts.length - 1]).month);
+  const ratio = last ? last.ratio : null;
+
+  return {
+    ...data,
+    firstYear,
+    lastYear,
+    calendar,
+    peak,
+    total,
+    peakYear,
+    currentMonth: latest.month,
+    currentYear: latest.year,
+    ratio,
+    status: statusOf(ratio),
+    points: pts
   };
 }

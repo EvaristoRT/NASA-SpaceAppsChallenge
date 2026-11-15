@@ -2,25 +2,33 @@ import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { geometryFor } from '../utils/useAnalysis';
 import { downloadCsv } from '../utils/downloadCsv';
+import { exportCalendarPng, exportChartPng } from '../utils/exportFigure';
 import { useMeta } from '../utils/useMeta';
 
-// Descargas de la zona o el área trazada: la serie mensual, los hexágonos del mes elegido y los focos individuales de ese mes.
-export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth }) {
+const spanMonths = (from, to) => (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(to.slice(5)) - Number(from.slice(5)) + 1;
+
+// Descargas de la zona o el área trazada: CSV (serie del periodo, hexágonos y focos del mes o del periodo) e imágenes PNG del
+// calendario y de la gráfica. `range` es el periodo elegido ({from, to}, "YYYY-MM"); `ranged` indica que no es toda la serie.
+export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth, data, range, ranged }) {
   const { t } = useLanguage();
   const meta = useMeta();
   // Estado por fila: { loading, message }
   const [state, setState] = useState({});
 
+  const months = t('analysis.monthsShort');
+  const monthLabelOf = (key) => `${months[Number(key.slice(5)) - 1]} ${key.slice(0, 4)}`;
+  const periodLabel = range ? (range.from === range.to ? monthLabelOf(range.from) : `${monthLabelOf(range.from)} – ${monthLabelOf(range.to)}`) : '';
+
   const monthKey = selectedMonth ? `${selectedMonth.year}-${String(selectedMonth.month + 1).padStart(2, '0')}` : null;
   const monthLabel = selectedMonth ? `${t('analysis.monthsLong')[selectedMonth.month]} ${selectedMonth.year}` : '';
   const hotspotsAvailable = meta ? meta.hotspots_available !== false : true;
+  // Focos: el mes elegido o, si no hay, el periodo cuando cabe en 12 meses (el límite del servidor)
+  const shortRange = range ? spanMonths(range.from, range.to) <= 12 : false;
 
-  const run = async (id, level, month) => {
-    const geometry = geometryFor(zone, drawnArea);
-    if (!geometry) return;
+  const run = async (id, action) => {
     setState((s) => ({ ...s, [id]: { loading: true } }));
     try {
-      await downloadCsv(level, geometry, month);
+      await action();
       setState((s) => ({ ...s, [id]: { message: t('download.done') } }));
     } catch (error) {
       const message =
@@ -29,54 +37,97 @@ export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth
     }
   };
 
-  const rows = [
+  const csv = (level, start, end) => () => {
+    const geometry = geometryFor(zone, drawnArea);
+    if (!geometry) return Promise.resolve();
+    return downloadCsv(level, geometry, start, end);
+  };
+
+  const slug = (zoneName || 'zone').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'zone';
+  const labels = (kind) => ({
+    title: t(kind === 'calendar' ? 'download.imageTitleCalendar' : 'download.imageTitleChart', { zone: zoneName }),
+    subtitle: t('download.imageSubtitle', { period: periodLabel }),
+    footer: t('download.imageFooter'),
+    monthsShort: months,
+    scaleLabel: t('download.imageScale')
+  });
+  const chartSvg = () => document.querySelector('.estimate-chart');
+
+  const csvRows = [
     {
       id: 'monthly',
-      level: 'monthly',
-      label: t('download.monthly', { zone: zoneName }),
-      month: null,
+      label: ranged ? t('download.monthlyRange', { zone: zoneName, period: periodLabel }) : t('download.monthly', { zone: zoneName }),
+      action: csv('monthly', ranged ? range.from : null, ranged ? range.to : null),
       disabledReason: ''
     },
     {
       id: 'cells',
-      level: 'cells',
       label: monthLabel ? t('download.cells', { month: monthLabel }) : t('download.cellsAny'),
-      month: monthKey,
+      action: csv('cells', monthKey),
       disabledReason: monthKey ? '' : t('download.pickMonth')
     },
     {
       id: 'hotspots',
-      level: 'hotspots',
-      label: monthLabel ? t('download.hotspots', { month: monthLabel }) : t('download.hotspotsAny'),
-      month: monthKey,
-      disabledReason: !monthKey ? t('download.pickMonth') : !hotspotsAvailable ? t('download.unavailable') : ''
+      label: monthLabel
+        ? t('download.hotspots', { month: monthLabel })
+        : shortRange
+        ? t('download.hotspotsRange', { period: periodLabel })
+        : t('download.hotspotsAny'),
+      action: monthKey ? csv('hotspots', monthKey) : csv('hotspots', range?.from, range?.to),
+      disabledReason: !hotspotsAvailable ? t('download.unavailable') : monthKey || shortRange ? '' : t('download.pickMonthOrShort')
     }
   ];
 
+  const imageRows = [
+    {
+      id: 'calendarImg',
+      label: t('download.calendarImage'),
+      action: () => exportCalendarPng(data, labels('calendar'), `ignissync_calendar_${slug}.png`),
+      disabledReason: ''
+    },
+    {
+      id: 'chartImg',
+      label: t('download.chartImage'),
+      action: () => {
+        const svg = chartSvg();
+        if (!svg) return Promise.reject(new Error('chart'));
+        return exportChartPng(svg, labels('chart'), `ignissync_series_${slug}.png`);
+      },
+      disabledReason: data.points.filter((p) => !p.partial).length >= 2 ? '' : t('download.error')
+    }
+  ];
+
+  const renderRows = (rows) =>
+    rows.map((row) => {
+      const s = state[row.id] || {};
+      const disabled = Boolean(row.disabledReason) || Boolean(s.loading);
+      return (
+        <li key={row.id}>
+          <button type="button" className="download-row" disabled={disabled} onClick={() => run(row.id, row.action)}>
+            <span className="download-text">
+              <b>{row.label}</b>
+              {row.disabledReason && <small>{row.disabledReason}</small>}
+            </span>
+          </button>
+          {(s.loading || s.message) && (
+            <p className={`download-status${s.error ? ' error' : ''}`} role="status">
+              {s.loading ? t('download.working') : s.message}
+            </p>
+          )}
+        </li>
+      );
+    });
+
   return (
-    <section className="analysis-downloads" aria-label={t('download.title')}>
-      <h3 className="analysis-section-title">{t('download.title')}</h3>
-      <ul>
-        {rows.map((row) => {
-          const s = state[row.id] || {};
-          const disabled = Boolean(row.disabledReason) || Boolean(s.loading);
-          return (
-            <li key={row.id}>
-              <button type="button" className="download-row" disabled={disabled} onClick={() => run(row.id, row.level, row.month)}>
-                <span className="download-text">
-                  <b>{row.label}</b>
-                  {row.disabledReason && <small>{row.disabledReason}</small>}
-                </span>
-              </button>
-              {(s.loading || s.message) && (
-                <p className={`download-status${s.error ? ' error' : ''}`} role="status">
-                  {s.loading ? t('download.working') : s.message}
-                </p>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+    <>
+      <section className="analysis-downloads" aria-label={t('download.title')}>
+        <h3 className="analysis-section-title">{t('download.title')}</h3>
+        <ul>{renderRows(csvRows)}</ul>
+      </section>
+      <section className="analysis-downloads" aria-label={t('download.imagesTitle')}>
+        <h3 className="analysis-section-title">{t('download.imagesTitle')}</h3>
+        <ul>{renderRows(imageRows)}</ul>
+      </section>
+    </>
   );
 }

@@ -9,12 +9,12 @@ export class DownloadError extends Error {
 }
 
 // Pide un CSV al backend (POST /api/export.csv?level=...) y lo descarga con el nombre que propone el servidor.
-// level: 'monthly' (serie mensual), 'cells' (hexágonos de un mes) o 'hotspots' (focos individuales).
-export async function downloadCsv(level, geojson, month) {
+// level: 'monthly' (serie mensual), 'cells' (hexágonos de un mes) o 'hotspots' (focos individuales). start y end: "YYYY-MM" (opcionales).
+export async function downloadCsv(level, geojson, start, end) {
   const body = { geojson };
-  if (month) {
-    body.start = month;
-    body.end = month;
+  if (start) {
+    body.start = start;
+    body.end = end || start;
   }
   let response;
   try {
