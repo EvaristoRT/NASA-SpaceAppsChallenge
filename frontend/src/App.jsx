@@ -51,6 +51,8 @@ function MainApp() {
   // Mes elegido en el calendario para pintar su actividad en el mapa: { key, year, month (0-11) }. `key` identifica la zona o el área
   // para la que se eligió; si la zona cambia, el mes se descarta (el calendario y la capa siempre hablan de lo mismo).
   const [activeMonth, setActiveMonth] = useState(null);
+  // Pestaña del panel de información: se conserva al cambiar de zona (si estás en Análisis, la zona nueva abre también en Análisis)
+  const [panelTab, setPanelTab] = useState('main');
   const monthScope = drawnArea ? `area:${(drawnArea.center || []).join(',')}` : selectedZone?.id ?? null;
   if (activeMonth && activeMonth.key !== monthScope) setActiveMonth(null);
   const selectedMonth = activeMonth && activeMonth.key === monthScope ? activeMonth : null;
@@ -299,6 +301,8 @@ function MainApp() {
           onClearArea={handleClearDrawing}
           selectedMonth={selectedMonth}
           onSelectMonth={handleSelectMonth}
+          tab={panelTab}
+          onTabChange={setPanelTab}
         />
       )}
 

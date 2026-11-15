@@ -87,6 +87,7 @@ const Globe = forwardRef(function Globe(
   const activityRef = useRef(activity);
   // Hover fluido: códigos ISO con el estado de hover encendido, y temporizadores para procesarlo una vez por cuadro
   const hoverIsosRef = useRef([]);
+  const selectedIsosRef = useRef([]); // zona elegida: conserva el efecto de hover hasta que se elija otra
   const hoverEventRef = useRef(null);
   const hoverTimerRef = useRef(0);
   const hoverTsRef = useRef(0);
@@ -568,6 +569,7 @@ const Globe = forwardRef(function Globe(
     const paint = isContinent ? soft : strong;
     map.setPaintProperty(`zones-${kind}-line`, 'line-width', paint.width);
     map.setPaintProperty(`zones-${kind}-line`, 'line-opacity', paint.opacity);
+    if (kind === 'highlight') setSelectedState(map, zone);
   };
 
   // Hover con feature-state: encender o apagar el estado de los polígonos es barato y las capas de hover lo animan con una transición
@@ -583,6 +585,19 @@ const Globe = forwardRef(function Globe(
     }
     for (const iso of next) map.setFeatureState(target(iso), { hover: level });
     hoverIsosRef.current = next;
+  };
+
+  // La zona elegida se queda iluminada como si tuviera hover (aunque el cursor se vaya) y el efecto pasa a la zona nueva al elegir otra
+  const setSelectedState = (map, zone) => {
+    if (!map || !map.getSource('country-boundaries')) return;
+    const level = zone ? (zone.category === 'Continente' ? 2 : 1) : 0;
+    const next = isoListOf(zone);
+    const target = (id) => ({ source: 'country-boundaries', sourceLayer: 'country_boundaries', id });
+    for (const iso of selectedIsosRef.current) {
+      if (!next.includes(iso)) map.setFeatureState(target(iso), { selected: 0 });
+    }
+    for (const iso of next) map.setFeatureState(target(iso), { selected: level });
+    selectedIsosRef.current = next;
   };
 
   // Etiqueta con el nombre de la zona bajo el cursor (en el idioma activo). Sigue al cursor.
@@ -664,6 +679,7 @@ const Globe = forwardRef(function Globe(
       promoteId: { country_boundaries: 'iso_3166_1' }
     });
     hoverIsosRef.current = [];
+    selectedIsosRef.current = [];
     hoveredZoneIdRef.current = '';
     const base = { source: 'country-boundaries', 'source-layer': 'country_boundaries' };
 
@@ -702,7 +718,13 @@ const Globe = forwardRef(function Globe(
     setTimeout(revealLines, 1500);
 
     // Hover: el país (o el continente) bajo el cursor
-    const hoverLevel = ['to-number', ['feature-state', 'hover'], 0];
+    // Nivel del efecto: el hover del cursor manda; si no hay, el de la zona elegida (1 = país, 2 = continente)
+    const hoverLevel = [
+      'case',
+      ['>', ['to-number', ['feature-state', 'hover'], 0], 0],
+      ['to-number', ['feature-state', 'hover'], 0],
+      ['to-number', ['feature-state', 'selected'], 0]
+    ];
     map.addLayer({
       ...base,
       id: 'zones-hover-fill',
@@ -1543,9 +1565,9 @@ const Globe = forwardRef(function Globe(
 
       renderSelectedZoneMarker(mapRef.current, selectedZone);
 
-      if (mapRef.current.isStyleLoaded()) applyZoneHighlight(mapRef.current, 'highlight', selectedZone);
+      applyZoneHighlight(mapRef.current, 'highlight', selectedZone);
     } else {
-      if (mapRef.current.isStyleLoaded()) applyZoneHighlight(mapRef.current, 'highlight', null);
+      applyZoneHighlight(mapRef.current, 'highlight', null);
     }
   }, [selectedZone]);
 

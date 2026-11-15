@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
@@ -24,10 +24,11 @@ export default function InfoPanel({
   onFocusArea,
   onClearArea,
   selectedMonth,
-  onSelectMonth
+  onSelectMonth,
+  tab = 'main',
+  onTabChange
 }) {
   const { lang, t } = useLanguage();
-  const [tab, setTab] = useState('main');
   const isArea = Boolean(drawnArea);
 
   const localized = !isArea && zone ? localizeZone(zone, lang) : null;
@@ -97,7 +98,7 @@ export default function InfoPanel({
             role="tab"
             aria-selected={tab === item.id}
             className={`info-tab ${tab === item.id ? 'active' : ''}`}
-            onClick={() => setTab(item.id)}
+            onClick={() => onTabChange && onTabChange(item.id)}
           >
             {item.label}
           </button>
