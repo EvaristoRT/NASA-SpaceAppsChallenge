@@ -11,11 +11,18 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT.parent / "design" / "brand" / "patterns"
 DST = ROOT / "public" / "brand"
 
-# nombre: (líneas "dark" sobre blanco o "light" sobre negro, ancho de salida en px, tamaño del filtro de engrosado)
-PATTERNS = {"waves": ("dark", 1000, 3), "voronoi": ("dark", 1000, 3), "orbits": ("light", 1400, 3)}
+# salida: (original, líneas "dark" sobre blanco o "light" sobre negro, ancho en px, filtro de engrosado, giro en grados)
+# waves-vertical: las ondas giradas 90 grados, para que corran de arriba hacia abajo (explorador).
+PATTERNS = {
+    "waves": ("waves", "dark", 1000, 3, 0),
+    "waves-vertical": ("waves", "dark", 1000, 3, 90),
+    "orbits": ("orbits", "light", 1400, 3, 0),
+}
 
-for name, (mode, width, dilate) in PATTERNS.items():
-    gray = Image.open(SRC / f"{name}.png").convert("RGB").convert("L")
+for name, (origin, mode, width, dilate, turn) in PATTERNS.items():
+    gray = Image.open(SRC / f"{origin}.png").convert("RGB").convert("L")
+    if turn:
+        gray = gray.rotate(turn, expand=True)
     inten = ImageOps.invert(gray) if mode == "dark" else ImageOps.autocontrast(gray)
     inten = inten.point(lambda v: 255 if v > 40 else v * 6)   # bordes suavizados -> trazo sólido
     inten = inten.filter(ImageFilter.MaxFilter(dilate)).resize((width, width), Image.LANCZOS)

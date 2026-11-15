@@ -1087,7 +1087,7 @@
 }
 
 /* Bandas de marca en los paneles: degradado azul oficial con un patrón de líneas blancas (ver arriba).
-   Explorador = Voronoi (celdas, territorios); ficha del área trazada = Waves (curvas de nivel).
+   Explorador = Waves girado (ondas de arriba hacia abajo); ficha del área trazada = Waves en diagonal (curvas de nivel).
    Siempre azul con texto blanco, en ambos temas. */
 .sidebar-header,
 .drawn-area-drawer .zone-drawer-header {
@@ -1110,7 +1110,7 @@
   pointer-events: none;
 }
 
-.sidebar-header::before { background-image: url('/brand/voronoi.png'); }
+.sidebar-header::before { background-image: url('/brand/waves-vertical.png'); }
 .drawn-area-drawer .zone-drawer-header::before { background-image: url('/brand/waves.png'); }
 
 .sidebar-header .sidebar-title,
