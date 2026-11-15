@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { ZONES } from '../data/zonesData';
 import { useLanguage } from '../context/LanguageContext';
 import { localizeZone } from '../i18n/zoneText';
+import { getWebglInfo } from '../utils/webglInfo';
 import {
   generateZonesGeoJSON,
   generateZonesOutlineGeoJSON,
@@ -844,6 +845,40 @@ const Globe = forwardRef(function Globe(
           }
         }, 1200);
       });
+
+      // El relieve no debe depender de la suerte: si tras cargar el estilo falta el terreno o el sombreado (el orden de los
+      // eventos cambia con el navegador, la red o la GPU), se vuelve a aplicar al entrar en reposo, con un tope de intentos.
+      let reliefRetries = 0;
+      map.on('idle', () => {
+        const id = currentStyleIdRef.current;
+        if (id !== 'outdoors' && id !== 'satellite') {
+          reliefRetries = 0;
+          return;
+        }
+        if (map.isStyleLoaded() && (!map.getTerrain() || !map.getLayer('relief-hillshade')) && reliefRetries < 5) {
+          reliefRetries += 1;
+          applyTerrain(map);
+        }
+      });
+
+      // Diagnóstico para cuando el relieve se ve plano en algún navegador: ejecutar  __ignisDiag()  en la consola
+      const webgl = getWebglInfo();
+      window.__ignisDiag = () => ({
+        ...webgl,
+        userAgent: navigator.userAgent,
+        devicePixelRatio: window.devicePixelRatio,
+        style: currentStyleIdRef.current,
+        zoom: map.getZoom(),
+        pitch: map.getPitch(),
+        terrain: map.getTerrain() ? JSON.stringify(map.getTerrain()) : null,
+        hillshade: !!map.getLayer('relief-hillshade'),
+        demLoaded: map.getSource('mapbox-dem') ? map.isSourceLoaded('mapbox-dem') : null,
+        reliefRetries
+      });
+      // Solo queda en la consola: no se le avisa al usuario
+      if (!webgl.webgl || webgl.software) {
+        console.warn('Gráficos sin aceleración por hardware:', webgl);
+      }
 
       // Asegurar redimensionamiento al entrar en reposo
       map.once('idle', () => {

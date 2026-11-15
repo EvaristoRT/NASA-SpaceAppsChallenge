@@ -28,6 +28,11 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
   4.5× en 8, 3× en 11, 2× en 14; Satélite: 3.5×, 2.6×, 1.8×, 1.3×). Con un valor fijo bajo (1.95, 2.6) las montañas se veían planas a escala de país. `addReliefShading` añade
   una capa de sombreado (`relief-hillshade`) porque el estilo Relieve no trae ninguna y sin sombra el terreno no se lee. La cámara se inclina a 66° al cambiar a Relieve y a 62°
   mínimo al elegir una zona. Valores probados en vivo sobre Veracruz y Puebla; ajustar ahí si hace falta.
+  **Que se vea igual en todos los navegadores:** el relieve necesita WebGL con aceleración por hardware. Si el terreno o el sombreado faltan al entrar en reposo (el orden de los
+  eventos cambia con el navegador, la red o la GPU), `Globe.jsx` los vuelve a aplicar (hasta 5 intentos). Si el navegador dibuja por software (`utils/webglInfo.js`), solo se deja un
+  aviso en la consola (no se le muestra nada al usuario). Si en algún navegador sigue plano, pedir que ejecuten `__ignisDiag()` en la consola y pasar el resultado (muestra WebGL, GPU,
+  si hay terreno, sombreado y datos de altura cargados). Causas comunes: aceleración por hardware desactivada, GPU en la lista negra del navegador, extensiones o modo de
+  privacidad estricto (por ejemplo, la protección contra huellas de Brave o `resistFingerprinting` de Firefox).
 
 ## Colores del mapa (en `Globe.jsx` y en `App.css`; si cambian en uno, cambiar el otro)
 - **Amarillo neón** = lo activo: zona seleccionada, área que se dibuja, herramienta activa, fila seleccionada, controles encendidos.
