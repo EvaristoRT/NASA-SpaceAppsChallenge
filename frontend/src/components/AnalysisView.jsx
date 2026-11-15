@@ -166,6 +166,8 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
               </p>
             )}
 
+            {!interactive && data.synthetic && <p className="analysis-pick">{t('analysis.pickNeedsApi')}</p>}
+
             <figcaption className="analysis-caption">
               <b>{t('analysis.fig1')}</b>
               {t('analysis.fig1Text')}
