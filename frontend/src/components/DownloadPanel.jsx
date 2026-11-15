@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Download } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { geometryFor } from '../utils/useAnalysis';
 import { downloadCsv } from '../utils/downloadCsv';
@@ -35,7 +34,6 @@ export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth
       id: 'monthly',
       level: 'monthly',
       label: t('download.monthly', { zone: zoneName }),
-      hint: t('download.monthlyHint'),
       month: null,
       disabledReason: ''
     },
@@ -43,7 +41,6 @@ export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth
       id: 'cells',
       level: 'cells',
       label: monthLabel ? t('download.cells', { month: monthLabel }) : t('download.cellsAny'),
-      hint: t('download.cellsHint'),
       month: monthKey,
       disabledReason: monthKey ? '' : t('download.pickMonth')
     },
@@ -51,7 +48,6 @@ export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth
       id: 'hotspots',
       level: 'hotspots',
       label: monthLabel ? t('download.hotspots', { month: monthLabel }) : t('download.hotspotsAny'),
-      hint: t('download.hotspotsHint'),
       month: monthKey,
       disabledReason: !monthKey ? t('download.pickMonth') : !hotspotsAvailable ? t('download.unavailable') : ''
     }
@@ -67,10 +63,9 @@ export default function DownloadPanel({ zone, drawnArea, zoneName, selectedMonth
           return (
             <li key={row.id}>
               <button type="button" className="download-row" disabled={disabled} onClick={() => run(row.id, row.level, row.month)}>
-                <Download size={15} aria-hidden="true" />
                 <span className="download-text">
                   <b>{row.label}</b>
-                  <small>{row.disabledReason || row.hint}</small>
+                  {row.disabledReason && <small>{row.disabledReason}</small>}
                 </span>
               </button>
               {(s.loading || s.message) && (

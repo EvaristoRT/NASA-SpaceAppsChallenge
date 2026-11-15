@@ -38,9 +38,8 @@ export default function ActivityLegend({ month, activity, onClear }) {
           <p className="activity-note">{t('activity.unit')}</p>
           <p className="activity-note">{t('activity.summary', { cells: fmt(data.n_cells), total: fmt(data.total) })}</p>
           {(estimated || data.is_nrt) && (
-            <p className="activity-flags">
-              {estimated && <span>{t('activity.estimated')}</span>}
-              {data.is_nrt && <span>{t('activity.preliminary')}</span>}
+            <p className="activity-note">
+              {[estimated && t('activity.estimated'), data.is_nrt && t('activity.preliminary')].filter(Boolean).join(' · ')}
             </p>
           )}
         </>

@@ -54,7 +54,7 @@ export default function EstimateChart({ points }) {
     ? [
         `${label(hp)}: ${fmt(hp.count)}`,
         hp.hi > hp.lo ? `${t('estimate.interval')} ${fmt(hp.lo)}–${fmt(hp.hi)}` : null,
-        estimated(hp) ? t('estimate.estimated') : t('estimate.measured'),
+        estimated(hp) ? t('estimate.estimated') : null,
         hp.nrt ? t('estimate.preliminary') : null
       ]
         .filter(Boolean)
@@ -88,11 +88,17 @@ export default function EstimateChart({ points }) {
             {tk.year}
           </text>
         ))}
+        {/* rótulos directos en lugar de una leyenda aparte */}
+        <text x={PAD.l + 4} y={PAD.t + 10} className="estimate-label estimate-zone-label">
+          {t('estimate.estimated')}
+        </text>
+        {chart.firstMeasured < n - 1 && (
+          <text x={x(chart.firstMeasured) + 4} y={PAD.t + 10} className="estimate-label estimate-zone-label">
+            {t('estimate.measured')}
+          </text>
+        )}
         <path d={chart.band} className="estimate-band" />
         <path d={chart.line} className="estimate-line" />
-        {pts.map((p, i) =>
-          p.nrt ? <circle key={p.month} cx={x(i)} cy={y(0) - 3} r={2} className="estimate-nrt" /> : null
-        )}
         {hp && (
           <g>
             <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={y(0)} className="estimate-cursor" />
@@ -102,22 +108,8 @@ export default function EstimateChart({ points }) {
       </svg>
 
       <p className="estimate-tip" aria-live="polite">
-        {tip || t('estimate.hover')}
+        {tip}
       </p>
-      <ul className="estimate-legend">
-        <li>
-          <i className="swatch swatch-line" /> {t('estimate.measured')}
-        </li>
-        <li>
-          <i className="swatch swatch-band" /> {t('estimate.band')}
-        </li>
-        <li>
-          <i className="swatch swatch-zone" /> {t('estimate.zone')}
-        </li>
-        <li>
-          <i className="swatch swatch-nrt" /> {t('estimate.preliminary')}
-        </li>
-      </ul>
       <figcaption className="analysis-caption">
         <b>{t('estimate.fig')}</b>
         {t('estimate.caption')}

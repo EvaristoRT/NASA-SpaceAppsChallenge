@@ -804,9 +804,19 @@ const Globe = forwardRef(function Globe(
   const dimForStyle = () => (MAP_STYLES.find((s) => s.id === currentStyleIdRef.current) || MAP_STYLES[0]).dim;
   const hexEdgeForStyle = () => (MAP_STYLES.find((s) => s.id === currentStyleIdRef.current) || MAP_STYLES[0]).hexEdge;
 
+  // Dónde insertar los hexágonos: por encima de TODA la geometría del mapa base (carreteras, senderos, límites, relieve) y justo
+  // debajo de los nombres. Con "antes de la primera etiqueta" algunos estilos (Terreno) dejaban decenas de capas de caminos encima
+  // del fuego. Si no hay etiquetas después de la geometría, se insertan debajo de nuestras capas de zonas.
   const firstSymbolId = (map) => {
-    const layer = map.getStyle().layers.find((l) => l.type === 'symbol');
-    return layer ? layer.id : undefined;
+    const layers = map.getStyle().layers;
+    const ours = (l) => /^(zones|fire|draw)/.test(l.id);
+    let lastGeometry = -1;
+    layers.forEach((l, i) => {
+      if (!ours(l) && l.type !== 'symbol' && l.type !== 'sky') lastGeometry = i;
+    });
+    const label = layers.slice(lastGeometry + 1).find((l) => l.type === 'symbol' && !ours(l));
+    if (label) return label.id;
+    return map.getLayer('zones-fill') ? 'zones-fill' : undefined;
   };
 
   const setupActivityLayers = (map) => {
@@ -984,26 +994,6 @@ const Globe = forwardRef(function Globe(
     });
   };
 
-  // Vista "Político": sin carreteras ni aeropuertos y con los límites de estados bien marcados. Todo sale de las teselas que el estilo
-  // ya pide (capas `road` y `aeroway`, y `admin-1-boundary`), así que no cuesta ninguna descarga extra.
-  const applyPoliticalTweaks = (map) => {
-    if (!map || currentStyleIdRef.current !== 'political') return;
-    try {
-      for (const layer of map.getStyle().layers) {
-        const source = layer['source-layer'];
-        if (source === 'road' || source === 'aeroway') map.setLayoutProperty(layer.id, 'visibility', 'none');
-      }
-      if (map.getLayer('admin-1-boundary')) {
-        map.setPaintProperty('admin-1-boundary', 'line-color', '#2491ff');
-        map.setPaintProperty('admin-1-boundary', 'line-opacity', 0.95);
-        map.setPaintProperty('admin-1-boundary', 'line-dasharray', [3, 2]);
-        map.setPaintProperty('admin-1-boundary', 'line-width', ['interpolate', ['linear'], ['zoom'], 2, 0.8, 5, 1.4, 8, 2]);
-      }
-    } catch (e) {
-      console.warn('No se pudo ajustar la vista política:', e);
-    }
-  };
-
   // Configuración integral tras carga de cualquier estilo cartográfico
   const applyMapConfiguration = (map) => {
     if (!map) return;
@@ -1035,7 +1025,6 @@ const Globe = forwardRef(function Globe(
     // 3b. Etiquetas del mapa en el idioma activo (el estilo nuevo trae sus textos originales)
     labelOriginalsRef.current = new Map();
     applyMapLanguage(map);
-    applyPoliticalTweaks(map);
 
     // 4. Recrear capas de zonas y dibujo con protección de errores
     try {

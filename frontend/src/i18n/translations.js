@@ -25,15 +25,11 @@ export const translations = {
     styles: {
       satellite: {
         name: 'Satélite',
-        desc: '¿Qué cubre el suelo? Imagen satelital real: bosque, cultivo y suelo desnudo.'
-      },
-      political: {
-        name: 'Datos',
-        desc: '¿Dónde y cuánto? Fondo limpio, sin carreteras, con países y estados: la vista para leer el dato.'
+        desc: 'Imagen satelital real de la superficie.'
       },
       outdoors: {
         name: 'Terreno',
-        desc: '¿En qué terreno? Montañas, valles y ríos para relacionar el fuego con la topografía.'
+        desc: 'Montañas, valles y ríos del terreno.'
       }
     },
     drawToolbar: {
@@ -145,14 +141,12 @@ export const translations = {
       customArea: 'Área trazada',
       demoTitle: 'Datos de demostración.',
       demoText: 'Generados artificialmente; no son observaciones de incendios.',
-      realTitle: 'Equivalente NOAA-20.',
-      realText: 'Antes de abril de 2018 es una estimación; los meses recientes son preliminares y el mes en curso no cuenta.',
+      realText: 'Días-celda con fuego, equivalente NOAA-20. Antes de abril de 2018 es una estimación.',
       loading: 'Cargando el análisis…',
       error: 'No se pudo cargar el análisis. Intenta de nuevo en unos minutos.',
-      noData: 'Sin datos para esta zona. Por ahora solo hay análisis para Argentina y Chile.',
+      noData: 'Sin datos para esta zona. Por ahora solo hay análisis para América.',
       pickHint: 'Elige un mes para ver su actividad en el mapa.',
       pickNeedsApi: 'Con datos de demostración los meses no se pueden ver en el mapa: hace falta conectar el backend con datos reales.',
-      pickShown: 'Mostrando {month} {year} en el mapa.',
       noMonthData: 'Sin datos armonizados para este mes',
       monthIncomplete: 'mes en curso, todavía incompleto',
       collapse: 'Ocultar análisis',
@@ -162,11 +156,9 @@ export const translations = {
       statementNormal: '{month} está dentro de lo normal.',
       calendarLabel: 'Calendario: cada fila es un año, cada columna un mes',
       cellTitle: '{days} días con fuego',
-      maxLabel: 'máximo',
       fig1: 'Fig. 1',
-      fig1Text: 'Días con fuego detectado, por mes, equivalentes a NOAA-20. El recuadro amarillo marca el mes en curso. Gris: sin fuego.',
+      fig1Text: 'Días-celda con fuego por mes.',
       factTotal: 'Quemas, {from}–{to}',
-      factTotalUnit: 'días-celda eq. NOAA-20',
       factPeakYear: 'Año con más actividad',
       factRiskMonth: 'Mes de mayor riesgo',
       factStatus: 'Estado del mes',
@@ -179,33 +171,27 @@ export const translations = {
       loading: 'Cargando la actividad…',
       error: 'No se pudo cargar la actividad de este mes.',
       empty: 'Sin fuego en este mes dentro de la zona.',
-      unit: 'Días-celda con fuego por hexágono (~36 km²), equivalente NOAA-20. No es número de incendios.',
-      summary: '{cells} hexágonos con fuego · {total} días-celda',
-      estimated: 'Estimado: antes de abril de 2018 no hay NOAA-20',
-      preliminary: 'Preliminar: NASA lo reemplaza en unos 5 meses'
+      unit: 'Días-celda con fuego por hexágono (~36 km²); no es número de incendios.',
+      summary: '{cells} hexágonos · {total} días-celda',
+      estimated: 'Estimado (antes de abril de 2018)',
+      preliminary: 'Preliminar (se reemplaza en ~5 meses)'
     },
     estimate: {
       fig: 'Fig. 2',
-      caption: 'Estimación del modelo: días-celda con fuego por mes, equivalente NOAA-20. La banda es el intervalo al 95 %: solo se ensancha antes de abril de 2018, donde no hay NOAA-20 y el valor es una estimación; después es medido y la banda se cierra sobre la línea.',
-      hover: 'Pasa el cursor por la gráfica para ver cada mes.',
+      caption: 'Estimación mensual con su intervalo al 95 %; antes de abril de 2018 es un valor del modelo.',
       interval: 'intervalo',
       measured: 'Medido (NOAA-20)',
       estimated: 'Estimado',
-      band: 'Intervalo al 95 %',
-      zone: 'Antes de NOAA-20: estimado',
       preliminary: 'Preliminar',
       summary: 'Serie mensual de {from} a {to}, con su intervalo al 95 %. Mes con más fuego: {peak}.'
     },
     download: {
       title: 'Descargar CSV',
       monthly: 'Serie mensual de {zone}',
-      monthlyHint: 'Un valor por mes con su intervalo, su fuente y la anomalía',
       cells: 'Hexágonos de {month}',
       cellsAny: 'Hexágonos del mes elegido',
-      cellsHint: 'Los hexágonos con fuego que ves en el mapa',
       hotspots: 'Focos de {month}',
       hotspotsAny: 'Focos del mes elegido',
-      hotspotsHint: 'Cada detección individual de FIRMS dentro de la zona',
       pickMonth: 'Elige un mes en el calendario',
       unavailable: 'No disponible en este servidor',
       tooMany: 'Hay demasiados focos para un solo archivo (más de 300,000). Dibuja un área más pequeña o elige otro mes.',
@@ -251,15 +237,11 @@ export const translations = {
     styles: {
       satellite: {
         name: 'Satellite',
-        desc: 'What covers the ground? Real satellite imagery: forest, cropland and bare soil.'
-      },
-      political: {
-        name: 'Data',
-        desc: 'Where and how much? A clean map with no roads, with countries and states: the view for reading the data.'
+        desc: 'Real satellite imagery of the surface.'
       },
       outdoors: {
         name: 'Terrain',
-        desc: 'On what terrain? Mountains, valleys and rivers, to relate fire to topography.'
+        desc: 'Mountains, valleys and rivers of the terrain.'
       }
     },
     drawToolbar: {
@@ -371,14 +353,12 @@ export const translations = {
       customArea: 'Drawn area',
       demoTitle: 'Demo data.',
       demoText: 'Artificially generated; these are not fire observations.',
-      realTitle: 'NOAA-20 equivalent.',
-      realText: 'Before April 2018 it is an estimate; recent months are preliminary and the current month is not counted.',
+      realText: 'Burning cell-days, NOAA-20 equivalent. Before April 2018 it is an estimate.',
       loading: 'Loading the analysis…',
       error: 'The analysis could not be loaded. Try again in a few minutes.',
-      noData: 'No data for this zone. For now the analysis only covers Argentina and Chile.',
+      noData: 'No data for this zone. For now the analysis only covers the Americas.',
       pickHint: 'Pick a month to see its activity on the map.',
       pickNeedsApi: 'With demo data the months cannot be shown on the map: the backend with real data must be connected.',
-      pickShown: 'Showing {month} {year} on the map.',
       noMonthData: 'No harmonized data for this month',
       monthIncomplete: 'current month, still incomplete',
       collapse: 'Hide analysis',
@@ -388,11 +368,9 @@ export const translations = {
       statementNormal: '{month} is within the normal range.',
       calendarLabel: 'Calendar: each row is a year, each column a month',
       cellTitle: '{days} fire days',
-      maxLabel: 'max',
       fig1: 'Fig. 1',
-      fig1Text: 'Days with detected fire per month, NOAA-20 equivalent. The yellow outline marks the current month. Grey: no fire.',
+      fig1Text: 'Burning cell-days per month.',
       factTotal: 'Burns, {from}–{to}',
-      factTotalUnit: 'NOAA-20-eq. cell-days',
       factPeakYear: 'Most active year',
       factRiskMonth: 'Highest-risk month',
       factStatus: 'Month status',
@@ -405,33 +383,27 @@ export const translations = {
       loading: 'Loading activity…',
       error: 'This month\'s activity could not be loaded.',
       empty: 'No fire this month inside the zone.',
-      unit: 'Burning cell-days per hexagon (~36 km²), NOAA-20 equivalent. Not a number of fires.',
-      summary: '{cells} hexagons with fire · {total} cell-days',
-      estimated: 'Estimated: there is no NOAA-20 before April 2018',
-      preliminary: 'Preliminary: NASA replaces it in about 5 months'
+      unit: 'Burning cell-days per hexagon (~36 km²); not a number of fires.',
+      summary: '{cells} hexagons · {total} cell-days',
+      estimated: 'Estimated (before April 2018)',
+      preliminary: 'Preliminary (replaced in ~5 months)'
     },
     estimate: {
       fig: 'Fig. 2',
-      caption: 'Model estimate: burning cell-days per month, NOAA-20 equivalent. The band is the 95% interval: it only widens before April 2018, where there is no NOAA-20 and the value is an estimate; afterwards it is measured and the band closes onto the line.',
-      hover: 'Move the cursor over the chart to see each month.',
+      caption: 'Monthly estimate with its 95% interval; before April 2018 it is a model value.',
       interval: 'interval',
       measured: 'Measured (NOAA-20)',
       estimated: 'Estimated',
-      band: '95% interval',
-      zone: 'Before NOAA-20: estimated',
       preliminary: 'Preliminary',
       summary: 'Monthly series from {from} to {to}, with its 95% interval. Month with the most fire: {peak}.'
     },
     download: {
       title: 'Download CSV',
       monthly: 'Monthly series of {zone}',
-      monthlyHint: 'One value per month with its interval, source and anomaly',
       cells: 'Hexagons of {month}',
       cellsAny: 'Hexagons of the chosen month',
-      cellsHint: 'The hexagons with fire you see on the map',
       hotspots: 'Hotspots of {month}',
       hotspotsAny: 'Hotspots of the chosen month',
-      hotspotsHint: 'Every individual FIRMS detection inside the zone',
       pickMonth: 'Pick a month in the calendar',
       unavailable: 'Not available on this server',
       tooMany: 'There are too many hotspots for a single file (over 300,000). Draw a smaller area or pick another month.',

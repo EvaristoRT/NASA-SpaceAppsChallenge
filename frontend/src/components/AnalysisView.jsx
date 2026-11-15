@@ -86,134 +86,112 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
 
   return (
     <div className="zone-drawer-body analysis-view" aria-label={t('analysis.title')}>
-      <div className="analysis-demo">
+      <p className="analysis-statement">{statement}</p>
+
+      <dl className="analysis-facts">
+        <div>
+          <dt>{t('analysis.factTotal', { from: data.firstYear, to: data.lastYear })}</dt>
+          <dd>{fmt(data.total)}</dd>
+        </div>
+        <div>
+          <dt>{t('analysis.factPeakYear')}</dt>
+          <dd>{data.peakYear}</dd>
+        </div>
+        <div>
+          <dt>{t('analysis.factRiskMonth')}</dt>
+          <dd>{monthsLong[data.riskMonth]}</dd>
+        </div>
+        <div>
+          <dt>{t('analysis.factStatus')}</dt>
+          <dd>
+            <span className={`analysis-status analysis-status-${data.status}`}>{t(`analysis.status.${data.status}`)}</span>
+          </dd>
+        </div>
+      </dl>
+
+      <p className="analysis-note">
         {data.synthetic ? (
           <>
             <b>{t('analysis.demoTitle')}</b> {t('analysis.demoText')}
           </>
         ) : (
-          <>
-            <b>{t('analysis.realTitle')}</b> {t('analysis.realText')}
-          </>
+          t('analysis.realText')
         )}
-      </div>
+      </p>
 
-      <div className="analysis-body">
-        <div className="analysis-main">
-          <p className="analysis-statement">{statement}</p>
-
-          <figure className="analysis-figure">
-            <div className="cal" role={interactive ? 'group' : 'img'} aria-label={t('analysis.calendarLabel')} onKeyDown={interactive ? moveFocus : undefined}>
-              <span />
-              {months.map((m) => (
-                <span key={m} className="cal-axis">{m}</span>
-              ))}
-              {years.map((y) => (
-                <React.Fragment key={y}>
-                  <span className="cal-axis">{y}</span>
-                  {data.calendar[y].map((v, m) => {
-                    // Sin dato armonizado (antes de nov. 2000, meses futuros): apagado y sin clic
-                    if (v === null) return <span key={m} className="cal-cell" title={interactive ? t('analysis.noMonthData') : undefined} />;
-                    const now = y === data.lastYear && m === data.currentMonth;
-                    const isPeak = y === data.peak.year && m === data.peak.month;
-                    const title = `${months[m]} ${y}: ${t('analysis.cellTitle', { days: v })}`;
-                    const style = { background: cellColor(v, data.max), color: textOn(v, data.max) };
-                    if (!interactive) {
-                      return (
-                        <span key={m} className={`cal-cell filled${now ? ' now' : ''}`} style={style} title={title}>
-                          {isPeak ? v : ''}
-                        </span>
-                      );
-                    }
-                    // Mes en curso incompleto: se ve, pero no se puede elegir
-                    const locked = Boolean(data.partial?.[y]?.[m]);
-                    const picked = selectedMonth && selectedMonth.year === y && selectedMonth.month === m;
-                    return (
-                      <button
-                        key={m}
-                        type="button"
-                        data-y={y}
-                        data-m={m}
-                        className={`cal-cell filled${now ? ' now' : ''}${locked ? ' locked' : ' pick'}${picked ? ' picked' : ''}`}
-                        style={style}
-                        title={locked ? `${months[m]} ${y}: ${t('analysis.monthIncomplete')}` : title}
-                        disabled={locked}
-                        aria-pressed={locked ? undefined : Boolean(picked)}
-                        tabIndex={y === tabY && m === tabM ? 0 : -1}
-                        onClick={() => onSelectMonth(y, m)}
-                      >
-                        {isPeak ? v : ''}
-                      </button>
-                    );
-                  })}
-                </React.Fragment>
-              ))}
-            </div>
-
-            <div className="cal-scale">
-              <span className="cal-axis">0</span>
-              <div
-                className="cal-ramp"
-                style={{ background: rampGradient() }}
-              />
-              <span className="cal-axis">
-                {data.max}+ ({t('analysis.maxLabel')}: {data.peak.value}, {months[data.peak.month]} {data.peak.year})
-              </span>
-            </div>
-
-            {interactive && (
-              <p className="analysis-pick">
-                {selectedMonth
-                  ? t('analysis.pickShown', { month: monthsLong[selectedMonth.month], year: selectedMonth.year })
-                  : t('analysis.pickHint')}
-              </p>
-            )}
-
-            {!interactive && data.synthetic && <p className="analysis-pick">{t('analysis.pickNeedsApi')}</p>}
-
-            <figcaption className="analysis-caption">
-              <b>{t('analysis.fig1')}</b>
-              {t('analysis.fig1Text')}
-            </figcaption>
-          </figure>
-
-          {!data.synthetic && (
-            <>
-              <EstimateChart points={data.points} />
-              <DownloadPanel
-                zone={zone}
-                drawnArea={drawnArea}
-                zoneName={drawnArea ? t('analysis.customArea') : localizeZone(zone, lang).name}
-                selectedMonth={selectedMonth}
-              />
-            </>
-          )}
+      <figure className="analysis-figure">
+        <div className="cal" role={interactive ? 'group' : 'img'} aria-label={t('analysis.calendarLabel')} onKeyDown={interactive ? moveFocus : undefined}>
+          <span />
+          {months.map((m) => (
+            <span key={m} className="cal-axis">{m}</span>
+          ))}
+          {years.map((y) => (
+            <React.Fragment key={y}>
+              <span className="cal-axis">{y}</span>
+              {data.calendar[y].map((v, m) => {
+                // Sin dato armonizado (antes de nov. 2000, meses futuros): apagado y sin clic
+                if (v === null) return <span key={m} className="cal-cell" title={interactive ? t('analysis.noMonthData') : undefined} />;
+                const isPeak = y === data.peak.year && m === data.peak.month;
+                const title = `${months[m]} ${y}: ${t('analysis.cellTitle', { days: v })}`;
+                const style = { background: cellColor(v, data.max), color: textOn(v, data.max) };
+                if (!interactive) {
+                  return (
+                    <span key={m} className="cal-cell filled" style={style} title={title}>
+                      {isPeak ? v : ''}
+                    </span>
+                  );
+                }
+                // Mes en curso incompleto: se ve, pero no se puede elegir
+                const locked = Boolean(data.partial?.[y]?.[m]);
+                const picked = selectedMonth && selectedMonth.year === y && selectedMonth.month === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    data-y={y}
+                    data-m={m}
+                    className={`cal-cell filled${locked ? ' locked' : ' pick'}${picked ? ' picked' : ''}`}
+                    style={style}
+                    title={locked ? `${months[m]} ${y}: ${t('analysis.monthIncomplete')}` : title}
+                    disabled={locked}
+                    aria-pressed={locked ? undefined : Boolean(picked)}
+                    tabIndex={y === tabY && m === tabM ? 0 : -1}
+                    onClick={() => onSelectMonth(y, m)}
+                  >
+                    {isPeak ? v : ''}
+                  </button>
+                );
+              })}
+            </React.Fragment>
+          ))}
         </div>
 
-        <dl className="analysis-facts">
-          <div>
-            <dt>{t('analysis.factTotal', { from: data.firstYear, to: data.lastYear })}</dt>
-            <dd>
-              {fmt(data.total)}
-              <small>{t('analysis.factTotalUnit')}</small>
-            </dd>
-          </div>
-          <div>
-            <dt>{t('analysis.factPeakYear')}</dt>
-            <dd>{data.peakYear}</dd>
-          </div>
-          <div>
-            <dt>{t('analysis.factRiskMonth')}</dt>
-            <dd>{monthsLong[data.riskMonth]}</dd>
-          </div>
-          <div>
-            <dt>{t('analysis.factStatus')}</dt>
-            <dd>
-              <span className={`analysis-status analysis-status-${data.status}`}>{t(`analysis.status.${data.status}`)}</span>
-            </dd>
-          </div>
-        </dl>
-      </div>
+        <div className="cal-scale">
+          <span className="cal-axis">0</span>
+          <div className="cal-ramp" style={{ background: rampGradient() }} />
+          <span className="cal-axis">{fmt(data.max)}</span>
+        </div>
+
+        {interactive && !selectedMonth && <p className="analysis-pick">{t('analysis.pickHint')}</p>}
+        {!interactive && data.synthetic && <p className="analysis-pick">{t('analysis.pickNeedsApi')}</p>}
+
+        <figcaption className="analysis-caption">
+          <b>{t('analysis.fig1')}</b>
+          {t('analysis.fig1Text')}
+        </figcaption>
+      </figure>
+
+      {!data.synthetic && (
+        <>
+          <EstimateChart points={data.points} />
+          <DownloadPanel
+            zone={zone}
+            drawnArea={drawnArea}
+            zoneName={drawnArea ? t('analysis.customArea') : localizeZone(zone, lang).name}
+            selectedMonth={selectedMonth}
+          />
+        </>
+      )}
     </div>
   );
 }

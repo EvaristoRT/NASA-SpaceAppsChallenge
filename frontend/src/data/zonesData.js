@@ -208,32 +208,17 @@ export const MAP_STYLES = [
     name: 'Satélite',
     styleUrl: 'mapbox://styles/mapbox/satellite-streets-v12',
     icon: '🛰️',
-    description: '¿Qué cubre el suelo? Imagen satelital real: bosque, cultivo y suelo desnudo.',
-    // Atenuación de la zona cuando hay un mes elegido: ligera, para que la imagen real siga viéndose y la vista no se confunda con Datos
-    dim: { color: '#05080a', opacity: 0.38 },
-    // Borde de los hexágonos: más marcado, porque con poca atenuación el contraste del relleno no alcanza para los valores bajos
-    hexEdge: { color: 'rgba(255, 255, 255, 0.85)', width: 1.1 },
+    description: 'Imagen satelital real de la superficie.',
+    // Atenuación mínima: la imagen real tiene que seguir viéndose con un mes encendido, 
+    dim: { color: '#05080a', opacity: 0.12 },
+    // Borde claro y marcado: con tan poca atenuación el relleno solo no basta para separar los hexágonos de la imagen
+    hexEdge: { color: 'rgba(255, 255, 255, 0.95)', width: 1.3 },
     // Colores de nuestras capas de países (fronteras, hover y selección), ajustados a cada fondo.
     overlay: {
       line: 'rgba(255, 255, 255, 0.55)', lineOpacity: 0.85, fill: '#dfe1e2',
-      // sobre la imagen: hover blanco y selección amarilla (como en Datos), con el hover algo más suave para no lavar la imagen
+      // sobre la imagen: hover blanco y selección amarilla, con el hover algo más suave para no lavar la imagen
       hover: '#ffffff', hoverFill: 0.12, hoverFillStrong: 0.28, hoverLine: '#ffffff',
       highlightFill: 0.16, casing: { color: '#05080a', opacity: 0.55, extra: 2 }
-    }
-  },
-  {
-    id: 'political',
-    name: 'Datos',
-    styleUrl: 'mapbox://styles/mapbox/dark-v11',
-    icon: '🧭',
-    description: '¿Dónde y cuánto? Fondo limpio, sin carreteras, con países y estados: la vista para leer el dato.',
-    // El fondo ya es oscuro: atenuación ligera para que los límites de los estados sigan visibles
-    dim: { color: '#151622', opacity: 0.35 },
-    hexEdge: { color: 'rgba(255, 255, 255, 0.45)', width: 0.8 },
-    overlay: {
-      line: 'rgba(223, 225, 226, 0.45)', lineOpacity: 0.8, fill: '#dfe1e2',
-      hover: '#ffffff', hoverFill: 0.14, hoverFillStrong: 0.38, hoverLine: '#ffffff',
-      highlightFill: 0.2, casing: null
     }
   },
   {
@@ -241,10 +226,10 @@ export const MAP_STYLES = [
     name: 'Terreno',
     styleUrl: 'mapbox://styles/mapbox/outdoors-v12',
     icon: '🏔️',
-    description: '¿En qué terreno? Montañas, valles y ríos para relacionar el fuego con la topografía.',
-    // Pizarra oscura sobre el relieve claro: hace falta más opacidad para que los valores bajos no se pierdan
-    dim: { color: '#10161a', opacity: 0.75 },
-    hexEdge: { color: 'rgba(255, 255, 255, 0.55)', width: 0.9 },
+    description: 'Montañas, valles y ríos del terreno.',
+    // Velo claro y apagado: el relieve se ve desvaído, sin el salto de contraste de un fondo oscuro; el borde claro separa cada hexágono
+    dim: { color: '#f1f3f0', opacity: 0.55 },
+    hexEdge: { color: 'rgba(255, 255, 255, 0.75)', width: 0.9 },
     overlay: {
       line: 'rgba(21, 22, 34, 0.6)', lineOpacity: 0.85, fill: '#151622',
       // sobre el relieve claro el blanco no se ve: el hover pasa al azul eléctrico de la marca y la selección amarilla lleva un
