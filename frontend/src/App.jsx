@@ -64,6 +64,8 @@ function MainApp() {
   const handleSelectZone = (zone) => {
     setSelectedZone(zone);
     setOrbitMode(false);
+    // Al elegir un continente se abre el explorador para poder elegir uno de sus países
+    if (zone?.category === 'Continente') setIsSidebarOpen(true);
   };
 
   // Alternar rotación continua

@@ -1492,3 +1492,32 @@
     right: 16px;
   }
 }
+
+/* Explorador por niveles: botón de regreso a los continentes */
+.zones-back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  color: var(--link);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.zones-back:hover {
+  background: var(--surface-2);
+}
+
+/* Encabezados de grupo en los resultados de la barra de búsqueda (Continentes / Países) */
+.search-result-group {
+  padding: 6px 16px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}

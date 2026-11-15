@@ -1,11 +1,14 @@
 // Textos de países y continentes en inglés.
 //
 // Los datos (zonesData.js, allCountries.js) están en español y no se duplican: `localizeZone(zone, 'en')` devuelve una copia
-// traducida al vuelo. Con 'es' devuelve la zona tal cual.
+// traducida al vuelo. Con 'es' devuelve los textos de los datos; solo a los países se les precisa el continente
+// (América del Sur / del Norte, ver utils/continents.js).
 // - Nombres de país: Intl.DisplayNames con el código ISO que se deduce de la bandera (campo `icon`).
 // - Capitales: tabla `CAPITALS_EN` (solo las que cambian de nombre en inglés).
 // - Descripción, puntos destacados, clima y población de los países: plantillas (en los datos son siempre iguales).
 // - Los 7 continentes llevan texto escrito a mano en `CONTINENTS_EN`.
+
+import { continentIdOf } from '../utils/continents';
 
 const CONTINENT_NAMES_EN = {
   'América': 'Americas',
@@ -113,12 +116,24 @@ function countryNameEn(zone) {
 const continentEn = (name) => CONTINENT_NAMES_EN[name] || name;
 const populationEn = (p) => (p ? p.replace(/\s*millones$/, ' million') : p);
 
+const CONTINENT_NAMES_ES = {
+  'america-del-sur': 'América del Sur',
+  'america-del-norte': 'América del Norte',
+  europa: 'Europa',
+  africa: 'África',
+  asia: 'Asia',
+  oceania: 'Oceanía',
+  antartida: 'Antártida'
+};
+
 const cache = new Map();
 
 /** Devuelve la zona con sus textos en el idioma pedido ('es' = sin cambios). */
 export function localizeZone(zone, lang) {
-  if (!zone || lang !== 'en') return zone;
-  const hit = cache.get(zone.id);
+  if (!zone) return zone;
+  if (lang !== 'en' && zone.category === 'Continente') return zone;
+  const key = `${lang}:${zone.id}`;
+  const hit = cache.get(key);
   if (hit) return hit;
 
   let out;
@@ -136,9 +151,17 @@ export function localizeZone(zone, lang) {
       highlights: t.highlights || zone.highlights
     };
   } else {
+    if (lang !== 'en') {
+      // español: se conservan los textos de los datos y solo se precisa el continente (América del Sur / del Norte)
+      const cid = continentIdOf(zone);
+      out = { ...zone, continent: (cid && CONTINENT_NAMES_ES[cid]) || zone.continent };
+      cache.set(key, out);
+      return out;
+    }
     const name = countryNameEn(zone);
     const capital = CAPITALS_EN[zone.capital] || zone.capital;
-    const continent = continentEn(zone.continent);
+    const cid = continentIdOf(zone);
+    const continent = (cid && CONTINENTS_EN[cid]?.name) || continentEn(zone.continent);
     out = {
       ...zone,
       name,
@@ -152,7 +175,7 @@ export function localizeZone(zone, lang) {
       highlights: [`Capital: ${capital}`, `Region: ${continent}`, `Area: ${zone.area}`]
     };
   }
-  cache.set(zone.id, out);
+  cache.set(key, out);
   return out;
 }
 

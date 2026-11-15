@@ -36,10 +36,11 @@ export default function Navbar({
   const searchResults = query
     ? ZONES.map((z) => ({ zone: z, text: localizeZone(z, lang) }))
         .filter(({ zone, text }) =>
-          [zone.name, text.name, zone.capital, text.capital, zone.continent, text.continent].some(
+          [zone.name, text.name, zone.capital, text.capital].some(
             (v) => v && normalizeSearch(v).includes(query)
           )
         )
+        .sort((a, b) => Number(b.zone.category === 'Continente') - Number(a.zone.category === 'Continente'))
         .slice(0, 10)
     : [];
 
@@ -109,21 +110,31 @@ export default function Navbar({
         {/* Dropdown de resultados de búsqueda */}
         {showSearchResults && searchResults.length > 0 && (
           <div className="search-results-dropdown panel">
-            {searchResults.map(({ zone, text }) => (
-              <div
-                key={zone.id}
-                className="search-result-item"
-                onClick={() => handleSelectSearchResult(zone)}
-              >
-                <div className="search-result-text">
-                  <span className="search-result-title">{text.name}</span>
-                  <span className="search-result-sub">
-                    {text.capital ? `${text.capital} • ` : ''}
-                    {text.continent || text.category}
-                  </span>
-                </div>
-              </div>
-            ))}
+            {searchResults.map(({ zone, text }, i) => {
+              const isContinent = zone.category === 'Continente';
+              const prev = searchResults[i - 1];
+              const showHeader = !prev || (prev.zone.category === 'Continente') !== isContinent;
+              return (
+                <React.Fragment key={zone.id}>
+                  {showHeader && (
+                    <div className="search-result-group">
+                      {t(isContinent ? 'sidebarZones.continents' : 'sidebarZones.countries')}
+                    </div>
+                  )}
+                  <div className="search-result-item" onClick={() => handleSelectSearchResult(zone)}>
+                    <div className="search-result-text">
+                      <span className="search-result-title">{text.name}</span>
+                      {!isContinent && (
+                        <span className="search-result-sub">
+                          {text.capital ? `${text.capital} • ` : ''}
+                          {text.continent}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </React.Fragment>
+              );
+            })}
           </div>
         )}
       </div>

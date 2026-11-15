@@ -24,6 +24,8 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
   (solo las que cambian), descripción y puntos destacados por plantilla, y los 7 continentes con texto propio. El buscador acepta el nombre en ambos idiomas.
   Los datos originales siguen en español (el GeoJSON exportado conserva `paises_detectados` en español para la API).
   Al cambiar el texto del explorador, editar las dos lenguas en `translations.js` (`sidebarZones`).
+  **Mapa:** las etiquetas del mapa (países, ciudades, ríos, mares) también siguen el idioma: `applyMapLanguage` en `Globe.jsx` cambia `name_en` por `name_<idioma>` (con respaldo a `name_en` y `name`)
+  en las capas de texto de cada estilo y guarda el texto original para poder volver al inglés. Los títulos de la página también cambian (`app.title` en `translations.js`).
 - **Relieve:** `applyTerrain` en `Globe.jsx` es el de la rama `view_tests` (Mapbox Terrain-DEM; exageración 2.8 en Relieve y 1.8 en Satélite (en `view_tests` eran 1.95 y 1.35, subidas un poco); cámara a 58° al cambiar a
   Relieve y 45° al elegir una zona). Se probaron un sombreado propio, una exageración según el zoom y mensajes de diagnóstico, y se quitaron para dejarlo igual que en `view_tests`.
   Lo único añadido: si tras cargar el estilo falta el terreno, se vuelve a aplicar al entrar en reposo (hasta 5 intentos, en silencio). Si el relieve se ve plano en algún
@@ -32,8 +34,10 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
 ## Estilos de mapa, explorador y panel de análisis (14-nov)
 - **Tres modos de visualización**, distintos entre sí y no solo de color: **Satélite** (fotografía), **Cartografía urbana** (mapa de calles) y **Topografía y Relieve** (terreno 3D). Se quitaron
   Oscuro y Claro porque solo cambiaban colores (`MAP_STYLES` en `zonesData.js` y `styles` en `translations.js`).
-- **Explorador:** dos secciones, *Continentes* y *Países*, cada una de la A a la Z en el idioma activo, con buscador que ignora acentos y mayúsculas (`normalizeSearch`). Ya no tapa el cuadro de
-  coordenadas (`bottom: 76px`). Los textos de búsqueda son cortos: "Buscar lugar..." en la barra y "Buscar país o continente" en el explorador.
+- **Explorador por niveles** (`SidebarZones.jsx`): primero los *Continentes* (con su número de países) y, al elegir uno, sus *países* de la A a la Z con un botón de regreso. Sigue la selección: elegir un
+  continente (en el mapa, en el buscador o en la lista) abre el explorador en sus países, y elegir un país abre su continente. No tiene buscador propio: **hay un solo buscador, el de la barra superior**
+  ("Buscar lugar..."), que ignora acentos y mayúsculas (`normalizeSearch`), agrupa los resultados en Continentes y Países y busca los países solo por nombre y capital (así un continente no arrastra
+  todos sus países). América del Sur y América del Norte se separan en `utils/continents.js` (los datos solo dicen "América"). El explorador ya no tapa el cuadro de coordenadas (`bottom: 76px`).
 - **Panel de análisis** (`AnalysisDock.jsx`): aparece abajo a la izquierda al elegir una zona o trazar un área; encima de las coordenadas, a la derecha del explorador abierto y a la izquierda de la
   ficha. Frase que los datos respaldan, lista de hechos con líneas finas, calendario años × meses (rampa Inferno, mes en curso con recuadro amarillo, pie "Fig. 1") y aviso de demostración.
   Se adapta al ancho del propio panel (`@container`): con el explorador abierto pasa a una columna. **Los datos son de demostración** (`utils/demoAnalysis.js`, deterministas por zona);

@@ -394,6 +394,36 @@ const Globe = forwardRef(function Globe(
     }
   }, [styleUrl]);
 
+  // Idioma de las etiquetas del mapa (países, ciudades, ríos, mares...). Los estilos de Mapbox usan `name_en` con respaldo a
+  // `name`; aquí se cambia por `name_<idioma>` en cada capa de texto. Se guarda el texto original de cada capa para poder
+  // volver al inglés, y se vuelve a calcular en cada estilo nuevo (setStyle borra las capas).
+  const applyMapLanguage = (map) => {
+    if (!map) return;
+    try {
+      const lang = langRef.current;
+      const walk = (node) => {
+        if (!Array.isArray(node)) return node;
+        if (node[0] === 'get' && node[1] === 'name_en') {
+          return lang === 'en' ? node : ['coalesce', ['get', `name_${lang}`], ['get', 'name_en'], ['get', 'name']];
+        }
+        return node.map(walk);
+      };
+      const originals = labelOriginalsRef.current;
+      for (const layer of map.getStyle().layers) {
+        if (layer.type !== 'symbol') continue;
+        const field = layer.layout && layer.layout['text-field'];
+        if (!field) continue;
+        if (!originals.has(layer.id)) {
+          if (!JSON.stringify(field).includes('name_en')) continue;
+          originals.set(layer.id, field);
+        }
+        map.setLayoutProperty(layer.id, 'text-field', walk(originals.get(layer.id)));
+      }
+    } catch (e) {
+      console.warn('No se pudo cambiar el idioma de las etiquetas del mapa:', e);
+    }
+  };
+
   // Limpiar marcadores
   const clearMarkers = () => {
     markersRef.current.forEach((marker) => marker.remove());
@@ -407,6 +437,7 @@ const Globe = forwardRef(function Globe(
   // Idioma activo para las etiquetas de los marcadores (se leen al crearlos; ver el efecto de abajo)
   const langRef = useRef(lang);
   langRef.current = lang;
+  const labelOriginalsRef = useRef(new Map());
 
   // Marcadores de referencia para los continentes
   const renderZoneMarkers = (map) => {
@@ -443,6 +474,7 @@ const Globe = forwardRef(function Globe(
   // Al cambiar de idioma, volver a dibujar las etiquetas de los continentes
   useEffect(() => {
     if (mapRef.current && markersRef.current.length > 0) renderZoneMarkers(mapRef.current);
+    if (mapRef.current && mapRef.current.isStyleLoaded()) applyMapLanguage(mapRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
@@ -685,6 +717,10 @@ const Globe = forwardRef(function Globe(
 
     // 3. Configurar relieve 3D de terreno (montañas y valles)
     applyTerrain(map);
+
+    // 3b. Etiquetas del mapa en el idioma activo (el estilo nuevo trae sus textos originales)
+    labelOriginalsRef.current = new Map();
+    applyMapLanguage(map);
 
     // 4. Recrear capas de zonas y dibujo con protección de errores
     try {

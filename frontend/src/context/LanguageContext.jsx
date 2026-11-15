@@ -31,6 +31,7 @@ export function LanguageProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.lang = lang;
+    document.title = translations[lang]?.app?.title || document.title;
   }, [lang]);
 
   // Función de traducción anidada con soporte para parámetros {param}

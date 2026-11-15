@@ -88,7 +88,7 @@ export default function ZoneDrawer({
             </div>
           )}
 
-          {zone.continent && (
+          {zone.continent && rawZone.category !== 'Continente' && (
             <div className="metric-card">
               <div className="metric-header">
                 <Globe size={13} />

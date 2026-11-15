@@ -1,5 +1,8 @@
 export const translations = {
   es: {
+    app: {
+      title: 'IgnisSync - Calendario de quemas armonizado MODIS y VIIRS'
+    },
     navbar: {
       brandTag: 'NASA Space Apps 2026 · Boca del Río',
       toggleSidebar: 'Alternar panel de zonas',
@@ -88,14 +91,13 @@ export const translations = {
     },
     sidebarZones: {
       title: 'Explorador',
+      closeSidebar: 'Cerrar barra lateral',
       continents: 'Continentes',
       countries: 'Países',
-      closeSidebar: 'Cerrar barra lateral',
-      searchPlaceholder: 'Buscar país o continente',
-      clear: 'Limpiar',
-      noZonesFound: 'Sin resultados.',
       countOne: 'país',
-      countMany: 'países'
+      countMany: 'países',
+      noCountries: 'Este continente no tiene países.',
+      hint: 'Elige un continente para ver sus países'
     },
     zoneDrawer: {
       close: 'Cerrar panel',
@@ -168,6 +170,9 @@ export const translations = {
     }
   },
   en: {
+    app: {
+      title: 'IgnisSync - Harmonized MODIS and VIIRS burn calendar'
+    },
     navbar: {
       brandTag: 'NASA Space Apps 2026 · Boca del Río',
       toggleSidebar: 'Toggle zones panel',
@@ -256,14 +261,13 @@ export const translations = {
     },
     sidebarZones: {
       title: 'Explorer',
+      closeSidebar: 'Close sidebar',
       continents: 'Continents',
       countries: 'Countries',
-      closeSidebar: 'Close sidebar',
-      searchPlaceholder: 'Search country or continent',
-      clear: 'Clear',
-      noZonesFound: 'No results.',
       countOne: 'country',
-      countMany: 'countries'
+      countMany: 'countries',
+      noCountries: 'This continent has no countries.',
+      hint: 'Pick a continent to see its countries'
     },
     zoneDrawer: {
       close: 'Close panel',
