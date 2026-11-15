@@ -45,11 +45,14 @@ llevando cada satélite a esa escala con factores aprendidos en los años en que
 | **Limpieza** de volcanes, plataformas marinas, mecheros de gas e industria | FIRMS marca muchas fuentes estáticas (`type` 1–3). Los datos recientes (NRT) no traen esa marca: se filtran con una **máscara de celdas estáticas** armada con el histórico |
 
 ### El modelo
-No es una red neuronal: es un **modelo de razones**, elegido porque se puede explicar en una frase y validar con datos reales.
+La armonización es un **estimador de razón estratificado con encogimiento hacia un factor global**. En primera aproximación, la
+diferencia entre sensores es multiplicativa (el tamaño de píxel, la sensibilidad y el número de pasadas escalan las detecciones), y un
+estimador de razón la modela de forma directa. Es estable con solo cinco años de traslape, da un factor físicamente interpretable por
+región y mes, y su incertidumbre se puede cuantificar y validar en años que el modelo no vio.
 
 - Para cada región (hexágono padre H3 de resolución 3, ~12,000 km²) y cada mes del año se calcula
   `factor = días-celda de NOAA-20 / días-celda del otro satélite`, en los meses en que ambos funcionaron.
-- Las regiones con pocos datos se **encogen hacia el factor global** (prior de pseudo-cuentas), para que no den factores absurdos.
+- Las regiones con pocos datos se **encogen hacia el factor global** (prior de pseudo-cuentas), lo que mantiene estables sus factores cuando la muestra de traslape es pequeña.
 - Cadena hacia NOAA-20: S-NPP × `k_snpp` (2012–2018), MODIS × `k_modis` (2002–2011), Terra × `f_terra` × `k_modis` (2000–2002).
   Un solo salto en todo, salvo el tramo solo Terra, que nunca coincidió con VIIRS.
 - **Incertidumbre:** banda del 95% por **bootstrap** (200 réplicas, remuestreando hexágonos y años).
@@ -146,7 +149,7 @@ npm run dev
 Con la entrega de América el backend usa ~0.8 GB de memoria en reposo y ~1.9 GB al consultar el continente entero.
 Más detalle en [`backend/README.md`](backend/README.md) y [`frontend/README.md`](frontend/README.md). Despliegue: [`pipeline/DESPLIEGUE.md`](pipeline/DESPLIEGUE.md).
 
-## 6. Limitaciones (las decimos nosotros antes de que alguien las encuentre)
+## 6. Limitaciones
 
 - **Antes de 2012 no hay con qué comprobar MODIS** (no existía VIIRS). En Argentina + Chile la razón Terra/Aqua sube de 0.47 (2003) a
   ~0.62 (2011) y no se puede saber si es el fuego o el sensor. Es el tramo menos verificable.
@@ -166,4 +169,3 @@ Más detalle en [`backend/README.md`](backend/README.md) y [`frontend/README.md`
 - Grilla hexagonal: **H3** (Uber).
 - Reto propuesto por la **Comisión Nacional de Actividades Espaciales (CONAE)**, Argentina.
 
-**Equipo:** Evaristo y Carlos (datos y modelo), Manuel (backend y aplicación web) y el resto del equipo de diseño y front.

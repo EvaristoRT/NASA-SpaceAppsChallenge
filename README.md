@@ -53,11 +53,14 @@ bringing each satellite to that scale with factors learned in the years when bot
 | **Cleaning** of volcanoes, offshore platforms, gas flares and industry | FIRMS flags many static sources (`type` 1–3). Recent near-real-time (NRT) data has no such flag, so it is filtered with a **static-cell mask** built from the archive |
 
 ### The model
-It is not a neural network: it is a **ratio model**, chosen because it can be explained in one sentence and validated with real data.
+The harmonization is a **stratified ratio estimator with shrinkage toward a global factor**. To first order, the difference between
+sensors is multiplicative (pixel size, sensitivity and number of overpasses scale the detections), and a ratio estimator models that
+directly. It stays stable with only five overlap years, gives one physically interpretable factor per region and month, and its
+uncertainty can be quantified and validated on years the model never saw.
 
 - For each region (H3 parent hexagon at resolution 3, ~12,000 km²) and each calendar month we compute
   `factor = NOAA-20 cell-days / other satellite's cell-days`, over the months when both satellites were operating.
-- Regions with little data are **shrunk toward the global factor** (pseudo-count prior), so they do not produce extreme factors.
+- Regions with little data are **shrunk toward the global factor** (pseudo-count prior), which keeps their factors stable when the overlap sample is small.
 - Chain to NOAA-20: S-NPP × `k_snpp` (2012–2018), MODIS × `k_modis` (2002–2011), Terra × `f_terra` × `k_modis` (2000–2002).
   A single step everywhere, except the Terra-only period, which never overlapped with VIIRS.
 - **Uncertainty:** 95% band by **bootstrap** (200 replicates, resampling hexagons and years).
@@ -163,7 +166,7 @@ More detail in [`backend/README.md`](backend/README.md) and [`frontend/README.md
 To rebuild the data from scratch (FIRMS archive → delivery), see [`pipeline/README.md`](pipeline/README.md). On a 16 GB laptop the
 worldwide bronze layer took about 1.5 hours, and each region from minutes to about 2.5 hours depending on its size (Africa, the largest).
 
-## 6. Limitations (we state them before anyone finds them)
+## 6. Limitations
 
 - **Before 2012 there is nothing to check MODIS against** (VIIRS did not exist). In Argentina + Chile the Terra/Aqua ratio rises from 0.47
   (2003) to ~0.62 (2011), and we cannot tell whether that is the fire or the sensor. It is the least verifiable part of the series.
@@ -217,4 +220,3 @@ In line with the NASA Space Apps rules, we declare where AI tools were used:
   Source Sans 3 font (SIL Open Font License).
 - Brand: NASA Space Apps symbol and patterns from the official Space Apps brand assets. No NASA logo is used.
 
-**Team MEIREKI:** Evaristo and Carlos (data and model), Manuel (backend and web app), Mauricio and the rest of the team (design and front end).
