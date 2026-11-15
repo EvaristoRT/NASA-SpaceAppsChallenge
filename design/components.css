@@ -23,11 +23,23 @@
 /* the statement: one sentence the data supports. Set large but not shouting, and no highlighted word. */
 .statement { font-size: clamp(1.9rem, 3.6vw, 2.9rem); font-weight: 700; line-height: 1.12; text-wrap: balance; }
 
-/* brand band: the Space Apps gradient with the event context. Fixed colours: always blue, always white text. */
-.brandbar { position: relative; overflow: hidden; background: var(--brand-gradient); color: #ffffff; }
-/* official Space Apps pattern, screened back to ~25% over the blue (brand guide). Orbits is grey lines on black, so
-   `screen` leaves only the lines. Other patterns are dark lines on white: add `filter: invert(1)` to use them. */
-.brandbar .pattern-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.25; mix-blend-mode: screen; pointer-events: none; }
+/* brand surface: the Space Apps gradient. Fixed colours: always blue, always white text, in both themes.
+   Patterns live ONLY on these surfaces (brand guide: screened ~25% over a brand colour, preferably blue). */
+.brandbar, .brandband { position: relative; overflow: hidden; background: var(--brand-gradient); color: #ffffff; }
+/* official Space Apps pattern, screened back to ~25% over the blue. Orbits is grey lines on black, so `screen`
+   leaves only the lines. The other five are dark lines on white: add `.is-lines` (invert first) to use them.
+   Which pattern goes where is meaningful, not random:
+     orbits   -> brand bar (satellites in orbit)
+     voronoi  -> footer / data provenance (irregular cells ~ the H3 cell grid we count burns in)
+     waves    -> contour lines, for terrain/area sections (e.g. the drawn-area band)
+     rosette, fiduciaries, code -> reserved; use only on a dedicated blue band, one pattern per screen. */
+.pattern-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.25; mix-blend-mode: screen; pointer-events: none; }
+.pattern-img.is-lines { filter: invert(1); }
+.brandband .inner { position: relative; padding-block: var(--space-5); }
+.brandband p { margin: 0; }
+.brandband a { color: #ffffff; }
+.brandband .small { font-size: var(--text-sm); color: #dfe1e2; max-width: 70ch; }
+.brandband :focus-visible { outline-color: #fafaad; }
 .brandbar .brandmark { display: flex; align-items: center; gap: var(--space-4); }
 .brandbar .brandmark img { flex: none; width: 48px; height: 48px; }
 .brandbar .inner {
