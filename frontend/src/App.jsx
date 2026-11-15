@@ -4,6 +4,12 @@ import Navbar from './components/Navbar';
 import SidebarZones from './components/SidebarZones';
 import InfoPanel from './components/InfoPanel';
 import DrawToolbar from './components/DrawToolbar';
+import {
+  calculatePolygonArea,
+  calculatePolygonPerimeter,
+  getPolygonBoundsAndCenter,
+  findCoveredCountries
+} from './utils/geoUtils';
 import MapControls from './components/MapControls';
 import CoordinatesHUD from './components/CoordinatesHUD';
 import ActivityLegend from './components/ActivityLegend';
@@ -198,6 +204,22 @@ function MainApp() {
     setPolygonPointsCount(0);
   };
 
+  // Área creada escribiendo coordenadas: se arma igual que una dibujada y la cámara vuela hacia ella
+  const handleCreateAreaFromCoords = (coords, type) => {
+    const bounds = getPolygonBoundsAndCenter(coords);
+    handleSelectDrawMode(null);
+    handleFinishDrawing({
+      type,
+      coords,
+      area: calculatePolygonArea(coords),
+      perimeter: calculatePolygonPerimeter(coords),
+      bounds,
+      center: bounds ? bounds.center : [0, 0],
+      coveredCountries: findCoveredCountries(coords)
+    });
+    if (bounds) globeRef.current?.focusArea(bounds);
+  };
+
   const handleClearDrawing = () => {
     setDrawnArea(null);
     setPolygonPointsCount(0);
@@ -273,6 +295,7 @@ function MainApp() {
           polygonPointsCount={polygonPointsCount}
           onFinishPolygon={() => globeRef.current?.finishPolygon()}
           onUndoVertex={() => globeRef.current?.undoPolygonVertex()}
+          onCreateArea={handleCreateAreaFromCoords}
           onClose={() => {
             setIsDrawOpen(false);
             setDrawMode(null);

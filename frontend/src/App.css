@@ -1460,6 +1460,119 @@ button.cal-cell:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
+/* Escribir coordenadas en la barra de dibujo */
+.draw-coords {
+  margin-top: 8px;
+  border-top: 1px solid var(--rule);
+  padding-top: 6px;
+  font-size: 13px;
+}
+
+.draw-coords summary {
+  cursor: pointer;
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.draw-coord-modes {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.draw-coord-modes button {
+  padding: 4px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  cursor: pointer;
+}
+
+.draw-coord-modes button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.draw-coord-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+  margin-bottom: 8px;
+}
+
+.draw-coord-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.draw-coord-field input {
+  padding: 4px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.draw-coord-error {
+  margin: 0 0 8px;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+/* Meses futuros del calendario: valor esperado, tenue y con borde punteado */
+.cal-cell.expected {
+  opacity: 0.45;
+  outline: 1px dashed var(--border-strong);
+  outline-offset: -1px;
+}
+
+/* Próximos meses (según la climatología) */
+.analysis-next {
+  margin: 0 0 12px;
+}
+
+.analysis-next ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analysis-next li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14px;
+}
+
+.analysis-next li span {
+  min-width: 96px;
+}
+
+.analysis-level {
+  min-width: 64px;
+  font-weight: 700;
+}
+
+.analysis-level-high {
+  color: var(--heat);
+}
+
+.analysis-next small {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
 /* Periodo del análisis (desde, hasta) */
 .analysis-range {
   display: flex;

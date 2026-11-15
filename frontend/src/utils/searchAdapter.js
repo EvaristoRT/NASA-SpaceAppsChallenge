@@ -15,6 +15,33 @@ const parseMonth = (text) => {
   return { year: y, month: m - 1 }; // el panel cuenta los meses desde 0
 };
 
+// Meses que faltan del año y próximos tres meses, a partir de la climatología (mediana, p25 y p75 de cada mes calendario de la zona).
+// El nivel compara la mediana del mes con las 12 medianas: tercio inferior = bajo, tercio superior = alto. No es un pronóstico.
+function buildOutlook(climatology, last) {
+  if (!climatology?.length) return { expected: {}, nextMonths: [] };
+  const byMonth = {};
+  for (const c of climatology) byMonth[c.month] = c;
+  const medians = climatology.map((c) => c.median).sort((a, b) => a - b);
+  const n = medians.length;
+  const lowCut = medians[Math.max(0, Math.floor(n / 3) - 1)];
+  const highCut = medians[Math.min(n - 1, Math.ceil((2 * n) / 3))];
+  const levelOf = (median) => (median <= lowCut ? 'low' : median >= highCut ? 'high' : 'medium');
+  const entry = (year, month) => {
+    const c = byMonth[month + 1];
+    return c ? { year, month, median: c.median, p25: c.p25, p75: c.p75, level: levelOf(c.median) } : null;
+  };
+
+  const expected = { [last.year]: new Array(12).fill(null) };
+  for (let m = last.month + 1; m < 12; m++) expected[last.year][m] = entry(last.year, m);
+  const nextMonths = [];
+  for (let k = 1; k <= 3; k++) {
+    const idx = last.month + k;
+    const e = entry(last.year + Math.floor(idx / 12), idx % 12);
+    if (e) nextMonths.push(e);
+  }
+  return { expected, nextMonths };
+}
+
 export function adaptSearchResponse(response) {
   const { series = [], kpis = {}, synthetic = false } = response;
   if (!series.length) return null; // sin datos: quien llama debe mostrar el aviso de cobertura, no una serie en cero
@@ -60,6 +87,8 @@ export function adaptSearchResponse(response) {
   const latest = kpis.latest_month ? parseMonth(kpis.latest_month) : { year: lastYear, month: points[points.length - 1].month };
   const ratio = kpis.latest_vs_median ?? null;
 
+  const outlook = buildOutlook(response.climatology, parseMonth(series[series.length - 1].month));
+
   return {
     synthetic,
     firstYear,
@@ -74,6 +103,9 @@ export function adaptSearchResponse(response) {
     riskMonth,
     ratio,
     status: statusOf(ratio),
+    // Meses futuros con el rango esperado y los próximos meses (de la climatología)
+    expected: outlook.expected,
+    nextMonths: outlook.nextMonths,
     // Fuente por mes, banda de incertidumbre y meses preliminares (los usan el calendario y la gráfica de la estimación)
     source,
     ci,
@@ -106,6 +138,7 @@ export function applyRange(data, from, to) {
   if (!data?.points?.length) return data;
   const pts = data.points.filter((p) => p.month >= from && p.month <= to);
   if (!pts.length || pts.length === data.points.length) return data;
+  const toTheEnd = to >= data.points[data.points.length - 1].month; // solo si el periodo llega al último mes tiene sentido hablar de lo que viene
 
   const firstYear = Number(pts[0].month.slice(0, 4));
   const lastYear = Number(pts[pts.length - 1].month.slice(0, 4));
@@ -143,6 +176,8 @@ export function applyRange(data, from, to) {
     currentYear: latest.year,
     ratio,
     status: statusOf(ratio),
+    expected: toTheEnd ? data.expected : {},
+    nextMonths: toTheEnd ? data.nextMonths : [],
     points: pts
   };
 }

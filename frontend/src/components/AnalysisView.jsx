@@ -180,6 +180,22 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
         )}
       </p>
 
+      {data.nextMonths?.length > 0 && (
+        <section className="analysis-next" aria-label={t('analysis.nextTitle')}>
+          <h3 className="analysis-section-title">{t('analysis.nextTitle')}</h3>
+          <ul>
+            {data.nextMonths.map((n) => (
+              <li key={`${n.year}-${n.month}`}>
+                <span>{monthsLong[n.month]}{n.month === 0 ? ` ${n.year}` : ''}</span>
+                <b className={`analysis-level analysis-level-${n.level}`}>{t(`analysis.level.${n.level}`)}</b>
+                <small>{t('analysis.cellExpected', { median: fmt(Math.round(n.median)), low: fmt(Math.round(n.p25)), high: fmt(Math.round(n.p75)) })}</small>
+              </li>
+            ))}
+          </ul>
+          <p className="analysis-pick">{t('analysis.nextNote')}</p>
+        </section>
+      )}
+
       <figure className="analysis-figure">
         <div className="cal" role={interactive ? 'group' : 'img'} aria-label={t('analysis.calendarLabel')} onKeyDown={interactive ? moveFocus : undefined}>
           <span />
@@ -191,7 +207,15 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
               <span className="cal-axis">{y}</span>
               {data.calendar[y].map((v, m) => {
                 // Sin dato armonizado (antes de nov. 2000, meses futuros): apagado y sin clic
-                if (v === null) return <span key={m} className="cal-cell" title={interactive ? t('analysis.noMonthData') : undefined} />;
+                if (v === null) {
+                  // Mes futuro del último año: se pinta tenue con el valor esperado (mediana histórica), no medido
+                  const ex = data.expected?.[y]?.[m];
+                  if (ex) {
+                    const text = `${months[m]} ${y}: ${t('analysis.cellExpected', { median: fmt(Math.round(ex.median)), low: fmt(Math.round(ex.p25)), high: fmt(Math.round(ex.p75)) })}`;
+                    return <span key={m} className="cal-cell expected" role="img" aria-label={text} title={text} style={{ background: cellColor(ex.median, data.max) }} />;
+                  }
+                  return <span key={m} className="cal-cell" title={interactive ? t('analysis.noMonthData') : undefined} />;
+                }
                 const isPeak = y === data.peak.year && m === data.peak.month;
                 const title = `${months[m]} ${y}: ${t('analysis.cellTitle', { days: v })}`;
                 const style = { background: cellColor(v, data.max), color: textOn(v, data.max) };
@@ -233,6 +257,7 @@ export default function AnalysisView({ zone, drawnArea, selectedMonth, onSelectM
           <span className="cal-axis">{fmt(data.max)}</span>
         </div>
 
+        {data.nextMonths?.length > 0 && <p className="analysis-pick">{t('analysis.expectedNote')}</p>}
         {interactive && !selectedMonth && <p className="analysis-pick">{t('analysis.pickHint')}</p>}
         {!interactive && data.synthetic && <p className="analysis-pick">{t('analysis.pickNeedsApi')}</p>}
 

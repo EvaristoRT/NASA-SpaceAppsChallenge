@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Pencil,
   Pentagon,
@@ -10,6 +10,7 @@ import {
   Undo2
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { areaFromCoordinates } from '../utils/areaFromCoordinates';
 
 export default function DrawToolbar({
   drawMode, // null | 'freehand' | 'polygon' | 'rectangle'
@@ -19,9 +20,32 @@ export default function DrawToolbar({
   polygonPointsCount = 0,
   onFinishPolygon,
   onUndoVertex,
+  onCreateArea, // (coords, type) => void: crea el área a partir de coordenadas escritas
   onClose
 }) {
   const { lang, t } = useLanguage();
+  const [coordMode, setCoordMode] = useState('center'); // 'center' | 'box'
+  const [values, setValues] = useState({ lat: '', lon: '', radius: '50', south: '', north: '', west: '', east: '' });
+  const [coordError, setCoordError] = useState('');
+  const setValue = (key) => (e) => setValues((v) => ({ ...v, [key]: e.target.value }));
+
+  const submitCoords = (e) => {
+    e.preventDefault();
+    const result = areaFromCoordinates(coordMode, values);
+    if (result.error) {
+      setCoordError(t(`drawToolbar.${result.error}`));
+      return;
+    }
+    setCoordError('');
+    onCreateArea(result.coords, result.type);
+  };
+
+  const field = (key, label, placeholder) => (
+    <label className="draw-coord-field">
+      <span>{label}</span>
+      <input type="text" inputMode="decimal" value={values[key]} placeholder={placeholder} onChange={setValue(key)} />
+    </label>
+  );
 
   const getHint = () => {
     if (drawMode === 'polygon') {
@@ -138,6 +162,43 @@ export default function DrawToolbar({
           </button>
         )}
       </div>
+
+      <details className="draw-coords">
+        <summary>{t('drawToolbar.coordsTitle')}</summary>
+        <form onSubmit={submitCoords} noValidate>
+          <div className="draw-coord-modes" role="group" aria-label={t('drawToolbar.coordsTitle')}>
+            <button type="button" className={coordMode === 'center' ? 'active' : ''} aria-pressed={coordMode === 'center'} onClick={() => setCoordMode('center')}>
+              {t('drawToolbar.coordsCenter')}
+            </button>
+            <button type="button" className={coordMode === 'box' ? 'active' : ''} aria-pressed={coordMode === 'box'} onClick={() => setCoordMode('box')}>
+              {t('drawToolbar.coordsBox')}
+            </button>
+          </div>
+          {coordMode === 'center' ? (
+            <div className="draw-coord-grid">
+              {field('lat', t('drawToolbar.lat'), '-33.45')}
+              {field('lon', t('drawToolbar.lon'), '-70.66')}
+              {field('radius', t('drawToolbar.radius'), '50')}
+            </div>
+          ) : (
+            <div className="draw-coord-grid">
+              {field('north', t('drawToolbar.north'), '-32')}
+              {field('south', t('drawToolbar.south'), '-34')}
+              {field('west', t('drawToolbar.west'), '-71.5')}
+              {field('east', t('drawToolbar.east'), '-69.5')}
+            </div>
+          )}
+          {coordError && (
+            <p className="draw-coord-error" role="alert">
+              {coordError}
+            </p>
+          )}
+          <button type="submit" className="draw-tool-btn success">
+            <CheckCircle2 size={15} />
+            <span>{t('drawToolbar.coordsCreate')}</span>
+          </button>
+        </form>
+      </details>
 
       <div className="draw-hint-box">
         <Info size={13} className="text-amber-400 flex-shrink-0" />
