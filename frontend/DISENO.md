@@ -25,9 +25,6 @@ desde el buscador de la barra superior. `tools/build_continents.py` ya no vuelve
   Los datos originales siguen en español (el GeoJSON exportado conserva `paises_detectados` en español para la API).
   Al cambiar el texto del explorador, editar las dos lenguas en `translations.js` (`sidebarZones`).
 - **Relieve:** `applyTerrain` en `Globe.jsx` activa Mapbox Terrain-DEM en los estilos Satélite (exageración 1.35) y Relieve (1.95).
-  `addReliefLayers` añade además, en esos dos estilos, sombreado (`relief-hillshade`, más fuerte en Relieve) y curvas de nivel de `mapbox.mapbox-terrain-v2`
-  (principales desde el zoom 9, secundarias desde el 11; en Relieve, también la altitud en metros sobre las principales). Quedan debajo de las etiquetas del estilo
-  y de las capas de zonas. **Sin verificar en el mapa real** (no había token): si las curvas se ven densas o tenues, ajustar opacidades y `minzoom` ahí.
 
 ## Colores del mapa (en `Globe.jsx` y en `App.css`; si cambian en uno, cambiar el otro)
 - **Amarillo neón** = lo activo: zona seleccionada, área que se dibuja, herramienta activa, fila seleccionada, controles encendidos.
