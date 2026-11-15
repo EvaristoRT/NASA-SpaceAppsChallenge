@@ -32,7 +32,10 @@ def _is_partial(months: pd.DataFrame, m: int) -> bool | None:
 def timeline(sel: pd.DataFrame, months: pd.DataFrame, m_lo: int, m_hi: int,
              baseline_start: int, baseline_end: int | None):
     all_m = np.arange(int(months["m"].min()), int(months["m"].max()) + 1)
-    g = sel.groupby("m")[["value", "modis_ta", "viirs"]].sum().reindex(all_m, fill_value=0)
+    # Optional columns of the pipeline delivery: 95% interval of the estimate, FRP and the preliminary (NRT) flag
+    extra = [c for c in ("value_ci_lower", "value_ci_upper", "frp_mw") if c in sel.columns]
+    g = sel.groupby("m")[["value", "modis_ta", "viirs", *extra]].sum().reindex(all_m, fill_value=0)
+    nrt = sel.groupby("m")["is_nrt"].max().reindex(all_m, fill_value=False) if "is_nrt" in sel.columns else None
 
     years = 2000 + all_m // 12
     first_full = int(years[all_m % 12 == 0].min()) if (all_m % 12 == 0).any() else int(years.min())
@@ -65,7 +68,16 @@ def timeline(sel: pd.DataFrame, months: pd.DataFrame, m_lo: int, m_hi: int,
         mon = m % 12 + 1
         v = float(g.at[m, "value"])
         md, mdev, col = med[mon], mad[mon], cols[mon]
+        interval = {}
+        if "value_ci_lower" in extra:
+            # Sum of the cell intervals: the band the data team validated for region totals (a bit conservative)
+            interval = dict(count_ci_lower=round(float(g.at[m, "value_ci_lower"]), 2), count_ci_upper=round(float(g.at[m, "value_ci_upper"]), 2))
+        if "frp_mw" in extra:
+            interval["frp_mw"] = round(float(g.at[m, "frp_mw"]), 1)
+        if nrt is not None:
+            interval["is_nrt"] = bool(nrt.at[m])
         series.append(dict(
+            **interval,
             month=month_label(m), count=round(v, 2),
             raw_modis=int(g.at[m, "modis_ta"]), raw_viirs=int(g.at[m, "viirs"]),
             source=_src_label(months, m), is_partial=_is_partial(months, m), median=round(md, 2),

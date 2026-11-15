@@ -36,6 +36,10 @@ class ActivityResponse(BaseModel):
 class MonthPoint(BaseModel):
     month: str = Field(description="YYYY-MM")
     count: float = Field(description="Burning cell-days, NOAA-20 equivalent (not a number of fires or hotspots)")
+    count_ci_lower: Optional[float] = Field(None, description="Lower end of the 95% interval of the estimate (sum of the cell intervals)")
+    count_ci_upper: Optional[float] = Field(None, description="Upper end of the 95% interval of the estimate (sum of the cell intervals)")
+    frp_mw: Optional[float] = Field(None, description="Fire radiative power of the month, MW (harmonized)")
+    is_nrt: Optional[bool] = Field(None, description="The month includes preliminary near-real-time data")
     raw_modis: int
     raw_viirs: int
     source: Literal[
