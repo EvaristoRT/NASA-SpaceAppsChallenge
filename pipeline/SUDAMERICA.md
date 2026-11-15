@@ -81,6 +81,15 @@ Como en Cloud Run `/tmp` vive en la RAM, a ese pico hay que sumar los ~104 MB de
 
 ---
 
-## Respuesta de Evaristo
+## Respuesta de Evaristo (2026-11-15)
 
-_(escribir aquí)_
+1. **Cambios de rutas en 06 y 07: aprobados.** Los revisé (solo cambian rutas, no cálculos) y los probé corriendo Europa entera con esta rama:
+   Argentina + Chile no se tocó (`models/factores.parquet`, `gold/entrega/` y `gold/region=argentina_chile/` conservaron sus fechas).
+   Resultados en `REGIONES.md` §4 (rama `datos/europa`).
+2. **El MVP es toda América**, servida **en local** por ahora (el despliegue en Cloud Run queda para después, cuando haya quien ponga la tarjeta).
+   Argentina + Chile sigue siendo la red de seguridad hasta que América esté validada.
+3. **Una sola región `america`** (la que ya pusiste en `config.py`). Para la app no hace falta partirla: el front muestra cualquier país
+   que tenga celdas con datos (`useAnalysis.js` decide por `n_cells_with_fire > 0`), así que con la entrega de América funcionan solos
+   Brasil, México, EE. UU., etc.
+
+**Qué te toca para llegar al MVP:** [MVP_AMERICA.md](MVP_AMERICA.md).
